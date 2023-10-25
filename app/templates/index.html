@@ -1,0 +1,61 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Modeler with vis.js</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+</head>
+<body>
+<div style="margin-bottom: 20px;">
+    <button onclick="createAgent()">Create Agent</button>
+</div>
+<div id="graph" style="width: 800px; height: 500px;"></div>
+
+<script type="text/javascript">
+    var nodes = new vis.DataSet();
+    var edges = new vis.DataSet();
+    var nodeCounter = 1;
+
+    var data = {
+        nodes: nodes,
+        edges: edges
+    };
+
+    var options = {
+        manipulation: {
+            enabled: true,
+            initiallyActive: true,
+            editNode: function (nodeData, callback) {
+                // Show a text field pop-up to edit the node
+                var newLabel = prompt("Enter new label:", nodeData.label);
+                if (newLabel !== null) {
+                    nodeData.label = newLabel;
+                    callback(nodeData);
+                } else {
+                    callback(null); // Cancel the edit
+                }
+            },
+            addNode: function(nodeData, callback) {
+                nodeData.label = "New Node";
+                callback(nodeData);
+            }
+        }
+    };
+
+    var container = document.getElementById('graph');
+    var network = new vis.Network(container, data, options);
+
+    function createAgent() {
+        var agentId = "Agent" + nodeCounter++;
+        nodes.add({ id: agentId, label: 'role: user' });
+        nodes.add({ id: agentId + 'Content', label: `content: You're agent-${agentId}.` });
+        edges.add({ from: agentId, to: agentId + 'Content' });
+    }
+
+</script>
+</body>
+</html>
