@@ -12,6 +12,7 @@
 <body>
 <div style="margin-bottom: 20px;">
     <button onclick="createAgent()">Create Agent</button>
+    <button onclick="createLogicumAgents()">Logicum-Agents</button>
 </div>
 <div id="graph" style="width: 800px; height: 500px;"></div>
 
@@ -39,21 +40,40 @@
                     callback(null); // Cancel the edit
                 }
             },
-            addNode: function(nodeData, callback) {
+            addNode: function (nodeData, callback) {
                 nodeData.label = "New Node";
                 callback(nodeData);
             }
         }
     };
 
+    function createLogicumAgents() {
+        const agents = [
+            "Deductive Reasoning",
+            "Inductive Reasoning",
+            "Abductive Reasoning",
+            "Analogical Reasoning",
+            "Causal Reasoning",
+            "Counterfactual Reasoning",
+            "Probabilistic Reasoning"
+        ];
+
+        agents.forEach(agent => {
+            var agentId = agent.replace(/\s+/g, '');  // Removes spaces to make it a suitable id
+            nodes.add({id: agentId, label: `role: user - ${agent}`});
+            nodes.add({id: agentId + 'Content', label: `content: You're agent-${agent}.`});
+            edges.add({from: agentId, to: agentId + 'Content'});
+        });
+    }
+
     var container = document.getElementById('graph');
     var network = new vis.Network(container, data, options);
 
     function createAgent() {
         var agentId = "Agent" + nodeCounter++;
-        nodes.add({ id: agentId, label: 'role: user' });
-        nodes.add({ id: agentId + 'Content', label: `content: You're agent-${agentId}.` });
-        edges.add({ from: agentId, to: agentId + 'Content' });
+        nodes.add({id: agentId, label: 'role: user'});
+        nodes.add({id: agentId + 'Content', label: `content: You're agent-${agentId}.`});
+        edges.add({from: agentId, to: agentId + 'Content'});
     }
 
 </script>
