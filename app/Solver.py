@@ -147,10 +147,10 @@ class Solver:
             logging.info(f"Saved to BigQuery successfully.")
 
 
-openai_api_key = os.getenv('OPEN_AI_KEY')
-open_ai_url = "https://api.openai.com/v1/chat/completions"
-bot = Solver(openai_api_key, open_ai_url)
-
-problem_space = "There was a attack of the Palestinien sided group Hamas on Israel. Now Israel is bombing Gaza with heavy civiliens casualties. There is a total 'cleaning' of the Hamas in Gaza planned by Isralien-Army. There is a high danger that the whole region will fall into war."
-
-bot.model_problem_spaces(problem_space)
+# openai_api_key = os.getenv('OPEN_AI_KEY')
+# open_ai_url = "https://api.openai.com/v1/chat/completions"
+# bot = Solver(openai_api_key, open_ai_url)
+#
+# problem_space = "There was a attack of the Palestinien sided group Hamas on Israel. Now Israel is bombing Gaza with heavy civiliens casualties. There is a total 'cleaning' of the Hamas in Gaza planned by Isralien-Army. There is a high danger that the whole region will fall into war."
+#
+# bot.model_problem_spaces(problem_space)
