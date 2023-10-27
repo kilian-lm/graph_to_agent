@@ -21,9 +21,12 @@ from datetime import datetime
 
 load_dotenv()
 
+from google.cloud import bigquery
+from google.oauth2.credentials import Credentials
+
 
 class Solver:
-    def __init__(self, openai_api_key: str, url: str):
+    def __init__(self, openai_api_key: str, url: str, agents=None):
         self.openai_api_key = openai_api_key
         self.openai_base_url = url
         self.headers = {
@@ -31,36 +34,40 @@ class Solver:
             'Authorization': f'Bearer {self.openai_api_key}'
         }
 
-        self.agents = {
-            "Deductive Reasoning": {
-                "schema": ["Modus Ponens", "Modus Tollens", "Hypothetical Syllogism", "Disjunctive Syllogism"],
-                "briefing": "Your strength lies in deriving specific conclusions from general hypotheses. Utilize schemas like Modus Ponens, Modus Tollens, Hypothetical Syllogism, and Disjunctive Syllogism."
-            },
-            "Inductive Reasoning": {
-                "schema": ["Simple Induction", "Inverse Induction", "Causal Inference", "Statistical Generalization"],
-                "briefing": "Your expertise is in drawing general conclusions from specific observations. Harness schemas such as Simple Induction, Inverse Induction, Causal Inference, and Statistical Generalization."
-            },
-            "Abductive Reasoning": {
-                "schema": ["Inference to the Best Explanation", "Eliminative Induction"],
-                "briefing": "Your capability shines when discerning the most plausible explanation from a set of observations. Employ schemas like Inference to the Best Explanation and Eliminative Induction."
-            },
-            "Analogical Reasoning": {
-                "schema": ["Positive Analogy", "Negative Analogy", "Partial Analogy"],
-                "briefing": "Your forte is comparing similar situations and deriving conclusions from parallels. Lean on schemas like Positive Analogy, Negative Analogy, and Partial Analogy."
-            },
-            "Causal Reasoning": {
-                "schema": ["Cause-to-Effect", "Effect-to-Cause", "Common-Cause Reasoning"],
-                "briefing": "You excel in identifying cause-and-effect relationships. Use schemas such as Cause-to-Effect, Effect-to-Cause, and Common-Cause Reasoning."
-            },
-            "Counterfactual Reasoning": {
-                "schema": ["Conditional Counterfactual", "Causal Counterfactual"],
-                "briefing": "You thrive on imagining alternate scenarios and outcomes. Draw from schemas like Conditional Counterfactual and Causal Counterfactual."
-            },
-            "Probabilistic Reasoning": {
-                "schema": ["Bayesian Updating", "Statistical Reasoning", "Probability Tree Analysis"],
-                "briefing": "Your domain is estimating likelihoods and outcomes. Engage with schemas such as Bayesian Updating, Statistical Reasoning, and Probability Tree Analysis."
+        if agents is None:
+            self.agents = {
+                "Deductive Reasoning": {
+                    "schema": ["Modus Ponens", "Modus Tollens", "Hypothetical Syllogism", "Disjunctive Syllogism"],
+                    "briefing": "Your strength lies in deriving specific conclusions from general hypotheses. Utilize schemas like Modus Ponens, Modus Tollens, Hypothetical Syllogism, and Disjunctive Syllogism."
+                },
+                "Inductive Reasoning": {
+                    "schema": ["Simple Induction", "Inverse Induction", "Causal Inference",
+                               "Statistical Generalization"],
+                    "briefing": "Your expertise is in drawing general conclusions from specific observations. Harness schemas such as Simple Induction, Inverse Induction, Causal Inference, and Statistical Generalization."
+                },
+                "Abductive Reasoning": {
+                    "schema": ["Inference to the Best Explanation", "Eliminative Induction"],
+                    "briefing": "Your capability shines when discerning the most plausible explanation from a set of observations. Employ schemas like Inference to the Best Explanation and Eliminative Induction."
+                },
+                "Analogical Reasoning": {
+                    "schema": ["Positive Analogy", "Negative Analogy", "Partial Analogy"],
+                    "briefing": "Your forte is comparing similar situations and deriving conclusions from parallels. Lean on schemas like Positive Analogy, Negative Analogy, and Partial Analogy."
+                },
+                "Causal Reasoning": {
+                    "schema": ["Cause-to-Effect", "Effect-to-Cause", "Common-Cause Reasoning"],
+                    "briefing": "You excel in identifying cause-and-effect relationships. Use schemas such as Cause-to-Effect, Effect-to-Cause, and Common-Cause Reasoning."
+                },
+                "Counterfactual Reasoning": {
+                    "schema": ["Conditional Counterfactual", "Causal Counterfactual"],
+                    "briefing": "You thrive on imagining alternate scenarios and outcomes. Draw from schemas like Conditional Counterfactual and Causal Counterfactual."
+                },
+                "Probabilistic Reasoning": {
+                    "schema": ["Bayesian Updating", "Statistical Reasoning", "Probability Tree Analysis"],
+                    "briefing": "Your domain is estimating likelihoods and outcomes. Engage with schemas such as Bayesian Updating, Statistical Reasoning, and Probability Tree Analysis."
+                }
             }
-        }
+        else:
+            self.agents = agents
 
     def model_problem_spaces(self, problem_description: str) -> str:
 
@@ -132,6 +139,21 @@ class Solver:
         logging.info("Processing complete. Check the output file for full logs.")
 
         return responses
+
+    def save_to_bigquery(self, client: bigquery.Client, table_id: str):
+        """Save the agent's interactions to BigQuery"""
+        timestamp_str = datetime.datetime.utcnow().isoformat()
+
+        rows_to_insert = [{
+            "timestamp": timestamp_str,
+            "data": json.dumps(self.agents),
+        }]
+
+        errors = client.insert_rows_json(table_id, rows_to_insert)
+        if errors:
+            logging.error(f"Encountered errors while saving to BigQuery: {errors}")
+        else:
+            logging.info(f"Saved to BigQuery successfully.")
 
 
 openai_api_key = os.getenv('OPEN_AI_KEY')
