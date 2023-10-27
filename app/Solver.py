@@ -1,16 +1,7 @@
 import os
 import json
-from fastapi import FastAPI, HTTPException, Depends, Security
-from pydantic import BaseModel
 from typing import Optional
 import requests
-from fastapi.security.api_key import APIKeyQuery, APIKeyCookie, APIKeyHeader, APIKey
-from fastapi import FastAPI
-from fastapi.openapi.utils import get_openapi
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
-from fastapi.middleware.cors import CORSMiddleware
-
 from dotenv import load_dotenv
 import logging
 

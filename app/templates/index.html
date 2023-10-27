@@ -13,7 +13,7 @@
 <div style="margin-top: 20px;">
     <button onclick="createAgent()">Create Agent</button>
     <button onclick="createLogicumAgents()">Logicum-Agents</button>
-    <button onclick="saveAgentSetup()">Agent Setup O.K.</button>
+    <button onclick="saveAgentSetup()">Save Agent setup</button>
     <textarea id="problemDescription" placeholder="Formulate the problem space" rows="4" cols="50"></textarea>
     <button onclick="sendProblemDescription()">Send Problem Description</button>
 
@@ -102,16 +102,50 @@
 
     function sendProblemDescription() {
         var problemText = document.getElementById("problemDescription").value;
-        // You can either save this to BigQuery or send it to your Solver here, as per your requirements.
+
+        var setupData = {
+            nodes: nodes.get(),
+            edges: edges.get(),
+            problemDescription: problemText
+        };
+
+        fetch('/save_to_bigquery', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(setupData)
+        }).then(response => response.json()).then(data => {
+            alert(data.message);
+        });
     }
 
     function loadSavedSetups() {
-        // Fetch saved setups from the backend and populate the dropdown.
+        fetch('/get_saved_setups').then(response => response.json()).then(data => {
+            var dropdown = document.getElementById('savedSetupsDropdown');
+            dropdown.innerHTML = '';  // Clear previous options
+            data.forEach((setup, index) => {
+                var option = document.createElement('option');
+                option.value = index;
+                option.textContent = setup.timestamp;
+                dropdown.appendChild(option);
+            });
+        });
     }
 
     function loadSelectedSetup() {
-        // Load the selected setup from the dropdown.
+        var selectedIndex = document.getElementById('savedSetupsDropdown').value;
+        fetch('/get_saved_setups').then(response => response.json()).then(data => {
+            var selectedSetup = data[selectedIndex];
+            nodes.clear();
+            edges.clear();
+            nodes.add(selectedSetup.data.nodes);
+            edges.add(selectedSetup.data.edges);
+        });
     }
+
+    // Load saved setups when the page loads
+    window.onload = loadSavedSetups;
 </script>
 </body>
 </html>
