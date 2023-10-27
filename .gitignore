@@ -4,6 +4,7 @@
 *.idea
 *.iml
 sec_graph_to_agent_familylehn_bigquery_20231027.json
+*.json
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
