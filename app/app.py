@@ -16,13 +16,14 @@ logging.basicConfig(level=logging.DEBUG)
 
 load_dotenv()
 
-
 class AgentModelerApp:
 
-    def __init__(self):
+    def __init__(self, openai_api_key: str, url: str):
         self.app = Flask(__name__)
         self.app.secret_key = 'some_secret_key'
         self.setup_routes()
+        self.openai_api_key = openai_api_key
+        self.openai_base_url = url
 
         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
         bq_client_secrets_parsed = json.loads(bq_client_secrets)
@@ -44,30 +45,6 @@ class AgentModelerApp:
         data = request.json
         session['nodes_edges'] = data
         return jsonify({"message": "Saved to session"})
-
-    def save_to_bigquery(self):
-        data = request.json
-        table_id = f"{self.project_id}.graph_to_agent.graph_to_agent_20231027"
-
-        # Check if table exists, if not, create it
-        if not self._table_exists(table_id):
-            self._create_table(table_id)
-
-        # Convert datetime objects to string
-        timestamp_str = datetime.datetime.utcnow().isoformat()
-
-        rows_to_insert = [
-            {
-                u"timestamp": timestamp_str,
-                u"data": json.dumps(data),
-            },
-        ]
-
-        errors = self.bigquery_client.insert_rows_json(table_id, rows_to_insert)
-        if errors == []:
-            return jsonify({"message": "Saved to BigQuery successfully"})
-        else:
-            return jsonify({"message": f"Encountered errors: {errors}"})
 
     def get_saved_setups(self):
         table_id = f"{self.project_id}.graph_to_agent.graph_to_agent_20231027"
@@ -151,5 +128,7 @@ class AgentModelerApp:
 
 
 if __name__ == '__main__':
-    app = AgentModelerApp()
+    openai_api_key = os.getenv('OPEN_AI_KEY')
+    open_ai_url = "https://api.openai.com/v1/chat/completions"
+    app = AgentModelerApp(openai_api_key, open_ai_url)
     app.run()
