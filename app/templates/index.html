@@ -109,7 +109,7 @@
             problemDescription: problemText
         };
 
-        fetch('/save_to_bigquery', {
+        fetch('/trigger_agent_pool', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -119,6 +119,7 @@
             alert(data.message);
         });
     }
+
 
     function loadSavedSetups() {
         fetch('/get_saved_setups').then(response => response.json()).then(data => {
