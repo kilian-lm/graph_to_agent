@@ -20,6 +20,7 @@ load_dotenv()
 
 from google.cloud import bigquery
 from google.oauth2.credentials import Credentials
+import datetime
 
 from app.LoggerPublisher.MainPublisher import MainPublisher
 from app.LoggerPublisher.MainLogger import MainLogger
@@ -40,7 +41,7 @@ class Solver:
                                                project=self.bq_client_secrets.project_id)
         self.project_id = self.bq_client_secrets.project_id
         self.project_id = "enter-universes"
-        self.table_id = "enter-universes.graph_to_agent.graph_to_agent_20231030"
+        self.table_id = f"enter-universes.graph_to_agent.graph_to_agent_{datetime.now().strftime('%Y%m%d')}"
 
         self.headers = {
             'Content-Type': 'application/json',
@@ -149,15 +150,75 @@ class Solver:
         with open(filename, "w") as f:
             json.dump(logs, f, indent=4)
 
+        nodes, edges = self.convert_logs_to_graph_data(logs)
+        graph_data = {"nodes": nodes, "edges": edges}
+        filename_graph = f"agent_graph_data_{timestamp}.json"
+        logging.info(f"Serializing graph data to '{filename_graph}'...")
+        with open(filename_graph, "w") as f:
+            json.dump(graph_data, f, indent=4)
+
         logging.info("Processing complete. Check the output file for full logs.")
         self.save_to_bigquery(logs)
 
         return responses
 
+    def convert_logs_to_graph_data(self, logs):
+        nodes = []
+        edges = []
+
+        for interaction in logs["agent_interactions"]:
+            agent_name = interaction["agent"]
+
+            # Create node for the agent
+            nodes.append({"id": agent_name, "label": agent_name})
+
+            # Check the messages for interactions with other agents
+            for message in interaction["messages"]:
+                role = message["role"]
+                if role.startswith("agent:"):
+                    mentioned_agents = [msg.split(':')[1].strip() for msg in message["content"].split("Agent") if
+                                        "Agent" in msg]
+                    for mentioned_agent in mentioned_agents:
+                        edges.append({"from": agent_name, "to": mentioned_agent})
+
+        return nodes, edges
+
+
+    def define_table_schema(self):
+        # Define schema
+        schema = [
+            bigquery.SchemaField("timestamp", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("problem_description", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("agent_interactions", "RECORD", mode="REPEATED", fields=[
+                bigquery.SchemaField("agent", "STRING", mode="REQUIRED"),
+                bigquery.SchemaField("messages", "RECORD", mode="REPEATED", fields=[
+                    bigquery.SchemaField("role", "STRING", mode="REQUIRED"),
+                    bigquery.SchemaField("content", "STRING", mode="REQUIRED")
+                ])
+            ])
+        ]
+        return schema
+
+    def create_table_if_not_exists(self):
+        dataset_ref = self.bq_client.dataset("enter-universes")
+        table_ref = dataset_ref.table(f"graph_to_agent.graph_to_agent_{datetime.now().strftime('%Y%m%d')}")
+
+        try:
+            # This will raise a NotFound exception if the table doesn't exist.
+            self.bq_client.get_table(table_ref)
+            logging.info("Table already exists.")
+        except NotFound:
+            logging.info("Table does not exist. Creating...")
+            schema = self.define_table_schema()
+            table = bigquery.Table(table_ref, schema=schema)
+            table = self.bq_client.create_table(table)
+            logging.info(f"Created table {table.full_table_id}")
+
+
     def save_to_bigquery(self, logs):
         # Prepare the rows to be inserted
         rows_to_insert = [{
-            "timestamp": datetime.now().strftime('%Y%m%d_%H%M%S'),
+            "timestamp": datetime.datetime.now().strftime('%Y%m%d_%H%M%S'),
             "problem_description": logs["problem_description"],
             "agent_interactions": logs["agent_interactions"]
         }]
