@@ -9,17 +9,39 @@ import json
 import requests
 import logging
 from datetime import datetime
+import datetime
+import json
+
+from google.cloud import bigquery
+from google.oauth2.service_account import Credentials
+from google.cloud.exceptions import NotFound
 
 load_dotenv()
 
 from google.cloud import bigquery
 from google.oauth2.credentials import Credentials
 
+from app.LoggerPublisher.MainPublisher import MainPublisher
+from app.LoggerPublisher.MainLogger import MainLogger
+
+from google.oauth2.service_account import Credentials
 
 class Solver:
     def __init__(self, openai_api_key: str, url: str, agents=None):
+        print("__init__")
         self.openai_api_key = openai_api_key
         self.openai_base_url = url
+        bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
+
+        bq_client_secrets_parsed = json.loads(bq_client_secrets)
+        bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
+        self.bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
+        self.bigquery_client = bigquery.Client(credentials=self.bq_client_secrets,
+                                               project=self.bq_client_secrets.project_id)
+        self.project_id = self.bq_client_secrets.project_id
+        self.project_id = "enter-universes"
+        self.table_id = "enter-universes.graph_to_agent.graph_to_agent_20231030"
+
         self.headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.openai_api_key}'
@@ -61,7 +83,7 @@ class Solver:
             self.agents = agents
 
     def model_problem_spaces(self, problem_description: str) -> str:
-
+        print("model_problem_spaces")
         responses = []
         previous_agent_reasoning = []
 
@@ -128,29 +150,47 @@ class Solver:
             json.dump(logs, f, indent=4)
 
         logging.info("Processing complete. Check the output file for full logs.")
+        self.save_to_bigquery(logs)
 
         return responses
 
-    def save_to_bigquery(self, client: bigquery.Client, table_id: str):
-        """Save the agent's interactions to BigQuery"""
-        timestamp_str = datetime.datetime.utcnow().isoformat()
-
+    def save_to_bigquery(self, logs):
+        # Prepare the rows to be inserted
         rows_to_insert = [{
-            "timestamp": timestamp_str,
-            "data": json.dumps(self.agents),
+            "timestamp": datetime.now().strftime('%Y%m%d_%H%M%S'),
+            "problem_description": logs["problem_description"],
+            "agent_interactions": logs["agent_interactions"]
         }]
 
-        errors = client.insert_rows_json(table_id, rows_to_insert)
+        # Insert rows to BQ
+        errors = self.bigquery_client.insert_rows_json(self.table_id, rows_to_insert)
         if errors:
-            logging.error(f"Encountered errors while saving to BigQuery: {errors}")
+            logging.error(f"Failed to insert rows into BigQuery: {errors}")
         else:
-            logging.info(f"Saved to BigQuery successfully.")
+            logging.info("Successfully saved to BigQuery")
 
+    # def save_to_bigquery(self, client: bigquery.Client, table_id: str):
+    #     """Save the agent's interactions to BigQuery"""
+    #
+    #     print("save_to_bigquery")
+    #
+    #     timestamp_str = datetime.datetime.utcnow().isoformat()
+    #
+    #     rows_to_insert = [{
+    #         "timestamp": timestamp_str,
+    #         "data": json.dumps(self.agents),
+    #     }]
+    #
+    #     errors = client.insert_rows_json(table_id, rows_to_insert)
+    #     if errors:
+    #         logging.error(f"Encountered errors while saving to BigQuery: {errors}")
+    #     else:
+    #         logging.info(f"Saved to BigQuery successfully.")
 
-# openai_api_key = os.getenv('OPEN_AI_KEY')
-# open_ai_url = "https://api.openai.com/v1/chat/completions"
-# bot = Solver(openai_api_key, open_ai_url)
-#
-# problem_space = "There was a attack of the Palestinien sided group Hamas on Israel. Now Israel is bombing Gaza with heavy civiliens casualties. There is a total 'cleaning' of the Hamas in Gaza planned by Isralien-Army. There is a high danger that the whole region will fall into war."
-#
-# bot.model_problem_spaces(problem_space)
+openai_api_key = os.getenv('OPEN_AI_KEY')
+open_ai_url = "https://api.openai.com/v1/chat/completions"
+bot = Solver(openai_api_key, open_ai_url)
+
+problem_space = "There was a attack of the Palestinien sided group Hamas on Israel. Now Israel is bombing Gaza with heavy civiliens casualties. There is a total 'cleaning' of the Hamas in Gaza planned by Isralien-Army. There is a high danger that the whole region will fall into war."
+
+bot.model_problem_spaces(problem_space)

@@ -50,7 +50,7 @@ class AgentModelerApp:
         log_dir = 'temp_log'
 
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        log_file = f'{timestamp}_graph_to_agents.log'
+        log_file = f'graph_to_agents_{timestamp}.log'
         self.param_bucket_name = self.bucket_name
         self.logger = MainLogger(self.param_bucket_name, log_dir='temp_log', log_file=log_file)
 
@@ -80,6 +80,8 @@ class AgentModelerApp:
             self.app.route('/save_to_bigquery', methods=['POST'])(self.save_to_bigquery)
             self.app.route('/get_saved_setups', methods=['GET'])(self.get_saved_setups)
             self.app.route('/trigger_agent_pool', methods=['POST'])(self.trigger_agent_pool)
+            self.app.route('/get_agents', methods=['GET'])(self.get_agents)
+
         except Exception as e:
             error_msg = f'{self.__class__.__name__}.{self.setup_routes.__name__} encountered the Error: {str(e)}'
             self.logger.error(error_msg)
@@ -141,6 +143,21 @@ class AgentModelerApp:
             self.publisher.publish_message(error_msg)
             raise Exception(e)
 
+    def _fetch_agents_from_db(self):
+        try:
+            table_id = f"{self.project_id}.some_database.some_table_for_agents"
+            query = f"SELECT * FROM `{table_id}`"
+            results = self.bigquery_client.query(query).result()
+            agents = [dict(row) for row in results]
+            return agents
+        except NotFound:
+            return []
+        except Exception as e:
+            error_msg = f'{self.__class__.__name__}.{self._fetch_agents_from_db.__name__} encountered the Error: {str(e)}'
+            self.logger.error(error_msg)
+            self.publisher.publish_message(error_msg)
+            raise Exception(e)
+
     def save_to_bigquery(self):
         try:
             data = request.json
@@ -183,6 +200,17 @@ class AgentModelerApp:
 
         except Exception as e:
             error_msg = f'{self.__class__.__name__}.{self._create_table.__name__} encountered the Error: {str(e)}'
+            self.logger.error(error_msg)
+            self.publisher.publish_message(error_msg)
+            raise Exception(e)
+
+    def get_agents(self):
+        try:
+            # Your logic for fetching agents goes here
+            agents = self._fetch_agents_from_db()
+            return jsonify(agents)
+        except Exception as e:
+            error_msg = f'{self.__class__.__name__}.{self.get_agents.__name__} encountered the Error: {str(e)}'
             self.logger.error(error_msg)
             self.publisher.publish_message(error_msg)
             raise Exception(e)
