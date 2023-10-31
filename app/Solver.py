@@ -249,6 +249,45 @@ class Solver:
     #     else:
     #         logging.info(f"Saved to BigQuery successfully.")
 
+    def translate_to_visjs(agent_interactions):
+        nodes = []
+        edges = []
+        node_id = 0
+
+        prev_content_node_id = None
+
+        for interaction_group in agent_interactions:
+            messages = interaction_group['messages']
+            for interaction in messages:
+                # Extract role and content
+                role = interaction['role']
+                content = interaction['content'][:100] + "..."  # Truncate content for brevity
+
+                # Create nodes
+                role_node = {"id": node_id, "label": role}
+                nodes.append(role_node)
+                role_node_id = node_id
+                node_id += 1
+
+                content_node = {"id": node_id, "label": content}
+                nodes.append(content_node)
+                content_node_id = node_id
+                node_id += 1
+
+                # Create edges
+                edges.append({"from": role_node_id, "to": content_node_id})  # Role to content
+                if prev_content_node_id is not None:
+                    edges.append({"from": prev_content_node_id, "to": role_node_id})  # Previous content to current role
+
+                prev_content_node_id = content_node_id
+
+        return {"nodes": nodes, "edges": edges}
+
+visjs_data = translate_to_visjs(agent_interactions)
+
+visjs_data
+
+
 openai_api_key = os.getenv('OPEN_AI_KEY')
 open_ai_url = "https://api.openai.com/v1/chat/completions"
 bot = Solver(openai_api_key, open_ai_url)
