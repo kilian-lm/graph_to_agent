@@ -41,7 +41,7 @@ class Solver:
                                                project=self.bq_client_secrets.project_id)
         self.project_id = self.bq_client_secrets.project_id
         self.project_id = "enter-universes"
-        self.table_id = f"enter-universes.graph_to_agent.graph_to_agent_{datetime.now().strftime('%Y%m%d')}"
+        self.table_id = f"enter-universes.graph_to_agent.graph_to_agent_{datetime.datetime.now().strftime('%Y%m%d')}"
 
         self.headers = {
             'Content-Type': 'application/json',
@@ -144,7 +144,7 @@ class Solver:
             logging.info(f"Updated logs with agent '{agent_name}' interaction.")
 
         # Serialize logs dictionary to a .json file with a timestamp in its name
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"agent_interactions_{timestamp}.json"
         logging.info(f"Serializing logs to '{filename}'...")
         with open(filename, "w") as f:
@@ -158,7 +158,8 @@ class Solver:
             json.dump(graph_data, f, indent=4)
 
         logging.info("Processing complete. Check the output file for full logs.")
-        self.save_to_bigquery(logs)
+        # self.create_table_if_not_exists()
+        # self.save_to_bigquery(logs)
 
         return responses
 
@@ -200,18 +201,18 @@ class Solver:
         return schema
 
     def create_table_if_not_exists(self):
-        dataset_ref = self.bq_client.dataset("enter-universes")
-        table_ref = dataset_ref.table(f"graph_to_agent.graph_to_agent_{datetime.now().strftime('%Y%m%d')}")
+        dataset_ref = self.bigquery_client.dataset("enter-universes")
+        table_ref = dataset_ref.table(f"graph_to_agent.graph_to_agent_{datetime.datetime.now().strftime('%Y%m%d')}")
 
         try:
             # This will raise a NotFound exception if the table doesn't exist.
-            self.bq_client.get_table(table_ref)
+            self.bigquery_client.get_table(table_ref)
             logging.info("Table already exists.")
         except NotFound:
             logging.info("Table does not exist. Creating...")
             schema = self.define_table_schema()
             table = bigquery.Table(table_ref, schema=schema)
-            table = self.bq_client.create_table(table)
+            table = self.bigquery_client.create_table(table)
             logging.info(f"Created table {table.full_table_id}")
 
 
