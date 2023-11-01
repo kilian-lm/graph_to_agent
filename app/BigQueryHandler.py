@@ -55,19 +55,65 @@ class BigQueryHandler:
             bigquery.SchemaField("to", "INT64", mode="REQUIRED")
         ]
 
+    def translate_graph_data_for_bigquery(self, graph_data, graph_id):
+        """
+        Translates the provided graph data to match the BigQuery schema.
+
+        Args:
+        - graph_data (dict): The graph data containing nodes and edges.
+        - graph_id (str): The unique identifier for the graph.
+
+        Returns:
+        - tuple: A tuple containing nodes and edges in BigQuery format.
+        """
+
+        # Extract nodes and edges from the graph data
+        raw_nodes = graph_data.get('nodes', [])
+        raw_edges = graph_data.get('edges', [])
+
+        # Translate nodes
+        nodes_for_bq = [
+            {
+                "graph_id": graph_id,
+                "id": node.get('id'),
+                "label": node.get('label')
+                # Ignoring coordinates for now
+            }
+            for node in raw_nodes
+        ]
+
+        # Translate edges
+        edges_for_bq = [
+            {
+                "graph_id": graph_id,
+                "from": edge.get('from'),
+                "to": edge.get('to')
+            }
+            for edge in raw_edges
+        ]
+
+        return nodes_for_bq, edges_for_bq
+
     def save_graph_data(self, graph_data, graph_id):
         nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
         edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
 
-        # Add graph_id to each node and edge
-        nodes_with_id = [{"graph_id": graph_id, **node} for node in graph_data['nodes']]
-        edges_with_id = [{"graph_id": graph_id, **edge} for edge in graph_data['edges']]
+        # Use the translator function to transform the data
+        nodes_for_bq, edges_for_bq = translate_graph_data_for_bigquery(graph_data, graph_id)
+
+        # Print the transformed data for debugging
+        print("Transformed Nodes:", nodes_for_bq)
+        print("Transformed Edges:", edges_for_bq)
 
         # Insert nodes
-        errors_nodes = self.bigquery_client.insert_rows(nodes_table_ref, nodes_with_id)
+        errors_nodes = self.bigquery_client.insert_rows(nodes_table_ref, nodes_for_bq)
+        if errors_nodes:
+            print(f"Encountered errors while inserting nodes: {errors_nodes}")
 
         # Insert edges
-        errors_edges = self.bigquery_client.insert_rows(edges_table_ref, edges_with_id)
+        errors_edges = self.bigquery_client.insert_rows(edges_table_ref, edges_for_bq)
+        if errors_edges:
+            print(f"Encountered errors while inserting edges: {errors_edges}")
 
         # Compile all errors
         all_errors = {
@@ -76,7 +122,6 @@ class BigQueryHandler:
         }
 
         return all_errors
-
     def load_graph_data_by_id(self, graph_id):
         nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
         edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
