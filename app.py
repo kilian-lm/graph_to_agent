@@ -25,7 +25,6 @@ from google.cloud.exceptions import NotFound
 from flask import Flask, render_template
 import json
 
-
 from flask import Flask, render_template, jsonify, request
 import json
 from app.BigQueryHandler import BigQueryHandler
@@ -36,48 +35,20 @@ app = Flask(__name__)
 bq_handler = BigQueryHandler('graph_to_agent', '../test.json')
 
 
-@app.route('/save-graph', methods=['POST'])
-def save_graph():
-    try:
-        graph_data = request.json
-        # Generate a unique graph_id based on the current timestamp
-        graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        bq_handler.save_graph_data(graph_data, graph_id)
-        return jsonify({"status": "success", "message": "Graph saved successfully!"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-
 @app.route('/')
-def serve_graph():
-    # Ensure dataset exists
-    bq_handler.create_dataset_if_not_exists()
+def index_call():
+    return render_template('graph.html')
 
-    # Ensure nodes and edges tables exist
-    bq_handler.create_table_if_not_exists("nodes_table", bq_handler.get_node_schema())
-    bq_handler.create_table_if_not_exists("edges_table", bq_handler.get_edge_schema())
-
-    # Load the JSON data
-    with open("../agent_interactions_20231031_185854.json", "r") as file:
-        data = json.load(file)
-
-    agent_interactions = data['agent_interactions']
-
-    visjs_data = translate_to_visjs(agent_interactions)
-
-    # Return the rendered HTML template and pass the visjs_data
-    return render_template('graph.html', data=visjs_data)
-
-
-
-@app.route('/save-graph', methods=['POST'])
-def save_graph():
+@app.route('/get-graph-data', methods=['POST'])
+def get_graph_data():
     try:
-        graph_data = request.json
-        bq_handler.save_graph_data(graph_data)
-        return jsonify({"status": "success", "message": "Graph saved successfully!"})
+        graph_id = request.json['graph_id']
+        graph_data = bq_handler.load_graph_data_by_id(graph_id)
+        return jsonify(graph_data)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
+
+
 
 
 @app.route('/load-graph', methods=['GET'])
@@ -91,7 +62,16 @@ def load_graph():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
-
+@app.route('/save-graph', methods=['POST'])
+def save_graph():
+    try:
+        graph_data = request.json
+        # Generate a unique graph_id based on the current timestamp
+        graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        bq_handler.save_graph_data(graph_data, graph_id)
+        return jsonify({"status": "success", "message": "Graph saved successfully!"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 def translate_to_visjs(agent_interactions):
     nodes = []
     edges = []
@@ -127,6 +107,6 @@ def translate_to_visjs(agent_interactions):
 
     return {"nodes": nodes, "edges": edges}
 
+
 if __name__ == '__main__':
     app.run(debug=True)
-
