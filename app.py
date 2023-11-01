@@ -28,6 +28,14 @@ import json
 app = Flask(__name__)
 
 
+def ensure_dataset_exists(dataset_name):
+    """Ensure that the dataset exists in BigQuery. If not, create it."""
+    dataset_ref = client.dataset(dataset_name)
+    try:
+        client.get_dataset(dataset_ref)
+    except NotFound:
+        dataset = bigquery.Dataset(dataset_ref)
+        client.create_dataset(dataset)
 
 def translate_to_visjs(agent_interactions):
     nodes = []
@@ -77,8 +85,6 @@ def serve_graph():
 
     # Return the rendered HTML template and pass the visjs_data
     return render_template('graph.html', data=visjs_data)
-
-
 
 
 if __name__ == '__main__':
