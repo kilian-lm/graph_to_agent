@@ -52,3 +52,7 @@ def translate_to_visjs(agent_interactions):
 visjs_data = translate_to_visjs(agent_interactions)
 
 visjs_data
+
+json.dumps(visjs_data)
+with open('test.json', 'w') as f:
+    json.dump(visjs_data, f)
