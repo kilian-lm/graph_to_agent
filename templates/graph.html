@@ -21,14 +21,45 @@
 
 <script type="text/javascript">
     var nodes = new vis.DataSet({{ data.nodes | tojson | safe }});
+    // var nodes_data = {{ data.nodes | tojson | safe }};
+    // nodes_data.forEach(node => {
+    // let length = node.label.length;
+    // node.size = 10 + length * 5;  // Basic scaling factor, adjust as needed
+    // if (length > 30) {
+    //     node.font = { size: 12 };  // Adjust font size for very long labels, adjust as needed
+    //     }
+    // });
+    //
+    // var nodes = new vis.DataSet(nodes_data);
     var edges = new vis.DataSet({{ data.edges | tojson | safe }});
+
+
 
     var container = document.getElementById('mynetwork');
     var data = {
         nodes: nodes,
         edges: edges
     };
-    var options = {};
+        var options = {
+        manipulation: {
+            enabled: true,
+            initiallyActive: true,
+            editNode: function (nodeData, callback) {
+                // Show a text field pop-up to edit the node
+                var newLabel = prompt("Enter new label:", nodeData.label);
+                if (newLabel !== null) {
+                    nodeData.label = newLabel;
+                    callback(nodeData);
+                } else {
+                    callback(null); // Cancel the edit
+                }
+            },
+            addNode: function (nodeData, callback) {
+                nodeData.label = "New Node";
+                callback(nodeData);
+            }
+        }
+    };
     var network = new vis.Network(container, data, options);
 </script>
 

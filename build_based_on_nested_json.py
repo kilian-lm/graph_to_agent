@@ -27,8 +27,8 @@ def translate_to_visjs(agent_interactions):
         for interaction in messages:
             # Extract role and content
             role = interaction['role']
-            content = interaction['content'][:100] + "..."  # Truncate content for brevity
-
+            # content = interaction['content'][:100] + "..."  # Truncate content for brevity
+            content = interaction['content']
             # Create nodes
             role_node = {"id": node_id, "label": role}
             nodes.append(role_node)
