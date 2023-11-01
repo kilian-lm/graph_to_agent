@@ -65,13 +65,17 @@ class BigQueryHandler:
 
         # Insert nodes
         errors_nodes = self.bigquery_client.insert_rows(nodes_table_ref, nodes_with_id)
-        if errors_nodes:
-            print(f"Encountered errors while inserting nodes: {errors_nodes}")
 
         # Insert edges
         errors_edges = self.bigquery_client.insert_rows(edges_table_ref, edges_with_id)
-        if errors_edges:
-            print(f"Encountered errors while inserting edges: {errors_edges}")
+
+        # Compile all errors
+        all_errors = {
+            "node_errors": errors_nodes,
+            "edge_errors": errors_edges
+        }
+
+        return all_errors
 
     def load_graph_data_by_id(self, graph_id):
         nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
@@ -91,6 +95,14 @@ class BigQueryHandler:
 
         return {"nodes": nodes, "edges": edges}
 
-bq_handler = BigQueryHandler( 'graph_to_agent', 'test.json')
+    def get_available_graphs(self):
+        # Query to get distinct graph_ids from the nodes_table
+        query = f"SELECT DISTINCT graph_id FROM `{self.dataset_id}.nodes_table`"
+        query_job = self.bigquery_client.query(query)
+        results = query_job.result()
 
-bq_handler.load_graph_data_by_id('example_graph_001')
+        return [{"graph_id": row["graph_id"], "graph_name": row["graph_id"]} for row in results]
+
+# bq_handler = BigQueryHandler( 'graph_to_agent', 'test.json')
+#
+# bq_handler.load_graph_data_by_id('example_graph_001')

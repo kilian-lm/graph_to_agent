@@ -49,18 +49,15 @@ def get_graph_data():
         return jsonify({"status": "error", "message": str(e)})
 
 
-
-
-@app.route('/load-graph', methods=['GET'])
-def load_graph():
+@app.route('/get-available-graphs', methods=['GET'])
+def get_available_graphs():
     try:
-        nodes, edges = bq_handler.load_latest_graph_data()
-        if nodes and edges:
-            return jsonify({"nodes": nodes, "edges": edges})
-        else:
-            return jsonify({"status": "error", "message": "No data found."})
+        available_graphs = bq_handler.get_available_graphs()
+        return jsonify(available_graphs)
     except Exception as e:
+        print(e)  # Log the error for debugging
         return jsonify({"status": "error", "message": str(e)})
+
 
 @app.route('/save-graph', methods=['POST'])
 def save_graph():
@@ -68,45 +65,52 @@ def save_graph():
         graph_data = request.json
         # Generate a unique graph_id based on the current timestamp
         graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        bq_handler.save_graph_data(graph_data, graph_id)
+        errors = bq_handler.save_graph_data(graph_data, graph_id)
+
+        if errors:
+            return jsonify({"status": "error", "message": "Failed to save some data.", "errors": errors})
+
         return jsonify({"status": "success", "message": "Graph saved successfully!"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
-def translate_to_visjs(agent_interactions):
-    nodes = []
-    edges = []
-    node_id = 0
-
-    prev_content_node_id = None
-
-    for interaction_group in agent_interactions:
-        messages = interaction_group['messages']
-        for interaction in messages:
-            # Extract role and content
-            role = interaction['role']
-            # content = interaction['content'][:100] + "..."  # Truncate content for brevity
-            content = interaction['content']
-
-            # Create nodes
-            role_node = {"id": node_id, "label": role}
-            nodes.append(role_node)
-            role_node_id = node_id
-            node_id += 1
-
-            content_node = {"id": node_id, "label": content}
-            nodes.append(content_node)
-            content_node_id = node_id
-            node_id += 1
-
-            # Create edges
-            edges.append({"from": role_node_id, "to": content_node_id})  # Role to content
-            if prev_content_node_id is not None:
-                edges.append({"from": prev_content_node_id, "to": role_node_id})  # Previous content to current role
-
-            prev_content_node_id = content_node_id
-
-    return {"nodes": nodes, "edges": edges}
 
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+# def translate_to_visjs(agent_interactions):
+#     nodes = []
+#     edges = []
+#     node_id = 0
+#
+#     prev_content_node_id = None
+#
+#     for interaction_group in agent_interactions:
+#         messages = interaction_group['messages']
+#         for interaction in messages:
+#             # Extract role and content
+#             role = interaction['role']
+#             # content = interaction['content'][:100] + "..."  # Truncate content for brevity
+#             content = interaction['content']
+#
+#             # Create nodes
+#             role_node = {"id": node_id, "label": role}
+#             nodes.append(role_node)
+#             role_node_id = node_id
+#             node_id += 1
+#
+#             content_node = {"id": node_id, "label": content}
+#             nodes.append(content_node)
+#             content_node_id = node_id
+#             node_id += 1
+#
+#             # Create edges
+#             edges.append({"from": role_node_id, "to": content_node_id})  # Role to content
+#             if prev_content_node_id is not None:
+#                 edges.append({"from": prev_content_node_id, "to": role_node_id})  # Previous content to current role
+#
+#             prev_content_node_id = content_node_id
+#
+#     return {"nodes": nodes, "edges": edges}
