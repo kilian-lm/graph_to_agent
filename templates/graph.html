@@ -45,7 +45,6 @@
     <button onclick="cancelNodeChanges()">Cancel</button>
 </div>
 
-<div id="jsonDataDisplay" style="border:1px solid lightgray; padding: 10px; margin-top: 20px; overflow-y: scroll; height: 300px;"></div>
 
 
 <script type="text/javascript">
@@ -128,36 +127,6 @@
 
 
     }
-            function translateFromVisjs(visjsData) {
-            let agent_interactions = [];
-            let current_interaction = [];
-            let currentNode = null;
-
-            visjsData.edges.forEach(edge => {
-                if (currentNode && currentNode.id === edge.from) {
-                    // This is a link from content to role
-                    let role = visjsData.nodes.find(node => node.id === edge.to);
-                    current_interaction.push({
-                        role: role.label,
-                        content: currentNode.label
-                    });
-                } else if (currentNode) {
-                    // Previous conversation is complete
-                    agent_interactions.push({ messages: current_interaction });
-                    current_interaction = [];
-                }
-                currentNode = visjsData.nodes.find(node => node.id === edge.to);
-            });
-
-            if (current_interaction.length > 0) {
-                agent_interactions.push({ messages: current_interaction });
-            }
-
-            return { agent_interactions: agent_interactions };
-        }
-
-        let originalData = translateFromVisjs({ nodes: nodes, edges: edges });
-        document.getElementById('jsonDataDisplay').textContent = JSON.stringify(originalData, null, 2);
 
 </script>
 
