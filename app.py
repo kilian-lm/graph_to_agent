@@ -65,7 +65,9 @@ def save_graph():
         graph_data = request.json
         # Generate a unique graph_id based on the current timestamp
         graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        print(graph_id)
         errors = bq_handler.save_graph_data(graph_data, graph_id)
+        print(errors)
 
         if errors:
             return jsonify({"status": "error", "message": "Failed to save some data.", "errors": errors})
