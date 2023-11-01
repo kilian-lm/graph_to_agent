@@ -25,8 +25,11 @@
 </head>
 <body>
 
-<!-- UI Controls for Adjusting Physics -->
 <div>
+    <select id="graphDropdown">
+        <option value="">Select a Graph</option>
+        <!-- Options will be populated dynamically from BQ -->
+    </select>
     <button onclick="saveGraphData()">Save Graph</button>
     <button onclick="loadPreviousGraph()">Load Previous Graph</button>
     Central Gravity: <input id="centralGravity" type="range" min="0" max="1" step="0.01" value="0.0" onchange="updatePhysics()"><br>
@@ -38,7 +41,6 @@
 
 <div id="mynetwork"></div>
 
-<!-- Custom Edit Panel -->
 <div id="editPanel">
     <h3>Edit Node</h3>
     <textarea id="nodeTextLabel" rows="4" style="width:100%"></textarea>
@@ -47,13 +49,54 @@
     <button onclick="cancelNodeChanges()">Cancel</button>
 </div>
 
-
-
 <script type="text/javascript">
-    var nodes = new vis.DataSet({{ data.nodes | tojson | safe }});
-    var edges = new vis.DataSet({{ data.edges | tojson | safe }});
+    document.getElementById('graphDropdown').addEventListener('change', async function() {
+    const selectedGraphId = this.value;
+    try {
+        const response = await fetch('/get-graph-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ graph_id: selectedGraphId })
+        });
+        const graphData = await response.json();
 
-    // Store current node being edited
+        // Assuming you have initialized a vis.js Network object as 'network'
+        // Update the graph on vis.js
+        network.setData(graphData);
+    } catch (error) {
+        console.error('Error loading graph data:', error);
+    }
+    });
+    async function loadAvailableGraphs() {
+        try {
+            const response = await fetch('/get-available-graphs');
+            const graphs = await response.json();
+
+            const dropdown = document.getElementById('graphDropdown');
+            graphs.forEach(graph => {
+                const option = document.createElement('option');
+                option.value = graph.graph_id;
+                option.textContent = graph.graph_name;
+                dropdown.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading available graphs:', error);
+        }
+    }
+
+    document.getElementById('graphDropdown').addEventListener('change', function() {
+        const selectedGraphId = this.value;
+        if (selectedGraphId) {
+            loadPreviousGraph(selectedGraphId);
+        }
+    });
+
+    loadAvailableGraphs();
+
+    var nodes = new vis.DataSet();
+    var edges = new vis.DataSet();
     var currentNodeId;
 
     function editNodeFunction(nodeData, callback) {
@@ -77,7 +120,6 @@
             nodes: nodes.get(),
             edges: edges.get()
         };
-        // Send the graphData to a server endpoint to save in BigQuery
         fetch('/save-graph', {
                 method: 'POST',
                 headers: {
@@ -93,13 +135,23 @@
             });
     }
 
-    function loadPreviousGraph() {
-        fetch('/load-graph').then(response => response.json()).then(data => {
-            nodes.clear();
-            edges.clear();
-            nodes.add(data.nodes);
-            edges.add(data.edges);
-        });
+    function loadPreviousGraph(graphId) {
+        fetch(`/load-graph?graphId=${graphId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.nodes && data.edges) {
+                    nodes.clear();
+                    edges.clear();
+                    nodes.add(data.nodes);
+                    edges.add(data.edges);
+                } else {
+                    alert('No data found.');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading graph:', error);
+                alert('Failed to load graph data.');
+            });
     }
 
     var container = document.getElementById('mynetwork');
@@ -131,16 +183,13 @@
     };
     var network = new vis.Network(container, data, options);
 
-
     function updatePhysics() {
-        // Get values from sliders
         var centralGravity = parseFloat(document.getElementById("centralGravity").value);
         var springLength = parseInt(document.getElementById("springLength").value);
         var springConstant = parseFloat(document.getElementById("springConstant").value);
         var nodeDistance = parseInt(document.getElementById("nodeDistance").value);
         var damping = parseFloat(document.getElementById("damping").value);
 
-        // Update physics options
         var newOptions = {
             physics: {
                 hierarchicalRepulsion: {
@@ -153,13 +202,8 @@
             }
         };
 
-        // Apply the new options to the network
         network.setOptions(newOptions);
-
-
-
     }
-
 </script>
 
 </body>

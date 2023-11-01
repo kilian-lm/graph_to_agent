@@ -89,6 +89,8 @@ class BigQueryHandler:
         edges_results = edges_query_job.result()
         edges = [{"from": row['from'], "to": row['to']} for row in edges_results]
 
-        return nodes, edges
+        return {"nodes": nodes, "edges": edges}
 
-# bq_handler = BigQueryHandler('enter-universes', 'graph_to_agent', 'test.json')
+bq_handler = BigQueryHandler( 'graph_to_agent', 'test.json')
+
+bq_handler.load_graph_data_by_id('example_graph_001')

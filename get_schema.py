@@ -14,61 +14,74 @@ import datetime
 load_dotenv()
 
 
-def upload_example_to_bq(dataset_id, json_path, bq_client_secrets):
-    # Load the JSON data
-    with open(json_path, "r") as file:
+
+from google.api_core.exceptions import NotFound
+
+def create_table_if_not_exists(bigquery_client, dataset_id, table_id, schema):
+    table_ref = bigquery_client.dataset(dataset_id).table(table_id)
+    try:
+        table = bigquery_client.get_table(table_ref)
+    except NotFound:
+        table = bigquery.Table(table_ref, schema=schema)
+        bigquery_client.create_table(table)
+
+
+def upload_example_to_bq(dataset_id, json_path, bq_client_secrets_str):
+    # Parse the JSON credentials
+    bq_client_secrets = json.loads(bq_client_secrets_str)
+    credentials = Credentials.from_service_account_info(bq_client_secrets)
+
+    # Initialize BigQuery client
+    bigquery_client = bigquery.Client(credentials=credentials, project=bq_client_secrets['project_id'])
+
+    # Load the example data
+    with open(json_path, 'r') as file:
         data = json.load(file)
 
-    nodes = data['nodes']
-    edges = data['edges']
-
-    # Convert the client secrets string to Credentials object
-    bq_client_secrets_parsed = json.loads(bq_client_secrets)
-    credentials = Credentials.from_service_account_info(bq_client_secrets_parsed)
-    bigquery_client = bigquery.Client(credentials=credentials, project=credentials.project_id)
-
-    # Ensure dataset exists
-    dataset_ref = bigquery_client.dataset(dataset_id)
-    try:
-        bigquery_client.get_dataset(dataset_ref)
-    except Exception as e:
-        dataset = bigquery.Dataset(dataset_ref)
-        bigquery_client.create_dataset(dataset)
-
-    # Ensure nodes and edges tables exist
-    node_schema = [
+    # Define the schemas for nodes and edges tables
+    nodes_schema = [
+        bigquery.SchemaField("graph_id", "STRING", mode="REQUIRED"),
         bigquery.SchemaField("id", "INT64", mode="REQUIRED"),
         bigquery.SchemaField("label", "STRING", mode="REQUIRED")
     ]
-    edge_schema = [
+
+    edges_schema = [
+        bigquery.SchemaField("graph_id", "STRING", mode="REQUIRED"),
         bigquery.SchemaField("from", "INT64", mode="REQUIRED"),
         bigquery.SchemaField("to", "INT64", mode="REQUIRED")
     ]
+
+    # Check if tables exist and if not, create them
+    create_table_if_not_exists(bigquery_client, dataset_id, "nodes_table", nodes_schema)
+    create_table_if_not_exists(bigquery_client, dataset_id, "edges_table", edges_schema)
+
+    # Extract nodes and edges
+    nodes = data['nodes']
+    edges = data['edges']
+
+    # Define a graph_id for this upload (can be based on current timestamp or a unique identifier)
+    graph_id = "example_graph_001"
+
+    # Add graph_id to each node and edge
+    nodes_with_id = [{"graph_id": graph_id, **node} for node in nodes]
+    edges_with_id = [{"graph_id": graph_id, **edge} for edge in edges]
+
+    # Define the table references
     nodes_table_ref = bigquery_client.dataset(dataset_id).table("nodes_table")
     edges_table_ref = bigquery_client.dataset(dataset_id).table("edges_table")
 
-    try:
-        bigquery_client.get_table(nodes_table_ref)
-    except Exception as e:
-        table = bigquery.Table(nodes_table_ref, schema=node_schema)
-        bigquery_client.create_table(table)
-
-    try:
-        bigquery_client.get_table(edges_table_ref)
-    except Exception as e:
-        table = bigquery.Table(edges_table_ref, schema=edge_schema)
-        bigquery_client.create_table(table)
-
-    # Insert nodes and edges
-    errors_nodes = bigquery_client.insert_rows(nodes_table_ref, nodes)
-    errors_edges = bigquery_client.insert_rows(edges_table_ref, edges)
-
+    # Insert nodes to the "nodes_table" with explicit schema
+    errors_nodes = bigquery_client.insert_rows(nodes_table_ref, nodes_with_id, selected_fields=nodes_schema)
     if errors_nodes:
         return f"Encountered errors while inserting nodes: {errors_nodes}"
+
+    # Insert edges to the "edges_table" with explicit schema
+    errors_edges = bigquery_client.insert_rows(edges_table_ref, edges_with_id, selected_fields=edges_schema)
     if errors_edges:
         return f"Encountered errors while inserting edges: {errors_edges}"
 
     return "Data uploaded successfully!"
+
 
 def translate_to_visjs(agent_interactions):
     nodes = []
