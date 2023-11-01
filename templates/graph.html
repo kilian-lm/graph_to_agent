@@ -8,9 +8,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
     <style>
         #mynetwork {
-            width: 100%;
+            width: 60%;
             height: 800px;
             border: 1px solid lightgray;
+            float: left;
+        }
+        #editPanel {
+            width: 38%;
+            height: 800px;
+            float: right;
+            padding: 10px;
+            border: 1px solid lightgray;
+            display: none;
         }
     </style>
 </head>
@@ -27,9 +36,38 @@
 
 <div id="mynetwork"></div>
 
+<!-- Custom Edit Panel -->
+<div id="editPanel">
+    <h3>Edit Node</h3>
+    <textarea id="nodeTextLabel" rows="4" style="width:100%"></textarea>
+    <br>
+    <button onclick="applyNodeChanges()">Apply</button>
+    <button onclick="cancelNodeChanges()">Cancel</button>
+</div>
+
+
 <script type="text/javascript">
     var nodes = new vis.DataSet({{ data.nodes | tojson | safe }});
     var edges = new vis.DataSet({{ data.edges | tojson | safe }});
+
+    // Store current node being edited
+    var currentNodeId;
+
+    function editNodeFunction(nodeData, callback) {
+        currentNodeId = nodeData.id;
+        document.getElementById('nodeTextLabel').value = nodeData.label;
+        document.getElementById('editPanel').style.display = 'block';
+    }
+
+    function applyNodeChanges() {
+        var newLabel = document.getElementById('nodeTextLabel').value;
+        nodes.update({id: currentNodeId, label: newLabel});
+        document.getElementById('editPanel').style.display = 'none';
+    }
+
+    function cancelNodeChanges() {
+        document.getElementById('editPanel').style.display = 'none';
+    }
 
     var container = document.getElementById('mynetwork');
     var data = {
@@ -40,16 +78,7 @@
         manipulation: {
             enabled: true,
             initiallyActive: true,
-            editNode: function (nodeData, callback) {
-                // Show a text field pop-up to edit the node
-                var newLabel = prompt("Enter new label:", nodeData.label);
-                if (newLabel !== null) {
-                    nodeData.label = newLabel;
-                    callback(nodeData);
-                } else {
-                    callback(null); // Cancel the edit
-                }
-            },
+            editNode: editNodeFunction,
             addNode: function (nodeData, callback) {
                 nodeData.label = "New Node";
                 callback(nodeData);
@@ -68,6 +97,7 @@
         }
     };
     var network = new vis.Network(container, data, options);
+
 
     function updatePhysics() {
         // Get values from sliders
