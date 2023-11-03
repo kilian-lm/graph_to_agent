@@ -64,103 +64,81 @@ class BigQueryHandler:
     def get_node_schema(self):
         return [
             bigquery.SchemaField("graph_id", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("id", "INT64", mode="REQUIRED"),
+            bigquery.SchemaField("id", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("label", "STRING", mode="REQUIRED")
         ]
 
     def get_edge_schema(self):
         return [
             bigquery.SchemaField("graph_id", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("from", "INT64", mode="REQUIRED"),
-            bigquery.SchemaField("to", "INT64", mode="REQUIRED")
+            bigquery.SchemaField("from", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("to", "STRING", mode="REQUIRED")
         ]
 
-    # def translate_graph_data_for_bigquery(self, graph_data, graph_id):
-    #     """
-    #     Translates the provided graph data to match the BigQuery schema.
-    #
-    #     Args:
-    #     - graph_data (dict): The graph data containing nodes and edges.
-    #     - graph_id (str): The unique identifier for the graph.
-    #
-    #     Returns:
-    #     - tuple: A tuple containing nodes and edges in BigQuery format.
-    #     """
-    #
-    #     # Extract nodes and edges from the graph data
-    #     raw_nodes = graph_data.get('nodes', [])
-    #     raw_edges = graph_data.get('edges', [])
-    #
-    #     # Translate nodes
-    #     nodes_for_bq = [
-    #         {
-    #             "graph_id": graph_id,
-    #             "id": node.get('id'),
-    #             "label": node.get('label')
-    #             # Ignoring coordinates for now
-    #         }
-    #         for node in raw_nodes
-    #     ]
-    #
-    #     # Translate edges
-    #     edges_for_bq = [
-    #         {
-    #             "graph_id": graph_id,
-    #             "from": edge.get('from'),
-    #             "to": edge.get('to')
-    #         }
-    #         for edge in raw_edges
-    #     ]
-    #
-    #     return nodes_for_bq, edges_for_bq
 
-    def translate_bigquery_data_for_graph(self, nodes_for_bq, edges_for_bq):
+    def translate_graph_data_for_bigquery(self, graph_data, graph_id):
         """
-        Translates the provided BigQuery data back to the original graph format.
+        Translates the provided graph data to match the BigQuery schema.
 
         Args:
-        - nodes_for_bq (list): The list of nodes in BigQuery format.
-        - edges_for_bq (list): The list of edges in BigQuery format.
+        - graph_data (dict): The graph data containing nodes and edges.
+        - graph_id (str): The unique identifier for the graph.
 
         Returns:
-        - dict: A dictionary containing nodes and edges in the original graph format.
+        - tuple: A tuple containing nodes and edges in BigQuery format.
         """
 
+        # Extract nodes and edges from the graph data
+        raw_nodes = graph_data.get('nodes', [])
+        raw_edges = graph_data.get('edges', [])
+
         # Translate nodes
-        raw_nodes = [
+        nodes_for_bq = [
             {
-                "id": node["id"],
-                "label": node["label"]
-                # Coordinates can be added here if needed in the future
+                "graph_id": graph_id,
+                "id": node.get('id'),
+                "label": node.get('label')
+                # Ignoring coordinates for now
             }
-            # for node in nodes_for_bq
-            for node in nodes_for_bq if isinstance(node, dict)
-
+            for node in raw_nodes
         ]
 
-        # Translate edges
-        raw_edges = [
-            {
-                "from": edge["from"],
-                "to": edge["to"]
-            }
-            for edge in edges_for_bq
-        ]
         print(nodes_for_bq)
 
-        return {"nodes": raw_nodes, "edges": raw_edges}
+        # Translate edges
+        edges_for_bq = [
+            {
+                "graph_id": graph_id,
+                "from": edge.get('from'),
+                "to": edge.get('to')
+            }
+            for edge in raw_edges
+        ]
+
+        print(edges_for_bq)
+
+        return nodes_for_bq, edges_for_bq
 
     def save_graph_data(self, graph_data, graph_id):
         try:
+            # Check and create dataset if it doesn't exist
+            self.create_dataset_if_not_exists()
+
             nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
             edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
+
+            # Check and create nodes table if it doesn't exist
+            self.create_table_if_not_exists("nodes_table", self.get_node_schema())
+
+            # Check and create edges table if it doesn't exist
+            self.create_table_if_not_exists("edges_table", self.get_edge_schema())
 
             # Retrieve the tables and their schemas
             nodes_table = self.bigquery_client.get_table(nodes_table_ref)
             edges_table = self.bigquery_client.get_table(edges_table_ref)
 
             # Use the translator function to transform the data
-            nodes_for_bq, edges_for_bq = self.translate_bigquery_data_for_graph(graph_data, graph_id)
+            nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
 
             # Log the transformed data for debugging
             logger.debug(f"Transformed Nodes: {nodes_for_bq}")
