@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant U as User
+    participant S as System
+    participant DB as Database
+    participant C as Company
+    participant E as Experts
+
+    U->>S: Create agent/agent pool
+    S->>DB: Save agent/pool
+    U->>S: Deploy/Redeploy/Layer agent
+    S->>DB: Update agent/pool status
+    loop Validation Process
+        S->>S: Validate and optimize agent connections
+    end
+    S->>C: Rent out robust agents
+    C->>U: Provide maintenance
+    U->>E: Experiment with agents (sandbox)
+    E->>S: Feedback and improvements
