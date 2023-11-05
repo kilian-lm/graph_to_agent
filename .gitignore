@@ -1,14 +1,21 @@
 # kl-dev
-*.env
+
 *.xml
-*.idea
-*.iml
-sec_graph_to_agent_familylehn_bigquery_20231027.json
-*.json
+*.env
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+
+# audio
+*.aac
+*.wav
+*.json
+
+log
 
 # C extensions
 *.so

@@ -1,3 +1,4 @@
-# graph_to_agent
+# two
 
-# https://chat.openai.com/share/43a1ddfd-33b8-451c-ab48-4cb16b4bf50f
+# let's add hand-gestures
+https://www.youtube.com/watch?v=a99p_fAr6e4&ab_channel=IvanGoncharov

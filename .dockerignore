@@ -1,0 +1,6 @@
+*.json
+*.env
+*.csv
+*.wav
+*.mp3
+venv

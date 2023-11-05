@@ -1,0 +1,125 @@
+{% extends "base_template.html" %}
+{% block content %}
+    </head>
+    <body>
+    <div class="token-form-container">
+        <form action="/" method="post" id="token-form" class="token-form">
+            <div class="token-container">
+                <label for="openai-token">OpenAI Token:</label>
+                <input type="text" id="openai-token" name="openai-token" placeholder="Enter your token">
+                <button type="submit" id="submit-token">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="wrapper">
+        <div class="sidebar">
+            <h2>Settings</h2>
+            <div class="slider-container">
+                <label for="freshness">Freshness:</label>
+                <input type="range" id="freshness" name="freshness" min="0" max="1" step="0.1" value="0.8">
+                <label id="freshness-value">0.8</label>
+            </div>
+
+            <div class="slider-container">
+                <label for="frequency-penalty">Frequency Penalty:</label>
+                <input type="range" id="frequency-penalty" name="frequency-penalty" min="0" max="1" step="0.1"
+                       value="0.0">
+                <label id="frequency-penalty-value">0.0</label>
+
+            </div>
+            <div class="slider-container">
+                <label for="max_tokens">Max Tokens:</label>
+                <input type="range" id="max_tokens" name="max_tokens" min="0" max="1000" step="10"
+                       value="60">
+                <label id="max_tokens_value">60</label>
+
+            </div>
+        </div>
+        <div class="container">
+            <h1>Speak, Transcribe, Translate, Get Feedback, Connect</h1>
+            {% if user_message %}
+                <div id="user-message-modal" class="modal">
+                    <div class="modal-content">
+                        <span class="close-button" onclick="closeModal()">&times;</span>
+                        <p>{{ user_message }}</p>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="prompt-container">
+                <label for="mode-switch">Mode:</label>
+                <select id="mode-switch">
+                    <option value="translation-prompt">Single Prompt</option>
+                    <option value="agent-pool">Agent-Pool Prompt</option>
+                    <option value="create-connect-agents">Create and Connect Agents</option>
+                </select>
+                <br>
+                {#                <label for="translation-prompt">Single Agent Prompt:</label>#}
+                <textarea id="translation-prompt" name="translation-prompt"
+                          placeholder="Translate the following sentence to French:">
+        Translate the following sentence to French:
+    </textarea>
+            </div>
+
+            <button id="start-recording">Start Recording</button>
+            <button id="stop-recording">Stop Recording</button>
+            {#            <button id="save-button">Save Graph</button>#}
+
+            <div id="recording-status"></div>
+            <div id="transcription"></div>
+            <div id="graph-container">
+                <div id="graph"></div>
+                <div id="graph-controls">
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Include all scripts but defer their execution -->
+    <script src="/static/js/singlePrompt.js" defer></script>
+{#    <script src="/static/js/agentPoolPrompt.js" defer></script>#}
+    <script src="/static/js/createConnectAgents.js" defer></script>
+
+    <script>
+        // Main logic to determine which script to execute
+        document.getElementById("mode-switch").addEventListener("change", function () {
+            let selectedMode = this.value;
+
+            if (selectedMode === "translation-prompt") {
+                executeSinglePrompt(); // This function is defined in singlePrompt.js
+            } else if (selectedMode === "agent-pool") {
+                executeAgentPoolPrompt(); // This function is defined in agentPoolPrompt.js
+            } else if (selectedMode === "create-connect-agents") {
+                executeCreateConnectAgents(); // This function is defined in createConnectAgents.js
+            }
+        });
+
+        // Automatically trigger based on the initially selected mode
+        document.addEventListener("DOMContentLoaded", function () {
+            let initialMode = document.getElementById("mode-switch").value;
+            if (initialMode === "translation-prompt") {
+                executeSinglePrompt();
+            } else if (initialMode === "agent-pool") {
+                executeAgentPoolPrompt();
+            } else if (initialMode === "create-connect-agents") {
+                executeCreateConnectAgents();
+            }
+        });
+    </script>
+    <footer class="footer">
+        <p>Kilian Lehn</p>
+        <a href="{{ url_for('impressum') }}">Impressum</a> <!-- Link to the Impressum page -->
+
+        <div class="social-icons">
+            <a href="https://www.linkedin.com/in/kilian-lehn-11043a20b/" target="_blank"><i
+                    class="fa fa-linkedin"></i></a>
+            <a href="https://github.com/kilian-lm" target="_blank"><i class="fa fa-github"></i></a>
+            <a href="https://cv-api-caller-dacqlspr3a-uc.a.run.app/" target="_blank"><i class="fa fa-user"></i></a>
+        </div>
+    </footer>
+    </body>
+    </html>
+
+{% endblock %}

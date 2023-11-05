@@ -1,0 +1,59 @@
+[
+  {
+    'graph_id': '20231104133927',
+    'id': 'e91ae939-7cc2-4bab-9c5a-cc5a2498652d',
+    'label': 'user'
+  },
+  {
+    'graph_id': '20231104133927',
+    'id': '92c1c08c-5a59-4772-84dc-d15c188d7aa3',
+    'label': 'system'
+  },
+  {
+    'graph_id': '20231104133927',
+    'id': '6ac8fd63-baf2-4a25-a382-422eaa8bb507',
+    'label': " I need to translate the given method content into a detailed .puml by logic, so not in the style of a class diagram but in a style that a non technical person could understand what's going on. The output should be compatible with https://plantuml.com/, meaning you will not confuse it with mermaid syntax."
+  },
+  {
+    'graph_id': '20231104133927',
+    'id': '0c8b8a5d-ed1a-4549-b34b-05e2109c4cec',
+    'label': 'Understood! Please provide the detailed content of the method.'
+  },
+  {
+    'graph_id': '20231104133927',
+    'id': 'fdc11f7f-1da0-40ff-bdc9-f102d8d57a27',
+    'label': 'user'
+  },
+  {
+    'graph_id': '20231104133927',
+    'id': 'a2fb5b86-2f6c-43da-9240-1d8239950e9a',
+    'label': 'Method :     def apply_rows(self, table_id, schema, rows):\n        try:\n            if not self._table_exists(table_id):\n                self._create_table(table_id, schema)\n                print(f"Inserting rows to {table_id}: {rows}")\n            self._insert_rows(table_id, rows)\n            self.logger.info(\n                f"{self.__class__.__name__}.{self.apply_rows.__name__} {table_id} o.k")\n        except Exception as e:\n            error_msg = f\'{self.__class__.__name__}.{self._table_exists.__name__} encountered the Error: {str(e)}\'\n            self.logger.error(error_msg)\n            self.publisher.publish_message(error_msg)\n            raise Exception(e)'
+  }
+]
+[
+  {
+    'graph_id': '20231104133927',
+    'from': 'e91ae939-7cc2-4bab-9c5a-cc5a2498652d',
+    'to': '6ac8fd63-baf2-4a25-a382-422eaa8bb507'
+  },
+  {
+    'graph_id': '20231104133927',
+    'from': '92c1c08c-5a59-4772-84dc-d15c188d7aa3',
+    'to': '0c8b8a5d-ed1a-4549-b34b-05e2109c4cec'
+  },
+  {
+    'graph_id': '20231104133927',
+    'from': '6ac8fd63-baf2-4a25-a382-422eaa8bb507',
+    'to': '92c1c08c-5a59-4772-84dc-d15c188d7aa3'
+  },
+  {
+    'graph_id': '20231104133927',
+    'from': '0c8b8a5d-ed1a-4549-b34b-05e2109c4cec',
+    'to': 'fdc11f7f-1da0-40ff-bdc9-f102d8d57a27'
+  },
+  {
+    'graph_id': '20231104133927',
+    'from': 'fdc11f7f-1da0-40ff-bdc9-f102d8d57a27',
+    'to': 'a2fb5b86-2f6c-43da-9240-1d8239950e9a'
+  }
+]

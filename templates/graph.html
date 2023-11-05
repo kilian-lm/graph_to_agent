@@ -1,256 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wire-Box</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
-<!--    <style>-->
-<!--        /*#mynetwork {*/-->
-<!--        /*    width: 60%;*/-->
-<!--        /*    height: 800px;*/-->
-<!--        /*    border: 1px solid lightgray;*/-->
-<!--        /*    float: left;*/-->
-<!--        /*}*/-->
-<!--        /*#editPanel {*/-->
-<!--        /*    width: 38%;*/-->
-<!--        /*    height: 800px;*/-->
-<!--        /*    float: right;*/-->
-<!--        /*    padding: 10px;*/-->
-<!--        /*    border: 1px solid lightgray;*/-->
-<!--        /*    display: none;*/-->
-<!--        /*}*/-->
-<!--    </style>-->
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+{% extends "base_template.html" %}
+{% block content %}
+    </head>
+    <body>
 
-</head>
-<body>
+    <div>
+        <select id="graphDropdown">
+            <option value="">Select a Graph</option>
+            <!-- Options will be populated dynamically from BQ -->
+        </select>
+        <button onclick="saveGraphData()">Save Graph</button>
+        <br>
+        Central Gravity: <input id="centralGravity" type="range" min="0" max="1" step="0.01" value="0.0"
+                                onchange="updatePhysics()"><br>
+        Spring Length: <input id="springLength" type="range" min="50" max="2000" value="400" onchange="updatePhysics()"><br>
+        Spring Constant: <input id="springConstant" type="range" min="0" max="1" step="0.1" value="0.1"
+                                onchange="updatePhysics()"><br>
+        Node Distance: <input id="nodeDistance" type="range" min="50" max="2000" value="420" onchange="updatePhysics()"><br>
+        Damping: <input id="damping" type="range" min="0" max="1" step="0.1" value="0.1" onchange="updatePhysics()"><br>
+    </div>
 
-<div>
-    <select id="graphDropdown">
-        <option value="">Select a Graph</option>
-        <!-- Options will be populated dynamically from BQ -->
-    </select>
-    <button onclick="saveGraphData()">Save Graph</button>
-    <br>
-    Central Gravity: <input id="centralGravity" type="range" min="0" max="1" step="0.01" value="0.0" onchange="updatePhysics()"><br>
-    Spring Length: <input id="springLength" type="range" min="50" max="2000" value="400" onchange="updatePhysics()"><br>
-    Spring Constant: <input id="springConstant" type="range" min="0" max="1" step="0.1" value="0.1" onchange="updatePhysics()"><br>
-    Node Distance: <input id="nodeDistance" type="range" min="50" max="2000" value="420" onchange="updatePhysics()"><br>
-    Damping: <input id="damping" type="range" min="0" max="1" step="0.1" value="0.1" onchange="updatePhysics()"><br>
-</div>
+    {#<div id="mynetwork"></div>#}
 
-<div id="mynetwork"></div>
+    <div id="graph-container">
+        <div id="graph"></div>
+        <div id="graph-controls">
+        </div>
+        <div id="editPanel">
+            <h3>Edit Node</h3>
+            <textarea id="nodeTextLabel" rows="4" style="width:100%"></textarea>
+            <br>
+            <button onclick="applyNodeChanges()">Apply</button>
+            <button onclick="cancelNodeChanges()">Cancel</button>
+        </div>
 
-<div id="editPanel">
-    <h3>Edit Node</h3>
-    <textarea id="nodeTextLabel" rows="4" style="width:100%"></textarea>
-    <br>
-    <button onclick="applyNodeChanges()">Apply</button>
-    <button onclick="cancelNodeChanges()">Cancel</button>
-</div>
+        <div id="jsonDataPanel">
+            <h3>JSON Data</h3>
+            <textarea id="jsonData" rows="10" style="width:100%"></textarea>
+            <br>
+            <button onclick="updateGraphFromJSON()">Update Graph from JSON</button>
+            <button onclick="resetJSON()">Reset JSON</button>
+        </div>
 
-<div id="jsonDataPanel">
-    <h3>JSON Data</h3>
-    <textarea id="jsonData" rows="10" style="width:100%"></textarea>
-    <br>
-    <button onclick="updateGraphFromJSON()">Update Graph from JSON</button>
-    <button onclick="resetJSON()">Reset JSON</button>
-</div>
+        <script src="{{ url_for('static', filename='js/graph_operations.js') }}"></script>
 
-<script src="{{ url_for('static', filename='js/graph_operations.js') }}"></script>
-
-<!--<script type="text/javascript">-->
-<!--    document.getElementById('graphDropdown').addEventListener('change', async function() {-->
-<!--    const selectedGraphId = this.value;-->
-<!--    try {-->
-<!--        const response = await fetch('/get-graph-data', {-->
-<!--            method: 'POST',-->
-<!--            headers: {-->
-<!--                'Content-Type': 'application/json'-->
-<!--            },-->
-<!--            body: JSON.stringify({ graph_id: selectedGraphId })-->
-<!--        });-->
-<!--        const graphData = await response.json();-->
-
-<!--        // Assuming you have initialized a vis.js Network object as 'network'-->
-<!--        // Update the graph on vis.js-->
-<!--        network.setData(graphData);-->
-<!--    } catch (error) {-->
-<!--        console.error('Error loading graph data:', error);-->
-<!--    }-->
-<!--    });-->
-<!--    async function loadAvailableGraphs() {-->
-<!--        try {-->
-<!--            const response = await fetch('/get-available-graphs');-->
-<!--            const graphs = await response.json();-->
-
-<!--            const dropdown = document.getElementById('graphDropdown');-->
-<!--            graphs.forEach(graph => {-->
-<!--                const option = document.createElement('option');-->
-<!--                option.value = graph.graph_id;-->
-<!--                option.textContent = graph.graph_name;-->
-<!--                dropdown.appendChild(option);-->
-<!--            });-->
-<!--        } catch (error) {-->
-<!--            console.error('Error loading available graphs:', error);-->
-<!--        }-->
-<!--    }-->
-
-<!--    document.getElementById('graphDropdown').addEventListener('change', function() {-->
-<!--        const selectedGraphId = this.value;-->
-<!--        if (selectedGraphId) {-->
-<!--            loadPreviousGraph(selectedGraphId);-->
-<!--        }-->
-<!--    });-->
-
-<!--    loadAvailableGraphs();-->
-
-<!--    var nodes = new vis.DataSet();-->
-<!--    var edges = new vis.DataSet();-->
-<!--    var currentNodeId;-->
-
-<!--    function editNodeFunction(nodeData, callback) {-->
-<!--        currentNodeId = nodeData.id;-->
-<!--        document.getElementById('nodeTextLabel').value = nodeData.label;-->
-<!--        document.getElementById('editPanel').style.display = 'block';-->
-<!--    }-->
-
-<!--    function applyNodeChanges() {-->
-<!--        var newLabel = document.getElementById('nodeTextLabel').value;-->
-<!--        nodes.update({id: currentNodeId, label: newLabel});-->
-<!--        document.getElementById('editPanel').style.display = 'none';-->
-<!--        var graphData = {-->
-<!--            nodes: nodes.get(),-->
-<!--            edges: edges.get()-->
-<!--        };-->
-<!--        document.getElementById('jsonData').value = JSON.stringify(graphData, null, 2);-->
-<!--    }-->
-
-<!--    function cancelNodeChanges() {-->
-<!--        document.getElementById('editPanel').style.display = 'none';-->
-<!--    }-->
-
-<!--    function saveGraphData() {-->
-<!--        var graphData = {-->
-<!--            nodes: nodes.get(),-->
-<!--            edges: edges.get()-->
-<!--        };-->
-
-<!--        document.getElementById('jsonData').value = JSON.stringify(graphData, null, 2);-->
-
-<!--        fetch('/save-graph', {-->
-<!--                method: 'POST',-->
-<!--                headers: {-->
-<!--                    'Content-Type': 'application/json'-->
-<!--                },-->
-<!--                body: JSON.stringify(graphData)-->
-<!--            }).then(response => response.json()).then(data => {-->
-<!--                if(data.status === 'success') {-->
-<!--                    alert('Graph saved successfully!');-->
-<!--                } else {-->
-<!--                    alert('Failed to save graph.');-->
-<!--                }-->
-<!--            });-->
-<!--    }-->
-
-<!--    function loadPreviousGraph(graphId) {-->
-<!--        fetch(`/load-graph?graphId=${graphId}`)-->
-<!--            .then(response => response.json())-->
-<!--            .then(data => {-->
-<!--                if (data.nodes && data.edges) {-->
-<!--                    nodes.clear();-->
-<!--                    edges.clear();-->
-<!--                    nodes.add(data.nodes);-->
-<!--                    edges.add(data.edges);-->
-<!--                } else {-->
-<!--                    alert('No data found.');-->
-<!--                }-->
-<!--            })-->
-<!--            .catch(error => {-->
-<!--                console.error('Error loading graph:', error);-->
-<!--                alert('Failed to load graph data.');-->
-<!--            });-->
-
-<!--        document.getElementById('jsonData').value = JSON.stringify({-->
-<!--            nodes: data.nodes,-->
-<!--            edges: data.edges-->
-<!--        }, null, 2);-->
-<!--    }-->
-
-<!--    var container = document.getElementById('mynetwork');-->
-<!--    var data = {-->
-<!--        nodes: nodes,-->
-<!--        edges: edges-->
-<!--    };-->
-<!--    var options = {-->
-<!--        manipulation: {-->
-<!--            enabled: true,-->
-<!--            initiallyActive: true,-->
-<!--            editNode: editNodeFunction,-->
-<!--            addNode: function (nodeData, callback) {-->
-<!--                nodeData.label = "New Node";-->
-<!--                callback(nodeData);-->
-<!--            }-->
-<!--        },-->
-<!--        physics: {-->
-<!--            enabled: true,-->
-<!--            hierarchicalRepulsion: {-->
-<!--                centralGravity: 0.0,-->
-<!--                springLength: 400,-->
-<!--                springConstant: 0.01,-->
-<!--                nodeDistance: 420,-->
-<!--                damping: 0.02-->
-<!--            },-->
-<!--            solver: 'hierarchicalRepulsion'-->
-<!--        }-->
-<!--    };-->
-<!--    var network = new vis.Network(container, data, options);-->
-
-<!--    function updatePhysics() {-->
-<!--        var centralGravity = parseFloat(document.getElementById("centralGravity").value);-->
-<!--        var springLength = parseInt(document.getElementById("springLength").value);-->
-<!--        var springConstant = parseFloat(document.getElementById("springConstant").value);-->
-<!--        var nodeDistance = parseInt(document.getElementById("nodeDistance").value);-->
-<!--        var damping = parseFloat(document.getElementById("damping").value);-->
-
-<!--        var newOptions = {-->
-<!--            physics: {-->
-<!--                hierarchicalRepulsion: {-->
-<!--                    centralGravity: centralGravity,-->
-<!--                    springLength: springLength,-->
-<!--                    springConstant: springConstant,-->
-<!--                    nodeDistance: nodeDistance,-->
-<!--                    damping: damping-->
-<!--                }-->
-<!--            }-->
-<!--        };-->
-
-<!--        network.setOptions(newOptions);-->
-<!--    }-->
-
-<!--        function updateGraphFromJSON() {-->
-<!--        var jsonData = document.getElementById('jsonData').value;-->
-<!--        try {-->
-<!--            var graphData = JSON.parse(jsonData);-->
-<!--            nodes.clear();-->
-<!--            edges.clear();-->
-<!--            nodes.add(graphData.nodes);-->
-<!--            edges.add(graphData.edges);-->
-<!--        } catch (error) {-->
-<!--            alert('Invalid JSON format!');-->
-<!--        }-->
-<!--    }-->
-
-<!--    function resetJSON() {-->
-<!--        var graphData = {-->
-<!--            nodes: nodes.get(),-->
-<!--            edges: edges.get()-->
-<!--        };-->
-<!--        document.getElementById('jsonData').value = JSON.stringify(graphData, null, 2);-->
-<!--    }-->
-<!--</script>-->
-
-</body>
-</html>
+    </body>
+    </html>
+{% endblock %}
