@@ -149,6 +149,8 @@ var options = {
     manipulation: {
         enabled: true,
         initiallyActive: true,
+            multiselect: true,
+
         editNode: editNodeFunction,
         // Ensure to update JSON view after adding a node
         addNode: function (nodeData, callback) {
@@ -224,3 +226,15 @@ function resetJSON() {
     document.getElementById('jsonData').value = JSON.stringify(graphData, null, 2);
     console.log('JSON reset:', graphData);
 }
+
+
+// Assuming 'network' is your vis.Network instance
+network.on("select", function (params) {
+    console.log('Selected nodes:');
+    console.log(params.nodes);
+
+    console.log('Selected edges:');
+    console.log(params.edges);
+
+    // You can now perform actions on the selected nodes and edges
+});
