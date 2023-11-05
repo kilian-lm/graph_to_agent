@@ -186,11 +186,17 @@ class BigQueryHandler:
             # Pass the dictionaries to the workflow logic
             processed_data = self.translate_graph_to_gpt_sequence(graph_data_as_dicts)
 
-            self.extract_and_send_to_gpt(processed_data)
+
+            processed_data = processed_data["processed_data"]
             logger.debug(f"processed_data: {processed_data}")
+            agent_content = self.extract_and_send_to_gpt(processed_data)
+            logger.debug(f"agent_content: {agent_content}")
 
             # Serialize data to json
             json_data = json.dumps(processed_data, indent=4)
+            logger.debug(f"json_data: {json_data}")
+
+
 
             # Write to a timestamped JSON file
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -227,7 +233,7 @@ class BigQueryHandler:
 
         # Initialize the data structure
         translated_data = {
-            "model": "gpt-4",
+            "model": os.getenv("MODEL"),
             "messages": []
         }
 
@@ -307,20 +313,22 @@ class BigQueryHandler:
     def extract_and_send_to_gpt(self, processed_data):
         # Read the JSON file and extract processed_data
 
-        # json_filename = "./processed_graph_20231104155949.json"
+        # json_filename = "./processed_graph_20231105180530.json"
         #
         # with open(json_filename, 'r') as json_file:
         #     data = json.load(json_file)
-        #     processed_data = data.get("processed_data", {})
+        #     # processed_data = data.get("processed_data", {})
+        #     processed_data = data
+
 
         # Prepare the data for the POST request
         # Assuming 'processed_data' contains the necessary format for GPT-4 API
         post_data = {
             "model": os.getenv("MODEL"),
-            "messages": processed_data.get("messages", [])
+            "messages": processed_data["messages"]
         }
 
-        # Send POST request to GPT-4
+        # Send POST request to GPT
         response = requests.post(self.openai_base_url, headers=self.headers, json=post_data)
 
         # Check if the request was successful and extract PUML content
@@ -328,16 +336,16 @@ class BigQueryHandler:
             agent_content = response.json()["choices"][0]["message"]["content"]
             return agent_content
         else:
-            raise Exception(f"Error in GPT-4 request: {response.status_code}, {response.text}")
+            raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
 
 
 
 
 # openai_api_key = os.getenv('OPEN_AI_KEY')
 # open_ai_url = "https://api.openai.com/v1/chat/completions"
-# bot = BigQueryHandler(open_ai_url, openai_api_key, 'graph_to_agent', 'test.json')
+# bot = BigQueryHandler('graph_to_agent', 'test.json')
 #
-# bot.extract_and_send_to_gpt4('test')
+# bot.extract_and_send_to_gpt('test')
 
 # bq_handler = BigQueryHandler( 'graph_to_agent', 'test.json')
 #
