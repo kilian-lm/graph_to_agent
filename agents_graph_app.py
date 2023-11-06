@@ -32,8 +32,10 @@ from controllers.BigQueryHandler import BigQueryHandler
 app = Flask(__name__)
 
 # Initialize BigQueryHandler
-bq_handler = BigQueryHandler('graph_to_agent', '../test.json')
+bq_handler = BigQueryHandler('graph_to_agent')
 
+logging.basicConfig(level=logging.DEBUG)  # You can change the level as needed.
+logger = logging.getLogger(__name__)
 
 @app.route('/')
 def index_call():
@@ -57,6 +59,22 @@ def get_available_graphs():
     except Exception as e:
         print(e)  # Log the error for debugging
         return jsonify({"status": "error", "message": str(e)})
+
+
+# extract to gpt interactions class
+@app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])
+def return_gpt_agent_answer_to_graph():
+    graph_data = request.json
+    processed_data = translate_graph_to_gpt_sequence(graph_data)
+    try:
+        gpt_response = extract_and_send_to_gpt(processed_data)
+        updated_graph = process_gpt_response_and_update_graph(gpt_response, graph_data)
+        return jsonify({"status": "success", "updatedGraph": updated_graph})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+
 
 
 @app.route('/save-graph', methods=['POST'])
