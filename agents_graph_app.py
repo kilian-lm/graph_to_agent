@@ -28,18 +28,22 @@ import json
 from flask import Flask, render_template, jsonify, request
 import json
 from controllers.BigQueryHandler import BigQueryHandler
+from controllers.GptAgentInteractions import GptAgentInteractions
 
 app = Flask(__name__)
 
 # Initialize BigQueryHandler
 bq_handler = BigQueryHandler('graph_to_agent')
+gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
 
 logging.basicConfig(level=logging.DEBUG)  # You can change the level as needed.
 logger = logging.getLogger(__name__)
 
+
 @app.route('/')
 def index_call():
     return render_template('graph.html')
+
 
 @app.route('/get-graph-data', methods=['POST'])
 def get_graph_data():
@@ -65,27 +69,36 @@ def get_available_graphs():
 @app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])
 def return_gpt_agent_answer_to_graph():
     graph_data = request.json
-    processed_data = translate_graph_to_gpt_sequence(graph_data)
-    try:
-        gpt_response = extract_and_send_to_gpt(processed_data)
-        updated_graph = process_gpt_response_and_update_graph(gpt_response, graph_data)
-        return jsonify({"status": "success", "updatedGraph": updated_graph})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+    logger.debug(f"return_gpt_agent_answer_to_graph, graph_data : {graph_data}")
+    processed_data = gpt_agent_interactions.translate_graph_to_gpt_sequence(graph_data)
+    logger.debug(f"return_gpt_agent_answer_to_graph, processed_data : {processed_data}")
+
+    gpt_response = gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
+    logger.debug(f"return_gpt_agent_answer_to_graph, gpt_response : {gpt_response}")
+
+    updated_graph = gpt_agent_interactions.process_gpt_response_and_update_graph(gpt_response, graph_data)
+    logger.debug(f"return_gpt_agent_answer_to_graph, updated_graph : {updated_graph}")
+
+    # try:
 
 
-
+    return jsonify({"status": "success", "updatedGraph": updated_graph})
+    # except Exception as e:
+    #     return jsonify({"status": "error", "message": str(e)})
 
 
 @app.route('/save-graph', methods=['POST'])
 def save_graph():
     try:
         graph_data = request.json
+        logger.debug(f"save_graph, graph_data : {graph_data}")
+
         # Generate a unique graph_id based on the current timestamp
         graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        print(graph_id)
+        logger.debug(f"save_graph, graph_id : {graph_id}")
         errors = bq_handler.save_graph_data(graph_data, graph_id)
-        print(errors)
+
+        logger.error(f"save_graph, errors : {errors}")
 
         if errors:
             return jsonify({"status": "error", "message": "Failed to save some data.", "errors": errors})
@@ -97,40 +110,3 @@ def save_graph():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
-# def translate_to_visjs(agent_interactions):
-#     nodes = []
-#     edges = []
-#     node_id = 0
-#
-#     prev_content_node_id = None
-#
-#     for interaction_group in agent_interactions:
-#         messages = interaction_group['messages']
-#         for interaction in messages:
-#             # Extract role and content
-#             role = interaction['role']
-#             # content = interaction['content'][:100] + "..."  # Truncate content for brevity
-#             content = interaction['content']
-#
-#             # Create nodes
-#             role_node = {"id": node_id, "label": role}
-#             nodes.append(role_node)
-#             role_node_id = node_id
-#             node_id += 1
-#
-#             content_node = {"id": node_id, "label": content}
-#             nodes.append(content_node)
-#             content_node_id = node_id
-#             node_id += 1
-#
-#             # Create edges
-#             edges.append({"from": role_node_id, "to": content_node_id})  # Role to content
-#             if prev_content_node_id is not None:
-#                 edges.append({"from": prev_content_node_id, "to": role_node_id})  # Previous content to current role
-#
-#             prev_content_node_id = content_node_id
-#
-#     return {"nodes": nodes, "edges": edges}

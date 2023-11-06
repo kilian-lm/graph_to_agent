@@ -23,28 +23,97 @@ class GptAgentInteractions(BigQueryHandler):
 
     def __init__(self, dataset_id):
         super().__init__(dataset_id)
-        # print(self.openai_api_key)
-        # self.openai_api_key = os.getenv('OPEN_AI_KEY')
-        # self.openai_base_url = "https://api.openai.com/v1/chat/completions"
-        # self.headers = {
-        #     'Content-Type': 'application/json',
-        #     'Authorization': f'Bearer {self.openai_api_key}'
+
+    def get_node_type(self, node):
+        if 'user' in node['label'].lower():
+            return 'user'
+        elif 'system' in node['label'].lower():
+            return 'system'
+        else:
+            return 'content'
+
+    def extract_and_send_to_gpt(self, processed_data):
+
+        actual_data = processed_data.get("processed_data", {})
+        messages = actual_data.get("messages", [])
+
+        post_data = {
+            "model": os.getenv("MODEL"),
+            "messages": messages
+        }
+
+        # post_data = {
+        #     "model": os.getenv("MODEL"),
+        #     "messages": processed_data["messages"]
         # }
-        # self.dataset_id = dataset_id
-        # bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
-        #
-        # try:
-        #     bq_client_secrets_parsed = json.loads(bq_client_secrets)
-        #     self.bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
-        #     self.bigquery_client = bigquery.Client(credentials=self.bq_client_secrets,
-        #                                            project=self.bq_client_secrets.project_id)
-        #     logger.info("BigQuery client successfully initialized.")
-        # except json.JSONDecodeError as e:
-        #     logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
-        #     raise
-        # except Exception as e:
-        #     logger.error(f"An error occurred while initializing the BigQuery client: {e}")
-        #     raise
+
+        # Send POST request to GPT
+        response = requests.post(self.openai_base_url, headers=self.headers, json=post_data)
+
+        # Check if the request was successful and extract PUML content
+        if response.status_code == 200:
+            agent_content = response.json()["choices"][0]["message"]["content"]
+            return agent_content
+        else:
+            raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
+
+    def translate_graph_to_gpt_sequence(self, graph_data):
+        nodes = graph_data["nodes"]
+        edges = graph_data["edges"]
+
+        # Build a mapping of node IDs to nodes
+        node_mapping = {node['id']: node for node in nodes}
+
+        # Initialize the data structure
+        translated_data = {
+            "model": os.getenv("MODEL"),
+            "messages": []
+        }
+
+        # Define valid transitions
+        valid_transitions = {
+            'user': 'content',
+            'content': 'system',
+            'system': 'content'
+        }
+
+        # Start from 'user' nodes and follow the valid transitions
+        current_expected = 'user'
+
+        for edge in edges:
+            from_node = node_mapping[edge['from']]
+            to_node = node_mapping[edge['to']]
+
+            from_node_type = self.get_node_type(from_node)
+            to_node_type = self.get_node_type(to_node)
+
+            # Validate the transition
+            if from_node_type == current_expected and valid_transitions.get(from_node_type) == to_node_type:
+                # Append the content of the 'to' node if it's a 'content' node
+                if to_node_type == 'content':
+                    translated_data['messages'].append({
+                        "role": from_node_type,
+                        "content": to_node['label']
+                    })
+                # Update the expected type for the next node
+                current_expected = to_node_type
+
+            # Reset to 'user' after a 'system' to 'content' transition
+            if from_node_type == 'system' and to_node_type == 'content':
+                current_expected = 'user'
+
+        # Serialize data to json
+        json_data = json.dumps(translated_data, indent=4)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        json_filename = f"processed_graph_{timestamp}.json"
+
+        with open(json_filename, "w") as json_file:
+            json_file.write(json_data)
+
+        return {
+            'bigquery_errors': {'node_errors': [], 'edge_errors': []},
+            'processed_data': translated_data
+        }
 
     def extract_gpt_interactions_before_save(self, graph_data, graph_id):
 
@@ -68,6 +137,41 @@ class GptAgentInteractions(BigQueryHandler):
         agent_content = self.extract_and_send_to_gpt(processed_data)
         logger.debug(f"agent_content: {agent_content}")
 
+    def get_last_content_node(self, edges, nodes):
+        # Assuming edges are ordered
+        last_edge = edges[-1]
+        last_node_id = last_edge['to']
+
+        logger.debug(f"get_last_content_node, last_node_id : {last_node_id}")
+
+        for node in nodes:
+            if node['id'] == last_node_id:
+                return node
+        return None
+
+    def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
+        last_content_node = self.get_last_content_node(graph_data['edges'], graph_data['nodes'])
+
+        logger.debug(f"process_gpt_response_and_update_graph, last_content_node : {last_content_node}")
+
+        # Create a new node with GPT response
+        # Create a new node with GPT response
+        new_node_id = f"agent_response_based_on{last_content_node['id']}"  # generate a unique ID for the new node
+        new_node = {
+            'id': new_node_id,
+            'label': gpt_response,
+        }
+
+        # Create a new edge from the last content node to the new node
+        new_edge = {
+            'from': last_content_node['id'],
+            'to': new_node_id,
+        }
+
+        graph_data['nodes'].append(new_node)
+        graph_data['edges'].append(new_edge)
+
+        return graph_data
     # Add the process_recursive_graph method
     def process_recursive_graph(self, graph_data):
         # Update valid transitions to include 'variable' nodes
@@ -119,8 +223,6 @@ class GptAgentInteractions(BigQueryHandler):
             return response.json()["choices"][0]["message"]["content"]
         else:
             raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
-
-
 
 # GptAgentInteractions
 #
