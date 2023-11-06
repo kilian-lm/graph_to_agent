@@ -1,4 +1,52 @@
- def extract_gpt_interactions_before_save(self, graph_data, graph_id):
+import os
+import json
+from google.cloud import bigquery
+from google.oauth2.service_account import Credentials
+from dotenv import load_dotenv
+from google.api_core.exceptions import NotFound
+import logging
+from google.oauth2.service_account import Credentials
+from google.oauth2 import service_account
+from google.cloud import bigquery
+import json
+import datetime
+import requests
+from controllers.BigQueryHandler import BigQueryHandler
+
+load_dotenv()
+
+logging.basicConfig(level=logging.DEBUG)  # You can change the level as needed.
+logger = logging.getLogger(__name__)
+
+
+class GptAgentInteractions(BigQueryHandler):
+
+    def __init__(self, dataset_id):
+        super().__init__(dataset_id)
+        # print(self.openai_api_key)
+        # self.openai_api_key = os.getenv('OPEN_AI_KEY')
+        # self.openai_base_url = "https://api.openai.com/v1/chat/completions"
+        # self.headers = {
+        #     'Content-Type': 'application/json',
+        #     'Authorization': f'Bearer {self.openai_api_key}'
+        # }
+        # self.dataset_id = dataset_id
+        # bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
+        #
+        # try:
+        #     bq_client_secrets_parsed = json.loads(bq_client_secrets)
+        #     self.bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
+        #     self.bigquery_client = bigquery.Client(credentials=self.bq_client_secrets,
+        #                                            project=self.bq_client_secrets.project_id)
+        #     logger.info("BigQuery client successfully initialized.")
+        # except json.JSONDecodeError as e:
+        #     logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
+        #     raise
+        # except Exception as e:
+        #     logger.error(f"An error occurred while initializing the BigQuery client: {e}")
+        #     raise
+
+    def extract_gpt_interactions_before_save(self, graph_data, graph_id):
 
         nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
         # Log the transformed data for debugging
@@ -19,7 +67,6 @@
         logger.debug(f"processed_data: {processed_data}")
         agent_content = self.extract_and_send_to_gpt(processed_data)
         logger.debug(f"agent_content: {agent_content}")
-
 
     # Add the process_recursive_graph method
     def process_recursive_graph(self, graph_data):
@@ -72,3 +119,9 @@
             return response.json()["choices"][0]["message"]["content"]
         else:
             raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
+
+
+
+# GptAgentInteractions
+#
+# help(GptAgentInteractions)

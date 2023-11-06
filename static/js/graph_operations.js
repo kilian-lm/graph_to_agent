@@ -12,6 +12,30 @@ function saveEntireGraphToJSON() {
     document.getElementById('jsonData').value = JSON.stringify(graphData, null, 2);
 }
 
+function gptPostRequest() {
+    var graphData = {
+        nodes: nodes.get(),
+        edges: edges.get()
+    };
+
+    fetch('/return-gpt-agent-answer-to-graph', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(graphData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            updateGraphWithNewNode(data.updatedGraph);
+        } else {
+            alert('Failed to process GPT request.');
+        }
+    });
+}
+
+
 // Event listener for graph selection dropdown
 document.getElementById('graphDropdown').addEventListener('change', async function () {
     const selectedGraphId = this.value;

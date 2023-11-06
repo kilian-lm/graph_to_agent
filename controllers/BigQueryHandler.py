@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class BigQueryHandler:
 
-    def __init__(self, dataset_id, schema_json_path):
+    def __init__(self, dataset_id):
         self.openai_api_key = os.getenv('OPEN_AI_KEY')
         self.openai_base_url = "https://api.openai.com/v1/chat/completions"
         self.headers = {
@@ -28,7 +28,6 @@ class BigQueryHandler:
             'Authorization': f'Bearer {self.openai_api_key}'
         }
         self.dataset_id = dataset_id
-        self.schema_json_path = schema_json_path
         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
 
         try:
