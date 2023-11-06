@@ -174,12 +174,12 @@ class BigQueryHandler:
 
             # Pass the dictionaries to the workflow logic
             processed_data = self.translate_graph_to_gpt_sequence(graph_data_as_dicts)
-
-
-            processed_data = processed_data["processed_data"]
-            logger.debug(f"processed_data: {processed_data}")
-            agent_content = self.extract_and_send_to_gpt(processed_data)
-            logger.debug(f"agent_content: {agent_content}")
+            #
+            #
+            # processed_data = processed_data["processed_data"]
+            # logger.debug(f"processed_data: {processed_data}")
+            # agent_content = self.extract_and_send_to_gpt(processed_data)
+            # logger.debug(f"agent_content: {agent_content}")
 
             # Serialize data to json
             json_data = json.dumps(processed_data, indent=4)
@@ -203,6 +203,7 @@ class BigQueryHandler:
         except Exception as e:
             logger.exception("An unexpected error occurred during save_graph_data:")
         raise
+
 
     # A helper function to determine a node's type (user, system, or content)
     def get_node_type(self, node):
@@ -300,15 +301,6 @@ class BigQueryHandler:
         return [{"graph_id": row["graph_id"], "graph_name": row["graph_id"]} for row in results]
 
     def extract_and_send_to_gpt(self, processed_data):
-        # Read the JSON file and extract processed_data
-
-        # json_filename = "./processed_graph_20231105180530.json"
-        #
-        # with open(json_filename, 'r') as json_file:
-        #     data = json.load(json_file)
-        #     # processed_data = data.get("processed_data", {})
-        #     processed_data = data
-
 
         # Prepare the data for the POST request
         # Assuming 'processed_data' contains the necessary format for GPT-4 API
@@ -328,57 +320,8 @@ class BigQueryHandler:
             raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
 
 
-    # Add the process_recursive_graph method
-    def process_recursive_graph(self, graph_data):
-        # Update valid transitions to include 'variable' nodes
-        valid_transitions = {
-            'user': 'content',
-            'content': ['system', 'variable'],
-            'system': 'content',
-            'variable': 'content'
-        }
 
-        # Process the graph in a sequence
-        processed_data = {"messages": []}
-        variable_content = None
 
-        for edge in graph_data["edges"]:
-            from_node = graph_data["nodes"][edge['from']]
-            to_node = graph_data["nodes"][edge['to']]
-
-            from_node_type = self.get_node_type(from_node)
-            to_node_type = self.get_node_type(to_node)
-
-            # Check for valid transitions
-            if valid_transitions[from_node_type] == to_node_type or to_node_type in valid_transitions[from_node_type]:
-                if from_node_type == 'variable':
-                    # Replace 'variable' node content with the previous GPT API response
-                    from_node['label'] = variable_content
-
-                # Add the interaction to the processed data
-                processed_data['messages'].append({
-                    "role": from_node_type,
-                    "content": from_node['label']
-                })
-
-                # If the 'to' node is a 'variable', get response from GPT API
-                if to_node_type == 'variable':
-                    gpt_response = self.get_gpt_response(processed_data)
-                    variable_content = gpt_response
-
-        return processed_data
-
-    # New method to interact with the GPT API
-    def get_gpt_response(self, processed_data):
-        post_data = {
-            "model": os.getenv("MODEL"),
-            "messages": processed_data["messages"]
-        }
-        response = requests.post(self.openai_base_url, headers=self.headers, json=post_data)
-        if response.status_code == 200:
-            return response.json()["choices"][0]["message"]["content"]
-        else:
-            raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
 
 # openai_api_key = os.getenv('OPEN_AI_KEY')
 # open_ai_url = "https://api.openai.com/v1/chat/completions"
