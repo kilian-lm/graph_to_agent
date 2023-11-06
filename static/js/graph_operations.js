@@ -12,30 +12,6 @@ function saveEntireGraphToJSON() {
     document.getElementById('jsonData').value = JSON.stringify(graphData, null, 2);
 }
 
-function gptPostRequest() {
-    var graphData = {
-        nodes: nodes.get(),
-        edges: edges.get()
-    };
-
-    fetch('/return-gpt-agent-answer-to-graph', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(graphData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            updateGraphWithNewNode(data.updatedGraph);
-        } else {
-            alert('Failed to process GPT request.');
-        }
-    });
-}
-
-
 // Event listener for graph selection dropdown
 document.getElementById('graphDropdown').addEventListener('change', async function () {
     const selectedGraphId = this.value;
@@ -262,3 +238,47 @@ network.on("select", function (params) {
 
     // You can now perform actions on the selected nodes and edges
 });
+
+
+async function gptPostRequest() {
+    var graphData = {
+        nodes: nodes.get(),
+        edges: edges.get()
+    };
+
+    console.log('Graph data being sent to backend:', graphData);
+
+    // try {
+    const response = await fetch('/return-gpt-agent-answer-to-graph', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(graphData)
+    });
+
+    const data = await response.json();
+
+    // if (data.status === 'success') {
+    updateGraphWithNewNode(data.updatedGraph);
+    //     } else {
+    //         console.error('Failed to process GPT request:', data);
+    //         alert('Failed to process GPT request.');
+    //     }
+    // } catch (error) {
+    //     console.error('Error in GPT request:', error);
+    //     alert('An error occurred while processing the GPT request.');
+    // }
+}
+
+
+
+
+function updateGraphWithNewNode(updatedGraphData) {
+    console.log('Received updated graph data:', updatedGraphData);
+
+    nodes.clear();
+    edges.clear();
+    nodes.add(updatedGraphData.nodes);
+    edges.add(updatedGraphData.edges);
+}
