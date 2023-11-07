@@ -19,6 +19,7 @@ logging.basicConfig(level=logging.DEBUG)  # You can change the level as needed.
 logger = logging.getLogger(__name__)
 
 
+
 class GptAgentInteractions(BigQueryHandler):
 
     def __init__(self, dataset_id):

@@ -173,22 +173,19 @@ class BigQueryHandler:
 
             # Pass the dictionaries to the workflow logic
             processed_data = self.translate_graph_to_gpt_sequence(graph_data_as_dicts)
-            #
-            #
-            # processed_data = processed_data["processed_data"]
-            # logger.debug(f"processed_data: {processed_data}")
-            # agent_content = self.extract_and_send_to_gpt(processed_data)
-            # logger.debug(f"agent_content: {agent_content}")
 
             # Serialize data to json
             json_data = json.dumps(processed_data, indent=4)
             logger.debug(f"json_data: {json_data}")
 
-
-
-            # Write to a timestamped JSON file
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            filename = f"processed_graph_{timestamp}.json"
+            filename = f"temp_local/processed_graph_{timestamp}.json"
+
+            # Check if the temp_local directory exists
+            if not os.path.exists('temp_local'):
+                os.makedirs('temp_local')
+
+            # Save the JSON data to the file
             with open(filename, 'w') as json_file:
                 json_file.write(json_data)
 
