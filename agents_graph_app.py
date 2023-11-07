@@ -30,6 +30,7 @@ import json
 from controllers.BigQueryHandler import BigQueryHandler
 from controllers.GptAgentInteractions import GptAgentInteractions
 
+
 app = Flask(__name__)
 
 # Initialize BigQueryHandler
@@ -57,15 +58,6 @@ def get_graph_data():
         print(f"Error fetching graph data: {e}")
         return jsonify({"status": "error", "message": str(e)})
 
-
-# @app.route('/get-graph-data', methods=['POST'])
-# def get_graph_data():
-#     try:
-#         graph_id = request.json['graph_id']
-#         graph_data = bq_handler.load_graph_data_by_id(graph_id)
-#         return jsonify(graph_data)
-#     except Exception as e:
-#         return jsonify({"status": "error", "message": str(e)})
 
 
 @app.route('/get-available-graphs', methods=['GET'])

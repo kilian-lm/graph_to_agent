@@ -1,50 +1,52 @@
 {% extends "base_template.html" %}
 {% block content %}
-    </head>
-    <body>
+</head>
+<body>
 
-    <div>
-        <select id="graphDropdown">
-            <option value="">Select a Graph</option>
-            <!-- Options will be populated dynamically from BQ -->
-        </select>
-        <button onclick="saveGraphData()">Save Graph</button>
+<div>
+    <select id="graphDropdown">
+        <option value="">Select a Graph</option>
+        <!-- Options will be populated dynamically from BQ -->
+    </select>
+    <button id="saveGraphButton">Save Graph</button>
+    <br>
+    <button id="triggerAgentsButton">Trigger Agents</button>
+    <br>
+    Central Gravity: <input id="centralGravity" type="range" min="0" max="1" step="0.01" value="0.0"><br>
+    Spring Length: <input id="springLength" type="range" min="50" max="2000" value="400"><br>
+    Spring Constant: <input id="springConstant" type="range" min="0" max="1" step="0.1" value="0.1"><br>
+    Node Distance: <input id="nodeDistance" type="range" min="50" max="2000" value="420"><br>
+    Damping: <input id="damping" type="range" min="0" max="1" step="0.1" value="0.1"><br>
+</div>
+
+<div id="graph-container">
+    <div id="graph"></div>
+    <div id="graph-controls">
+    </div>
+    <div id="editPanel">
+        <h3>Edit Node</h3>
+        <textarea id="nodeTextLabel" rows="4" style="width:100%"></textarea>
         <br>
-        <button onclick="gptPostRequest()">Trigger Agents</button>
-        <br>
-        Central Gravity: <input id="centralGravity" type="range" min="0" max="1" step="0.01" value="0.0"
-                                onchange="updatePhysics()"><br>
-        Spring Length: <input id="springLength" type="range" min="50" max="2000" value="400" onchange="updatePhysics()"><br>
-        Spring Constant: <input id="springConstant" type="range" min="0" max="1" step="0.1" value="0.1"
-                                onchange="updatePhysics()"><br>
-        Node Distance: <input id="nodeDistance" type="range" min="50" max="2000" value="420" onchange="updatePhysics()"><br>
-        Damping: <input id="damping" type="range" min="0" max="1" step="0.1" value="0.1" onchange="updatePhysics()"><br>
+        <button id="applyNodeChangesButton">Apply</button>
+        <button id="cancelNodeChangesButton">Cancel</button>
     </div>
 
-    {#<div id="mynetwork"></div>#}
+    <div id="jsonDataPanel">
+        <h3>JSON Data</h3>
+        <textarea id="jsonData" rows="10" style="width:100%"></textarea>
+        <br>
+        <button id="updateFromJsonButton">Update Graph from JSON</button>
+        <button id="resetJsonButton">Reset JSON</button>
+    </div>
 
-    <div id="graph-container">
-        <div id="graph"></div>
-        <div id="graph-controls">
-        </div>
-        <div id="editPanel">
-            <h3>Edit Node</h3>
-            <textarea id="nodeTextLabel" rows="4" style="width:100%"></textarea>
-            <br>
-            <button onclick="applyNodeChanges()">Apply</button>
-            <button onclick="cancelNodeChanges()">Cancel</button>
-        </div>
+    <script src="{{ url_for('static', filename='js/GraphUI.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const graphUI = new GraphUI();
+            graphUI.init();
+        });
+    </script>
 
-        <div id="jsonDataPanel">
-            <h3>JSON Data</h3>
-            <textarea id="jsonData" rows="10" style="width:100%"></textarea>
-            <br>
-            <button onclick="updateGraphFromJSON()">Update Graph from JSON</button>
-            <button onclick="resetJSON()">Reset JSON</button>
-        </div>
-
-        <script src="{{ url_for('static', filename='js/graph_operations.js') }}"></script>
-
-    </body>
-    </html>
+</body>
+</html>
 {% endblock %}
