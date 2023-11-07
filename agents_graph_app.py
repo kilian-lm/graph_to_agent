@@ -30,7 +30,6 @@ import json
 from controllers.BigQueryHandler import BigQueryHandler
 from controllers.GptAgentInteractions import GptAgentInteractions
 
-
 app = Flask(__name__)
 
 # Initialize BigQueryHandler
@@ -41,77 +40,83 @@ logging.basicConfig(level=logging.DEBUG)  # You can change the level as needed.
 logger = logging.getLogger(__name__)
 
 
-@app.route('/')
-def index_call():
-    return render_template('graph.html')
+class GraphServer:
+    def __init__(self):
+        self.app = Flask(__name__)
+        self.bq_handler = BigQueryHandler('graph_to_agent')
+        self.gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+        self.setup_routes()
 
+    def index_call(self):
+        return render_template('graph.html')
 
-@app.route('/get-graph-data', methods=['POST'])
-def get_graph_data():
-    try:
-        graph_id = request.json['graph_id']
-        graph_data = bq_handler.load_graph_data_by_id(graph_id)
-        # Assuming graph_data is already in the correct format for the frontend
-        return jsonify(graph_data)
-    except Exception as e:
-        # Logging and returning an error response
-        print(f"Error fetching graph data: {e}")
-        return jsonify({"status": "error", "message": str(e)})
+    def get_graph_data(self):
+        try:
+            graph_id = request.json['graph_id']
+            graph_data = self.bq_handler.load_graph_data_by_id(graph_id)
+            return jsonify(graph_data)
+        except Exception as e:
+            self.logger.error(f"Error fetching graph data: {e}")
+            return jsonify({"status": "error", "message": str(e)})
 
+    def get_available_graphs(self):
+        try:
+            available_graphs = self.bq_handler.get_available_graphs()
+            return jsonify(available_graphs)
+        except Exception as e:
+            self.logger.error(f"Error loading available graphs: {e}")
+            return jsonify({"status": "error", "message": str(e)})
 
+    def return_gpt_agent_answer_to_graph(self):
+        try:
+            graph_data = request.json
+            self.logger.debug(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
+            processed_data = self.gpt_agent_interactions.translate_graph_to_gpt_sequence(graph_data)
+            self.logger.debug(f"return_gpt_agent_answer_to_graph, processed_data: {processed_data}")
 
-@app.route('/get-available-graphs', methods=['GET'])
-def get_available_graphs():
-    try:
-        available_graphs = bq_handler.get_available_graphs()
-        return jsonify(available_graphs)
-    except Exception as e:
-        print(e)  # Log the error for debugging
-        return jsonify({"status": "error", "message": str(e)})
+            gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
+            self.logger.debug(f"return_gpt_agent_answer_to_graph, gpt_response: {gpt_response}")
 
+            updated_graph = self.gpt_agent_interactions.process_gpt_response_and_update_graph(gpt_response, graph_data)
+            self.logger.debug(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
 
-# extract to gpt interactions class
-@app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])
-def return_gpt_agent_answer_to_graph():
-    graph_data = request.json
-    logger.debug(f"return_gpt_agent_answer_to_graph, graph_data : {graph_data}")
-    processed_data = gpt_agent_interactions.translate_graph_to_gpt_sequence(graph_data)
-    logger.debug(f"return_gpt_agent_answer_to_graph, processed_data : {processed_data}")
+            return jsonify({"status": "success", "updatedGraph": updated_graph})
+        except Exception as e:
+            self.logger.error(f"Error processing GPT agent request: {e}")
+            return jsonify({"status": "error", "message": str(e)})
 
-    gpt_response = gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
-    logger.debug(f"return_gpt_agent_answer_to_graph, gpt_response : {gpt_response}")
+    def save_graph(self):
+        try:
+            graph_data = request.json
+            self.logger.debug(f"save_graph, graph_data: {graph_data}")
 
-    updated_graph = gpt_agent_interactions.process_gpt_response_and_update_graph(gpt_response, graph_data)
-    logger.debug(f"return_gpt_agent_answer_to_graph, updated_graph : {updated_graph}")
+            graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            self.logger.debug(f"save_graph, graph_id: {graph_id}")
+            errors = self.bq_handler.save_graph_data(graph_data, graph_id)
 
-    # try:
+            self.logger.error(f"save_graph, errors: {errors}")
 
+            if errors:
+                return jsonify({"status": "error", "message": "Failed to save some data.", "errors": errors})
 
-    return jsonify({"status": "success", "updatedGraph": updated_graph})
-    # except Exception as e:
-    #     return jsonify({"status": "error", "message": str(e)})
+            return jsonify({"status": "success", "message": "Graph saved successfully!"})
+        except Exception as e:
+            self.logger.error(f"Error saving graph: {e}")
+            return jsonify({"status": "error", "message": str(e)})
 
+    def setup_routes(self):
+        self.app.route('/')(self.index_call)
+        self.app.route('/get-graph-data', methods=['POST'])(self.get_graph_data)
+        self.app.route('/get-available-graphs', methods=['GET'])(self.get_available_graphs)
+        self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.return_gpt_agent_answer_to_graph)
+        self.app.route('/save-graph', methods=['POST'])(self.save_graph)
 
-@app.route('/save-graph', methods=['POST'])
-def save_graph():
-    try:
-        graph_data = request.json
-        logger.debug(f"save_graph, graph_data : {graph_data}")
-
-        # Generate a unique graph_id based on the current timestamp
-        graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        logger.debug(f"save_graph, graph_id : {graph_id}")
-        errors = bq_handler.save_graph_data(graph_data, graph_id)
-
-        logger.error(f"save_graph, errors : {errors}")
-
-        if errors:
-            return jsonify({"status": "error", "message": "Failed to save some data.", "errors": errors})
-
-        return jsonify({"status": "success", "message": "Graph saved successfully!"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+    def run(self):
+        self.app.run(debug=True)
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    server = GraphServer()
+    server.run()
