@@ -3,60 +3,72 @@ var nodes = new vis.DataSet();
 var edges = new vis.DataSet();
 var currentNodeId;
 
+// Function to update the JSON view and the graph with the provided graph data
+function updateGraph(graphData) {
+  nodes.clear();
+  edges.clear();
+  nodes.add(graphData.nodes);
+  edges.add(graphData.edges);
+  saveEntireGraphToJSON(); // Update the JSON view with the entire graph
+  console.log('Graph updated:', graphData);
+}
+
 // Function to update the JSON view with the entire graph
 function saveEntireGraphToJSON() {
-    var graphData = {
-        nodes: nodes.get(),
-        edges: edges.get()
-    };
-    document.getElementById('jsonData').value = JSON.stringify(graphData, null, 2);
+  var graphData = {
+    nodes: nodes.get(),
+    edges: edges.get()
+  };
+  document.getElementById('jsonData').value = JSON.stringify(graphData, null, 2);
 }
 
 // Event listener for graph selection dropdown
 document.getElementById('graphDropdown').addEventListener('change', async function () {
-    const selectedGraphId = this.value;
-    console.log('Graph dropdown changed:', selectedGraphId);
-    if (selectedGraphId) {
-        try {
-            const response = await fetch('/get-graph-data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({graph_id: selectedGraphId})
-            });
-            const graphData = await response.json();
-            network.setData(graphData);
-            saveEntireGraphToJSON(); // Ensure the JSON view is updated with the entire graph
-            console.log('Graph data loaded:', graphData);
-        } catch (error) {
-            console.error('Error loading graph data:', error);
-        }
+  const selectedGraphId = this.value;
+  console.log('Graph dropdown changed:', selectedGraphId);
+  if (selectedGraphId) {
+    try {
+      const response = await fetch('/get-graph-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          graph_id: selectedGraphId
+        })
+      });
+      const graphData = await response.json();
+      updateGraph(graphData); // Use the new updateGraph function to update the graph
+      console.log('Graph data loaded:', graphData);
+    } catch (error) {
+      console.error('Error loading graph data:', error);
     }
+  }
 });
 
 // Load available graphs for selection
 async function loadAvailableGraphs() {
-    console.log('Loading available graphs...');
-    try {
-        const response = await fetch('/get-available-graphs');
-        const graphs = await response.json();
-        const dropdown = document.getElementById('graphDropdown');
-        dropdown.innerHTML = ''; // Clear the dropdown before adding new options
-        graphs.forEach(graph => {
-            const option = document.createElement('option');
-            option.value = graph.graph_id;
-            option.textContent = graph.graph_name;
-            dropdown.appendChild(option);
-        });
-        console.log('Available graphs loaded:', graphs);
-    } catch (error) {
-        console.error('Error loading available graphs:', error);
-    }
+  console.log('Loading available graphs...');
+  try {
+    const response = await fetch('/get-available-graphs');
+    const graphs = await response.json();
+    const dropdown = document.getElementById('graphDropdown');
+    dropdown.innerHTML = ''; // Clear the dropdown before adding new options
+    graphs.forEach(graph => {
+      const option = document.createElement('option');
+      option.value = graph.graph_id;
+      option.textContent = graph.graph_name;
+      dropdown.appendChild(option);
+    });
+    console.log('Available graphs loaded:', graphs);
+  } catch (error) {
+    console.error('Error loading available graphs:', error);
+  }
 }
 
 // Initial call to load available graphs
 loadAvailableGraphs();
+
 
 // Function to handle node editing
 function editNodeFunction(nodeData, callback) {
@@ -85,14 +97,6 @@ function cancelNodeChanges() {
 }
 
 
-// function saveEntireGraphToJSON() {
-//     var graphData = {
-//         nodes: nodes.get(),
-//         edges: edges.get()
-//     };
-//     document.getElementById('jsonData').value = JSON.stringify(graphData, null, 2);
-// }
-
 function saveGraphData() {
     var graphData = {
         nodes: nodes.get(),
@@ -113,31 +117,6 @@ function saveGraphData() {
             alert('Failed to save graph.');
         }
     });
-}
-
-function loadPreviousGraph(graphId) {
-    console.log('Loading previous graph:', graphId);
-    fetch(`/load-graph?graphId=${graphId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.nodes && data.edges) {
-                nodes.clear();
-                edges.clear();
-                nodes.add(data.nodes);
-                edges.add(data.edges);
-                document.getElementById('jsonData').value = JSON.stringify({
-                    nodes: data.nodes,
-                    edges: data.edges
-                }, null, 2);
-                console.log('Previous graph loaded:', data);
-            } else {
-                alert('No data found.');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading graph:', error);
-            alert('Failed to load graph data.');
-        });
 }
 
 var container = document.getElementById('graph');
@@ -227,58 +206,44 @@ function resetJSON() {
     console.log('JSON reset:', graphData);
 }
 
-
 // Assuming 'network' is your vis.Network instance
 network.on("select", function (params) {
-    console.log('Selected nodes:');
-    console.log(params.nodes);
+  console.log('Selected nodes:');
+  console.log(params.nodes);
 
-    console.log('Selected edges:');
-    console.log(params.edges);
+  console.log('Selected edges:');
+  console.log(params.edges);
 
-    // You can now perform actions on the selected nodes and edges
+  // You can now perform actions on the selected nodes and edges
 });
 
-
 async function gptPostRequest() {
-    var graphData = {
-        nodes: nodes.get(),
-        edges: edges.get()
-    };
+  var graphData = {
+    nodes: nodes.get(),
+    edges: edges.get()
+  };
 
-    console.log('Graph data being sent to backend:', graphData);
+  console.log('Graph data being sent to backend:', graphData);
 
-    // try {
-    const response = await fetch('/return-gpt-agent-answer-to-graph', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(graphData)
-    });
+  // try {
+  const response = await fetch('/return-gpt-agent-answer-to-graph', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(graphData)
+  });
 
-    const data = await response.json();
+  const data = await response.json();
 
-    // if (data.status === 'success') {
-    updateGraphWithNewNode(data.updatedGraph);
-    //     } else {
-    //         console.error('Failed to process GPT request:', data);
-    //         alert('Failed to process GPT request.');
-    //     }
-    // } catch (error) {
-    //     console.error('Error in GPT request:', error);
-    //     alert('An error occurred while processing the GPT request.');
-    // }
-}
-
-
-
-
-function updateGraphWithNewNode(updatedGraphData) {
-    console.log('Received updated graph data:', updatedGraphData);
-
-    nodes.clear();
-    edges.clear();
-    nodes.add(updatedGraphData.nodes);
-    edges.add(updatedGraphData.edges);
+  // if (data.status === 'success') {
+  updateGraph(data.updatedGraph); // Use the new updateGraph function to update the graph
+  //     } else {
+  //         console.error('Failed to process GPT request:', data);
+  //         alert('Failed to process GPT request.');
+  //     }
+  // } catch (error) {
+  //     console.error('Error in GPT request:', error);
+  //     alert('An error occurred while processing the GPT request.');
+  // }
 }
