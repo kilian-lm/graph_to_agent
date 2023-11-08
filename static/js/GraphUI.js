@@ -79,6 +79,31 @@ class GraphUI {
         }
     }
 
+
+    updateGraph(graphData) {
+    // Clear the existing data
+        this.nodes.clear();
+        this.edges.clear();
+
+        // Add new nodes, checking for duplicates
+        graphData.nodes.forEach(node => {
+            if (!this.nodes.get(node.id)) {
+                this.nodes.add(node);
+            } else {
+                console.warn(`Node with id ${node.id} already exists. Skipping...`);
+                // Optionally, update the existing node here
+                // this.nodes.update(node);
+            }
+        });
+
+        // Add edges
+        this.edges.add(graphData.edges);
+
+        // Additional logic if needed
+        console.log('Graph updated:', graphData);
+    }
+
+
     // updateGraph(graphData) {
     //     this.nodes.clear();
     //     this.edges.clear();
@@ -87,54 +112,6 @@ class GraphUI {
     //     this.saveEntireGraphToJSON();
     //     console.log('Graph updated:', graphData);
     // }
-
-    // updateGraph(graphData) {
-    //     this.nodes.clear();
-    //     this.edges.clear();
-    //
-    //     // Update the nodes and edges separately to prevent duplicate items
-    //     if (graphData.nodes && graphData.nodes.length > 0) {
-    //         this.nodes.add(graphData.nodes);
-    //     }
-    //
-    //     if (graphData.edges && graphData.edges.length > 0) {
-    //         this.edges.add(graphData.edges);
-    //     }
-    //
-    //     this.saveEntireGraphToJSON();
-    //     console.log('Graph updated:', graphData);
-    // }
-
-    updateGraph(graphData) {
-    this.nodes.clear();
-    this.edges.clear();
-
-    try {
-        this.nodes.add(graphData.nodes);
-        this.edges.add(graphData.edges);
-    } catch (error) {
-        if (error.toString().includes('item with id already exists')) {
-            console.error('Duplicate node ID found, applying fix:', error);
-
-            const fixedNodes = graphData.nodes.map(node => {
-                // Append _fix to the ID of the node
-                return {...node, id: `${node.id}_fix`};
-            });
-
-            try {
-                this.nodes.add(fixedNodes);
-                this.edges.add(graphData.edges);
-            } catch (secondError) {
-                console.error('Error after applying fix:', secondError);
-            }
-        } else {
-            console.error('Error updating graph:', error);
-        }
-    }
-
-    this.saveEntireGraphToJSON();
-    console.log('Graph updated:', graphData);
-}
 
 
     saveEntireGraphToJSON() {
