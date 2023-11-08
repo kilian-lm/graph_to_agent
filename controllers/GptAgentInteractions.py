@@ -277,38 +277,6 @@ class GptAgentInteractions:
         self.save_graph_data(graph_data, graph_id)
         return graph_data
 
-    # def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
-    #     last_content_node = self.get_last_content_node(graph_data['edges'], graph_data['nodes'])
-    #
-    #     logger.debug(f"process_gpt_response_and_update_graph, last_content_node : {last_content_node}")
-    #
-    #     # Create a new node with GPT response
-    #     new_node_id = f"agent_response_based_on{last_content_node['id']}"  # generate a unique ID for the new node
-    #     new_node = {
-    #         'id': new_node_id,
-    #         'label': gpt_response,
-    #     }
-    #
-    #     logger.debug(f"process_gpt_response_and_update_graph, new_node : {new_node}")
-    #
-    #     # Create a new edge from the last content node to the new node
-    #     new_edge = {
-    #         'from': last_content_node['id'],
-    #         'to': new_node_id,
-    #     }
-    #
-    #     logger.debug(f"process_gpt_response_and_update_graph, new_edge : {new_edge}")
-    #
-    #     graph_data['nodes'].append(new_node)
-    #     graph_data['edges'].append(new_edge)
-    #
-    #     logger.debug(f"process_gpt_response_and_update_graph, graph_data : {graph_data}")
-    #
-    #     # debugging:
-    #     graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    #
-    #     self.save_graph_data(graph_data, graph_id)
-    #     return graph_data
 
     def save_graph_data(self, graph_data, graph_id):
         try:

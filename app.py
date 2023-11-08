@@ -9,11 +9,7 @@ import logging
 from google.oauth2.service_account import Credentials
 from google.oauth2 import service_account
 
-# from app.Solver import Solver
-# from app.LoggerPublisher.MainPublisher import MainPublisher
-# from app.LoggerPublisher.MainLogger import MainLogger
 
-# load_dotenv()
 
 import datetime
 import json
