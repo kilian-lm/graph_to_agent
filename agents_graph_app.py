@@ -33,7 +33,7 @@ from controllers.GptAgentInteractions import GptAgentInteractions
 app = Flask(__name__)
 
 # Initialize BigQueryHandler
-bq_handler = BigQueryHandler('graph_to_agent')
+# bq_handler = BigQueryHandler('graph_to_agent')
 gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
 
 logging.basicConfig(level=logging.DEBUG)  # You can change the level as needed.
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 class GraphServer:
     def __init__(self):
         self.app = Flask(__name__)
-        self.bq_handler = BigQueryHandler('graph_to_agent')
+        # self.gpt_agent_interactions = BigQueryHandler('graph_to_agent')
         self.gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
@@ -55,7 +55,7 @@ class GraphServer:
     def get_graph_data(self):
         try:
             graph_id = request.json['graph_id']
-            graph_data = self.bq_handler.load_graph_data_by_id(graph_id)
+            graph_data = self.gpt_agent_interactions.load_graph_data_by_id(graph_id)
             return jsonify(graph_data)
         except Exception as e:
             self.logger.error(f"Error fetching graph data: {e}")
@@ -63,7 +63,7 @@ class GraphServer:
 
     def get_available_graphs(self):
         try:
-            available_graphs = self.bq_handler.get_available_graphs()
+            available_graphs = self.gpt_agent_interactions.get_available_graphs()
             return jsonify(available_graphs)
         except Exception as e:
             self.logger.error(f"Error loading available graphs: {e}")
@@ -94,7 +94,7 @@ class GraphServer:
 
             graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
             self.logger.debug(f"save_graph, graph_id: {graph_id}")
-            errors = self.bq_handler.save_graph_data(graph_data, graph_id)
+            errors = self.gpt_agent_interactions.save_graph_data(graph_data, graph_id)
 
             self.logger.error(f"save_graph, errors: {errors}")
 
