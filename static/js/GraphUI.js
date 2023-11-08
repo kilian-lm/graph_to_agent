@@ -44,33 +44,30 @@ class GraphUI {
             {value: 'layered', text: 'Layered Message Passing'},
             {value: 'token_passing', text: 'Token Passing'}
         ];
-        const dropdown = document.createElement('select');
-        dropdown.id = 'messagePassingDropdown';
-        dropdown.classList.add('custom-dropdown');
+
+        const dropdown = document.getElementById('messagePassingDropdown');
+        dropdown.innerHTML = '';
+
         techniques.forEach(technique => {
             const option = document.createElement('option');
             option.value = technique.value;
             option.text = technique.text;
             dropdown.appendChild(option);
         });
-        document.getElementById('dropdown-container').appendChild(dropdown); // Make sure to have a container with this id in your HTML
+
         dropdown.addEventListener('change', this.handleMessagePassingChange);
     }
 
-// Event handler for when a new message-passing technique is selected
     handleMessagePassingChange(event) {
         const selectedTechnique = event.target.value;
-        // Logic to handle message passing change goes here
         console.log('Selected message-passing technique:', selectedTechnique);
     }
-
 
     init() {
         this.loadAvailableGraphs();
         this.setupNetwork();
         this.attachEventListeners();
         this.createMessagePassingDropdown();
-
     }
 
     // You'll also need to implement the resetJSON method
@@ -79,10 +76,10 @@ class GraphUI {
         console.log('JSON reset to current graph state.');
     }
 
-    triggerAgents() {
-        // Logic to trigger agents would go here
-        console.log('Agents triggered.');
-    }
+    // triggerAgents() {
+    //     // Logic to trigger agents would go here
+    //     console.log('Agents triggered.');
+    // }
 
 
     async loadAvailableGraphs() {
