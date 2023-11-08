@@ -40,7 +40,7 @@ logging.basicConfig(level=logging.DEBUG)  # You can change the level as needed.
 logger = logging.getLogger(__name__)
 
 
-class GraphServer:
+class App:
     def __init__(self):
         self.app = Flask(__name__)
         # self.gpt_agent_interactions = BigQueryHandler('graph_to_agent')
@@ -118,5 +118,5 @@ class GraphServer:
 
 
 if __name__ == '__main__':
-    server = GraphServer()
+    server = App()
     server.run()
