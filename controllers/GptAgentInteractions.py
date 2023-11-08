@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class GptAgentInteractions:
 
     def __init__(self, dataset_id):
-        self.openai_api_key = os.getenv('OPEN_AI_KEY')
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.openai_base_url = "https://api.openai.com/v1/chat/completions"
         self.headers = {
             'Content-Type': 'application/json',
@@ -117,7 +117,6 @@ class GptAgentInteractions:
         logger.debug(f"edges_for_bq: {edges_for_bq}")
 
         return nodes_for_bq, edges_for_bq
-
 
     def get_node_type(self, node):
         if 'user' in node['label'].lower():
@@ -248,23 +247,68 @@ class GptAgentInteractions:
 
         logger.debug(f"process_gpt_response_and_update_graph, last_content_node : {last_content_node}")
 
-        # Create a new node with GPT response
-        new_node_id = f"agent_response_based_on{last_content_node['id']}"  # generate a unique ID for the new node
+        # Generate a unique ID for the new node
+        new_node_id = f"agent_response_based_on{last_content_node['id']}"
         new_node = {
             'id': new_node_id,
             'label': gpt_response,
         }
 
-        # Create a new edge from the last content node to the new node
-        new_edge = {
-            'from': last_content_node['id'],
-            'to': new_node_id,
-        }
+        logger.debug(f"process_gpt_response_and_update_graph, new_node : {new_node}")
 
-        graph_data['nodes'].append(new_node)
-        graph_data['edges'].append(new_edge)
+        # Check if a node with the new ID already exists
+        existing_node_ids = {node['id'] for node in graph_data['nodes']}
+        if new_node_id not in existing_node_ids:
+            graph_data['nodes'].append(new_node)
+            # Create a new edge from the last content node to the new node
+            new_edge = {
+                'from': last_content_node['id'],
+                'to': new_node_id,
+            }
+            graph_data['edges'].append(new_edge)
+            logger.debug(f"process_gpt_response_and_update_graph, new_edge : {new_edge}")
+        else:
+            logger.warning(f"Node with ID {new_node_id} already exists. Skipping node and edge addition.")
 
+        logger.debug(f"process_gpt_response_and_update_graph, graph_data : {graph_data}")
+
+        # debugging:
+        graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        self.save_graph_data(graph_data, graph_id)
         return graph_data
+
+    # def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
+    #     last_content_node = self.get_last_content_node(graph_data['edges'], graph_data['nodes'])
+    #
+    #     logger.debug(f"process_gpt_response_and_update_graph, last_content_node : {last_content_node}")
+    #
+    #     # Create a new node with GPT response
+    #     new_node_id = f"agent_response_based_on{last_content_node['id']}"  # generate a unique ID for the new node
+    #     new_node = {
+    #         'id': new_node_id,
+    #         'label': gpt_response,
+    #     }
+    #
+    #     logger.debug(f"process_gpt_response_and_update_graph, new_node : {new_node}")
+    #
+    #     # Create a new edge from the last content node to the new node
+    #     new_edge = {
+    #         'from': last_content_node['id'],
+    #         'to': new_node_id,
+    #     }
+    #
+    #     logger.debug(f"process_gpt_response_and_update_graph, new_edge : {new_edge}")
+    #
+    #     graph_data['nodes'].append(new_node)
+    #     graph_data['edges'].append(new_edge)
+    #
+    #     logger.debug(f"process_gpt_response_and_update_graph, graph_data : {graph_data}")
+    #
+    #     # debugging:
+    #     graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    #
+    #     self.save_graph_data(graph_data, graph_id)
+    #     return graph_data
 
     def save_graph_data(self, graph_data, graph_id):
         try:

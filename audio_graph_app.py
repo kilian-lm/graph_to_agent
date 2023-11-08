@@ -26,7 +26,7 @@ if not os.path.exists('recorded_audio'):
 
 def get_openai_key():
     # Step 1: Check if OPEN_AI_KEY exists in environment variables
-    OPENAI_API_KEY = os.environ.get('OPEN_AI_KEY')
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
     return OPENAI_API_KEY
 
 

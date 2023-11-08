@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class BigQueryHandler:
 
     def __init__(self, dataset_id):
-        self.openai_api_key = os.getenv('OPEN_AI_KEY')
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.openai_base_url = "https://api.openai.com/v1/chat/completions"
         self.headers = {
             'Content-Type': 'application/json',
