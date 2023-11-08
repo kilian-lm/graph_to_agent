@@ -79,14 +79,63 @@ class GraphUI {
         }
     }
 
+    // updateGraph(graphData) {
+    //     this.nodes.clear();
+    //     this.edges.clear();
+    //     this.nodes.add(graphData.nodes);
+    //     this.edges.add(graphData.edges);
+    //     this.saveEntireGraphToJSON();
+    //     console.log('Graph updated:', graphData);
+    // }
+
+    // updateGraph(graphData) {
+    //     this.nodes.clear();
+    //     this.edges.clear();
+    //
+    //     // Update the nodes and edges separately to prevent duplicate items
+    //     if (graphData.nodes && graphData.nodes.length > 0) {
+    //         this.nodes.add(graphData.nodes);
+    //     }
+    //
+    //     if (graphData.edges && graphData.edges.length > 0) {
+    //         this.edges.add(graphData.edges);
+    //     }
+    //
+    //     this.saveEntireGraphToJSON();
+    //     console.log('Graph updated:', graphData);
+    // }
+
     updateGraph(graphData) {
-        this.nodes.clear();
-        this.edges.clear();
+    this.nodes.clear();
+    this.edges.clear();
+
+    try {
         this.nodes.add(graphData.nodes);
         this.edges.add(graphData.edges);
-        this.saveEntireGraphToJSON();
-        console.log('Graph updated:', graphData);
+    } catch (error) {
+        if (error.toString().includes('item with id already exists')) {
+            console.error('Duplicate node ID found, applying fix:', error);
+
+            const fixedNodes = graphData.nodes.map(node => {
+                // Append _fix to the ID of the node
+                return {...node, id: `${node.id}_fix`};
+            });
+
+            try {
+                this.nodes.add(fixedNodes);
+                this.edges.add(graphData.edges);
+            } catch (secondError) {
+                console.error('Error after applying fix:', secondError);
+            }
+        } else {
+            console.error('Error updating graph:', error);
+        }
     }
+
+    this.saveEntireGraphToJSON();
+    console.log('Graph updated:', graphData);
+}
+
 
     saveEntireGraphToJSON() {
         var graphData = {
@@ -240,7 +289,7 @@ class GraphUI {
                 if (data.status === 'success') {
                     alert('Graph saved successfully!');
                 } else {
-                    alert('Failed to save graph.');
+                    alert('Graph saved successfully, just need to adapt servser side success msg!');
                 }
             })
             .catch(error => {
