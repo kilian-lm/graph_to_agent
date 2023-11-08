@@ -21,12 +21,56 @@ class GraphUI {
         this.updateGraphFromJSON = this.updateGraphFromJSON.bind(this);
         this.gptPostRequest = this.gptPostRequest.bind(this);
 
+        // msg passing
+        this.createMessagePassingDropdown = this.createMessagePassingDropdown.bind(this);
+        this.handleMessagePassingChange = this.handleMessagePassingChange.bind(this);
+
+
     }
+
+    // msg passing
+
+    // Method to create and populate the message-passing dropdown
+    createMessagePassingDropdown() {
+        const techniques = [
+            {value: 'flooding', text: 'Flooding/Broadcasting'},
+            {value: 'random_walk', text: 'Random Walk'},
+            {value: 'gossip', text: 'Gossip Protocol'},
+            {value: 'shortest_path', text: 'Shortest Path Routing'},
+            {value: 'distance_vector', text: 'Distance Vector Routing'},
+            {value: 'link_state', text: 'Link State Routing'},
+            {value: 'hierarchical', text: 'Hierarchical Routing'},
+            {value: 'recursive', text: 'Recursive Message Passing'},
+            {value: 'layered', text: 'Layered Message Passing'},
+            {value: 'token_passing', text: 'Token Passing'}
+        ];
+        const dropdown = document.createElement('select');
+        dropdown.id = 'messagePassingDropdown';
+        dropdown.classList.add('custom-dropdown');
+        techniques.forEach(technique => {
+            const option = document.createElement('option');
+            option.value = technique.value;
+            option.text = technique.text;
+            dropdown.appendChild(option);
+        });
+        document.getElementById('dropdown-container').appendChild(dropdown); // Make sure to have a container with this id in your HTML
+        dropdown.addEventListener('change', this.handleMessagePassingChange);
+    }
+
+// Event handler for when a new message-passing technique is selected
+    handleMessagePassingChange(event) {
+        const selectedTechnique = event.target.value;
+        // Logic to handle message passing change goes here
+        console.log('Selected message-passing technique:', selectedTechnique);
+    }
+
 
     init() {
         this.loadAvailableGraphs();
         this.setupNetwork();
         this.attachEventListeners();
+        this.createMessagePassingDropdown();
+
     }
 
     // You'll also need to implement the resetJSON method
@@ -35,7 +79,6 @@ class GraphUI {
         console.log('JSON reset to current graph state.');
     }
 
-    // Assuming you have a triggerAgents method implemented
     triggerAgents() {
         // Logic to trigger agents would go here
         console.log('Agents triggered.');
@@ -81,7 +124,7 @@ class GraphUI {
 
 
     updateGraph(graphData) {
-    // Clear the existing data
+        // Clear the existing data
         this.nodes.clear();
         this.edges.clear();
 
@@ -102,16 +145,6 @@ class GraphUI {
         // Additional logic if needed
         console.log('Graph updated:', graphData);
     }
-
-
-    // updateGraph(graphData) {
-    //     this.nodes.clear();
-    //     this.edges.clear();
-    //     this.nodes.add(graphData.nodes);
-    //     this.edges.add(graphData.edges);
-    //     this.saveEntireGraphToJSON();
-    //     console.log('Graph updated:', graphData);
-    // }
 
 
     saveEntireGraphToJSON() {
@@ -162,6 +195,14 @@ class GraphUI {
                 this.loadGraphData(selectedGraphId);
             }
         });
+
+        const messagePassingDropdown = document.getElementById('messagePassingDropdown');
+        if (messagePassingDropdown) {
+            messagePassingDropdown.addEventListener('change', this.handleMessagePassingChange);
+        } else {
+            console.error('Message passing dropdown not found');
+        }
+
 
         // Event listeners for other buttons and inputs
         document.getElementById('applyNodeChangesButton').addEventListener('click', this.applyNodeChanges.bind(this));
