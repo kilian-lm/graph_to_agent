@@ -21,14 +21,6 @@ class GraphUI {
         this.updateGraphFromJSON = this.updateGraphFromJSON.bind(this);
         this.gptPostRequest = this.gptPostRequest.bind(this);
 
-        // Define selectionRectangle as a class property
-        this.selectionRectangle = document.createElement('div');
-        this.selectionRectangle.style.position = 'absolute';
-        this.selectionRectangle.style.border = '1px dashed #999';
-        this.selectionRectangle.style.background = 'rgba(200, 200, 200, 0.3)';
-        this.selectionRectangle.style.pointerEvents = 'none';
-        document.body.appendChild(this.selectionRectangle);
-
     }
 
     init() {
@@ -89,7 +81,7 @@ class GraphUI {
 
 
     updateGraph(graphData) {
-        // Clear the existing data
+    // Clear the existing data
         this.nodes.clear();
         this.edges.clear();
 
@@ -318,115 +310,6 @@ class GraphUI {
             console.error('Invalid JSON format:', error);
         }
     }
-
-
-    moveSelectedNodes(selectedNodes) {
-        // Implement the code to move the selected nodes as a group
-        // Example:
-        const offsetX = 50; // Adjust this based on your requirements
-        const offsetY = 50; // Adjust this based on your requirements
-
-        // Get the current positions of the selected nodes
-        const currentPositions = this.nodes.get(selectedNodes, {fields: ['x', 'y']});
-
-        // Calculate the new positions
-        const newPositions = currentPositions.map(({x, y}) => ({
-            x: x + offsetX,
-            y: y + offsetY
-        }));
-
-        // Update the positions of the selected nodes
-        this.nodes.update(newPositions);
-    }
-
-
-    updateSelection(selectedNodes) {
-        // Implement the code to visually indicate the selected nodes (e.g., change their appearance)
-        // You can add a border or change the color of the selected nodes.
-        // Example:
-        this.nodes.update(selectedNodes.map(node => ({id: node, borderWidth: 2})));
-    }
-
-    // clearSelectionArea() {
-    //     // Implement the code to clear the selection area (e.g., remove the highlighting rectangle)
-    //     // You can hide or remove the selection rectangle.
-    // }
-
-
-    highlightSelectionArea(rect) {
-        // Use this.selectionRectangle instead of selectionRectangle
-        this.selectionRectangle.style.left = rect.x + 'px';
-        this.selectionRectangle.style.top = rect.y + 'px';
-        this.selectionRectangle.style.width = rect.width + 'px';
-        this.selectionRectangle.style.height = rect.height + 'px';
-    }
-
-    selectElementsWithCursor() {
-        let startX, startY, isSelecting = false;
-        let selectedNodes = [];
-
-        this.network.on('dragStart', (event) => {
-            if (!event.nodes.length) {
-                startX = event.pointer.canvas.x;
-                startY = event.pointer.canvas.y;
-                isSelecting = true;
-                selectedNodes = [];
-            }
-        });
-
-        this.network.on('dragging', (event) => {
-            if (isSelecting) {
-                const currentX = event.pointer.canvas.x;
-                const currentY = event.pointer.canvas.y;
-                const rect = {
-                    x: Math.min(startX, currentX),
-                    y: Math.min(startY, currentY),
-                    width: Math.abs(currentX - startX),
-                    height: Math.abs(currentY - startY)
-                };
-
-                // Highlight the selection area (you can add your own styling)
-                this.highlightSelectionArea(rect);
-
-                // Convert rectangle from canvas to DOM coordinates
-                const DOMRect = this.network.canvasToDOM({
-                    x: rect.x,
-                    y: rect.y,
-                    width: rect.width,
-                    height: rect.height
-                });
-
-                // Now we need to determine which nodes fall within this rectangle
-                selectedNodes = this.nodes.getIds().filter((id) => {
-                    const nodePosition = this.network.getPositions(id)[id];
-                    const nodeDOMPosition = this.network.canvasToDOM(nodePosition);
-                    return (
-                        nodeDOMPosition.x >= DOMRect.x &&
-                        nodeDOMPosition.x <= DOMRect.x + DOMRect.width &&
-                        nodeDOMPosition.y >= DOMRect.y &&
-                        nodeDOMPosition.y <= DOMRect.y + DOMRect.height
-                    );
-                });
-
-                // Update the visual selection (you can add your own styling)
-                this.updateSelection(selectedNodes);
-            }
-        });
-
-        this.network.on('dragEnd', () => {
-            if (isSelecting) {
-                isSelecting = false;
-
-                // Move the selected nodes as a group
-                this.moveSelectedNodes(selectedNodes);
-
-                // Clear the selection area and update the visual selection
-                this.clearSelectionArea();
-                this.updateSelection(selectedNodes);
-            }
-        });
-    }
-
 }
 
 // Usage
