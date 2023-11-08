@@ -42,6 +42,7 @@ class BigQueryHandler:
         except Exception as e:
             logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
+
     def create_dataset_if_not_exists(self):
         dataset_ref = self.bigquery_client.dataset(self.dataset_id)
         try:
@@ -95,12 +96,11 @@ class BigQueryHandler:
                 "graph_id": graph_id,
                 "id": node.get('id'),
                 "label": node.get('label')
-                # Ignoring coordinates for now
             }
             for node in raw_nodes
         ]
 
-        print(nodes_for_bq)
+        logger.debug(f"nodes_for_bq: {nodes_for_bq}")
 
         # Translate edges
         edges_for_bq = [
@@ -112,7 +112,7 @@ class BigQueryHandler:
             for edge in raw_edges
         ]
 
-        print(edges_for_bq)
+        logger.debug(f"edges_for_bq: {edges_for_bq}")
 
         return nodes_for_bq, edges_for_bq
 
@@ -171,102 +171,81 @@ class BigQueryHandler:
 
             logger.debug(f"graph_data_as_dicts: {graph_data_as_dicts}")
 
-            # Pass the dictionaries to the workflow logic
-            processed_data = self.translate_graph_to_gpt_sequence(graph_data_as_dicts)
-
-            # Serialize data to json
-            json_data = json.dumps(processed_data, indent=4)
-            logger.debug(f"json_data: {json_data}")
-
-            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            filename = f"temp_local/processed_graph_{timestamp}.json"
-
-            # Check if the temp_local directory exists
-            if not os.path.exists('temp_local'):
-                os.makedirs('temp_local')
-
-            # Save the JSON data to the file
-            with open(filename, 'w') as json_file:
-                json_file.write(json_data)
-
             # Return both BigQuery errors and processed data
             return {
                 "bigquery_errors": all_errors,
-                "processed_data": processed_data,
-                "json_file": filename
             }
 
         except Exception as e:
             logger.exception("An unexpected error occurred during save_graph_data:")
         raise
 
-
     # A helper function to determine a node's type (user, system, or content)
-    def get_node_type(self, node):
-        if 'user' in node['label'].lower():
-            return 'user'
-        elif 'system' in node['label'].lower():
-            return 'system'
-        else:
-            return 'content'
+    # def get_node_type(self, node):
+    #     if 'user' in node['label'].lower():
+    #         return 'user'
+    #     elif 'system' in node['label'].lower():
+    #         return 'system'
+    #     else:
+    #         return 'content'
 
-    def translate_graph_to_gpt_sequence(self, graph_data):
-        nodes = graph_data["nodes"]
-        edges = graph_data["edges"]
-
-        # Build a mapping of node IDs to nodes
-        node_mapping = {node['id']: node for node in nodes}
-
-        # Initialize the data structure
-        translated_data = {
-            "model": os.getenv("MODEL"),
-            "messages": []
-        }
-
-        # Define valid transitions
-        valid_transitions = {
-            'user': 'content',
-            'content': 'system',
-            'system': 'content'
-        }
-
-        # Start from 'user' nodes and follow the valid transitions
-        current_expected = 'user'
-
-        for edge in edges:
-            from_node = node_mapping[edge['from']]
-            to_node = node_mapping[edge['to']]
-
-            from_node_type = self.get_node_type(from_node)
-            to_node_type = self.get_node_type(to_node)
-
-            # Validate the transition
-            if from_node_type == current_expected and valid_transitions.get(from_node_type) == to_node_type:
-                # Append the content of the 'to' node if it's a 'content' node
-                if to_node_type == 'content':
-                    translated_data['messages'].append({
-                        "role": from_node_type,
-                        "content": to_node['label']
-                    })
-                # Update the expected type for the next node
-                current_expected = to_node_type
-
-            # Reset to 'user' after a 'system' to 'content' transition
-            if from_node_type == 'system' and to_node_type == 'content':
-                current_expected = 'user'
-
-        # Serialize data to json
-        json_data = json.dumps(translated_data, indent=4)
-        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        json_filename = f"processed_graph_{timestamp}.json"
-
-        with open(json_filename, "w") as json_file:
-            json_file.write(json_data)
-
-        return {
-            'bigquery_errors': {'node_errors': [], 'edge_errors': []},
-            'processed_data': translated_data
-        }
+    # def translate_graph_to_gpt_sequence(self, graph_data):
+    #     nodes = graph_data["nodes"]
+    #     edges = graph_data["edges"]
+    #
+    #     # Build a mapping of node IDs to nodes
+    #     node_mapping = {node['id']: node for node in nodes}
+    #
+    #     # Initialize the data structure
+    #     translated_data = {
+    #         "model": os.getenv("MODEL"),
+    #         "messages": []
+    #     }
+    #
+    #     # Define valid transitions
+    #     valid_transitions = {
+    #         'user': 'content',
+    #         'content': 'system',
+    #         'system': 'content'
+    #     }
+    #
+    #     # Start from 'user' nodes and follow the valid transitions
+    #     current_expected = 'user'
+    #
+    #     for edge in edges:
+    #         from_node = node_mapping[edge['from']]
+    #         to_node = node_mapping[edge['to']]
+    #
+    #         from_node_type = self.get_node_type(from_node)
+    #         to_node_type = self.get_node_type(to_node)
+    #
+    #         # Validate the transition
+    #         if from_node_type == current_expected and valid_transitions.get(from_node_type) == to_node_type:
+    #             # Append the content of the 'to' node if it's a 'content' node
+    #             if to_node_type == 'content':
+    #                 translated_data['messages'].append({
+    #                     "role": from_node_type,
+    #                     "content": to_node['label']
+    #                 })
+    #             # Update the expected type for the next node
+    #             current_expected = to_node_type
+    #
+    #         # Reset to 'user' after a 'system' to 'content' transition
+    #         if from_node_type == 'system' and to_node_type == 'content':
+    #             current_expected = 'user'
+    #
+    #     # Serialize data to json
+    #     json_data = json.dumps(translated_data, indent=4)
+    #     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    #     json_filename = f"processed_graph_{timestamp}.json"
+    #
+    #     with open(json_filename, "w") as json_file:
+    #         json_file.write(json_data)
+    #
+    #     return {
+    #         'bigquery_errors': {'node_errors': [], 'edge_errors': []},
+    #         'processed_data': translated_data
+    #     }
 
     def load_graph_data_by_id(self, graph_id):
         nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
@@ -296,28 +275,24 @@ class BigQueryHandler:
 
         return [{"graph_id": row["graph_id"], "graph_name": row["graph_id"]} for row in results]
 
-    def extract_and_send_to_gpt(self, processed_data):
-
-        # Prepare the data for the POST request
-        # Assuming 'processed_data' contains the necessary format for GPT-4 API
-        post_data = {
-            "model": os.getenv("MODEL"),
-            "messages": processed_data["messages"]
-        }
-
-        # Send POST request to GPT
-        response = requests.post(self.openai_base_url, headers=self.headers, json=post_data)
-
-        # Check if the request was successful and extract PUML content
-        if response.status_code == 200:
-            agent_content = response.json()["choices"][0]["message"]["content"]
-            return agent_content
-        else:
-            raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
-
-
-
-
+    # def extract_and_send_to_gpt(self, processed_data):
+    #
+    #     # Prepare the data for the POST request
+    #     # Assuming 'processed_data' contains the necessary format for GPT-4 API
+    #     post_data = {
+    #         "model": os.getenv("MODEL"),
+    #         "messages": processed_data["messages"]
+    #     }
+    #
+    #     # Send POST request to GPT
+    #     response = requests.post(self.openai_base_url, headers=self.headers, json=post_data)
+    #
+    #     # Check if the request was successful and extract PUML content
+    #     if response.status_code == 200:
+    #         agent_content = response.json()["choices"][0]["message"]["content"]
+    #         return agent_content
+    #     else:
+    #         raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
 
 # openai_api_key = os.getenv('OPEN_AI_KEY')
 # open_ai_url = "https://api.openai.com/v1/chat/completions"
