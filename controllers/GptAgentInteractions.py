@@ -11,13 +11,9 @@ from google.cloud import bigquery
 import json
 import datetime
 import requests
-
-# from controllers.BigQueryHandler import BigQueryHandler
+from logger.CustomLogger import CustomLogger
 
 load_dotenv()
-
-logging.basicConfig(level=logging.DEBUG)  # You can change the level as needed.
-logger = logging.getLogger(__name__)
 
 
 class GptAgentInteractions:
@@ -30,6 +26,7 @@ class GptAgentInteractions:
             'Authorization': f'Bearer {self.openai_api_key}'
         }
         self.dataset_id = dataset_id
+        self.logger = CustomLogger()
         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
 
         try:
@@ -37,40 +34,40 @@ class GptAgentInteractions:
             self.bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
             self.bigquery_client = bigquery.Client(credentials=self.bq_client_secrets,
                                                    project=self.bq_client_secrets.project_id)
-            logger.info("BigQuery client successfully initialized.")
+            self.logger.info("BigQuery client successfully initialized.")
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
+            self.logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
             raise
         except Exception as e:
-            logger.error(f"An error occurred while initializing the BigQuery client: {e}")
+            self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
     def create_dataset_if_not_exists(self):
         dataset_ref = self.bigquery_client.dataset(self.dataset_id)
         try:
             self.bigquery_client.get_dataset(dataset_ref)
-            logger.info(f"Dataset {self.dataset_id} already exists.")
+            self.logger.info(f"Dataset {self.dataset_id} already exists.")
         except Exception as e:
             try:
                 dataset = bigquery.Dataset(dataset_ref)
                 self.bigquery_client.create_dataset(dataset)
-                logger.info(f"Dataset {self.dataset_id} created.")
+                self.logger.info(f"Dataset {self.dataset_id} created.")
             except Exception as ex:
-                logger.error(f"Failed to create dataset {self.dataset_id}: {ex}")
+                self.logger.error(f"Failed to create dataset {self.dataset_id}: {ex}")
                 raise
 
     def create_table_if_not_exists(self, table_id, schema):
         table_ref = self.bigquery_client.dataset(self.dataset_id).table(table_id)
         try:
             self.bigquery_client.get_table(table_ref)
-            logger.info(f"Table {table_id} already exists.")
+            self.logger.info(f"Table {table_id} already exists.")
         except Exception as e:
             try:
                 table = bigquery.Table(table_ref, schema=schema)
                 self.bigquery_client.create_table(table)
-                logger.info(f"Table {table_id} created.")
+                self.logger.info(f"Table {table_id} created.")
             except Exception as ex:
-                logger.error(f"Failed to create table {table_id}: {ex}")
+                self.logger.error(f"Failed to create table {table_id}: {ex}")
                 raise
 
     def get_node_schema(self):
@@ -105,7 +102,7 @@ class GptAgentInteractions:
         nodes_results = nodes_query_job.result()
         nodes = [{"id": row['id'], "label": row['label']} for row in nodes_results]
 
-        logger.info(f"nodes loaded by graph id {nodes} already exists.")
+        self.logger.info(f"nodes loaded by graph id {nodes} already exists.")
 
         # Fetch edges for given graph_id
         edges_query = f"SELECT * FROM `{self.dataset_id}.edges_table` WHERE graph_id = '{graph_id}'"
@@ -130,7 +127,7 @@ class GptAgentInteractions:
             for node in raw_nodes
         ]
 
-        logger.debug(f"nodes_for_bq: {nodes_for_bq}")
+        print(f"nodes_for_bq: {nodes_for_bq}")
 
         # Translate edges
         edges_for_bq = [
@@ -142,7 +139,7 @@ class GptAgentInteractions:
             for edge in raw_edges
         ]
 
-        logger.debug(f"edges_for_bq: {edges_for_bq}")
+        print(f"edges_for_bq: {edges_for_bq}")
 
         return nodes_for_bq, edges_for_bq
 
@@ -240,30 +237,30 @@ class GptAgentInteractions:
 
         nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
         # Log the transformed data for debugging
-        logger.debug(f"extract_gpt_interactions_before_save, Transformed Nodes: {nodes_for_bq}")
-        logger.debug(f"extract_gpt_interactions_before_save, Transformed Edges: {edges_for_bq}")
+        print(f"extract_gpt_interactions_before_save, Transformed Nodes: {nodes_for_bq}")
+        print(f"extract_gpt_interactions_before_save, Transformed Edges: {edges_for_bq}")
 
         graph_data_as_dicts = {
             "nodes": nodes_for_bq,
             "edges": edges_for_bq
         }
 
-        logger.debug(f"extract_gpt_interactions_before_save, graph_data_as_dicts: {graph_data_as_dicts}")
+        print(f"extract_gpt_interactions_before_save, graph_data_as_dicts: {graph_data_as_dicts}")
 
         # Pass the dictionaries to the workflow logic
         processed_data = self.translate_graph_to_gpt_sequence(graph_data_as_dicts)
 
         processed_data = processed_data["processed_data"]
-        logger.debug(f"processed_data: {processed_data}")
+        print(f"processed_data: {processed_data}")
         agent_content = self.extract_and_send_to_gpt(processed_data)
-        logger.debug(f"agent_content: {agent_content}")
+        print(f"agent_content: {agent_content}")
 
     def get_last_content_node(self, edges, nodes):
         # Assuming edges are ordered
         last_edge = edges[-1]
         last_node_id = last_edge['to']
 
-        logger.debug(f"get_last_content_node, last_node_id : {last_node_id}")
+        print(f"get_last_content_node, last_node_id : {last_node_id}")
 
         for node in nodes:
             if node['id'] == last_node_id:
@@ -284,7 +281,7 @@ class GptAgentInteractions:
     def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
         last_content_node = self.get_last_content_node(graph_data['edges'], graph_data['nodes'])
 
-        logger.debug(f"process_gpt_response_and_update_graph, last_content_node : {last_content_node}")
+        print(f"process_gpt_response_and_update_graph, last_content_node : {last_content_node}")
 
         # Generate a unique ID for the new node
         new_node_id = f"agent_response_based_on{last_content_node['id']}"
@@ -293,7 +290,7 @@ class GptAgentInteractions:
             'label': gpt_response,
         }
 
-        logger.debug(f"process_gpt_response_and_update_graph, new_node : {new_node}")
+        print(f"process_gpt_response_and_update_graph, new_node : {new_node}")
 
         # Check if a node with the new ID already exists
         existing_node_ids = {node['id'] for node in graph_data['nodes']}
@@ -305,86 +302,166 @@ class GptAgentInteractions:
                 'to': new_node_id,
             }
             graph_data['edges'].append(new_edge)
-            logger.debug(f"process_gpt_response_and_update_graph, new_edge : {new_edge}")
+            print(f"process_gpt_response_and_update_graph, new_edge : {new_edge}")
         else:
-            logger.warning(f"Node with ID {new_node_id} already exists. Skipping node and edge addition.")
+            print(f"Node with ID {new_node_id} already exists. Skipping node and edge addition.")
 
-        logger.debug(f"process_gpt_response_and_update_graph, graph_data : {graph_data}")
+        print(f"process_gpt_response_and_update_graph, graph_data : {graph_data}")
 
         # debugging:
         graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         self.save_graph_data(graph_data, graph_id)
         return graph_data
 
-    def populate_variable_nodes(self, graph_data, gpt_response, recursion_depth=0):
-        import re
+    def populate_variable_nodes(self, graph_data, gpt_response):
+        # Iterate through the nodes in the graph_data
+        for node in graph_data['nodes']:
+            # Check if the node contains '@variable'
+            if '@variable' in node['label']:
+                # Replace '@variable' with the GPT response
+                node['label'] = node['label'].replace('@variable', gpt_response)
 
-        nodes = graph_data["nodes"]
-        edges = graph_data["edges"]
-
-        # Regular expression to find @variable placeholders with optional suffix
-        variable_pattern = re.compile(r'@variable(?:_(\d+))?')
-
-        # Track the versions of variables
-        variable_versions = {}
-
-        for node in nodes:
-            logger.debug(f"Processing node with id {node['id']} and label {node['label']}")
-
-            content = node['label']
-            matches = list(variable_pattern.finditer(content))
-            matches.sort(key=lambda match: int(match.group(1)) if match.group(1) else 0)
-
-            for match in matches:
-                suffix = match.group(1)
-                variable_full = match.group(0)
-
-                if suffix:
-                    logger.debug(f"Found versioned variable with suffix {suffix} in node {node['id']}")
-                    logger.debug(f"Found base @variable in node {node['id']}")
-
-                    # This is a versioned variable
-                    required_version = int(suffix)
-                    versioned_node_id = f"{node['id']}_v{required_version}"
-
-                    if versioned_node_id in variable_versions:
-                        # Use the versioned content
-                        previous_content = variable_versions[versioned_node_id]
-                        updated_content = content.replace(variable_full, previous_content)
-                    else:
-                        # Recursive call to resolve variable
-                        processed_data = self.translate_graph_to_gpt_sequence(graph_data)
-                        gpt_response = self.get_gpt_response(processed_data)
-                        self.populate_variable_nodes(graph_data, gpt_response, recursion_depth + 1)
-                        logger.debug(f"Populating variable nodes at recursion depth {recursion_depth}")
-
-                    # Update node label with resolved content
-                    node['label'] = updated_content
-                    node['id'] = versioned_node_id  # Update node ID with version
-                    variable_versions[node['id']] = updated_content
-                else:
-                    # It's the base @variable
-                    updated_content = content.replace(variable_full, gpt_response)
-                    node['label'] = updated_content
-                    logger.debug(f"Node {node['id']} updated to {node['label']}")
-
-                    versioned_node_id = f"{node['id']}_v{recursion_depth + 1}"
-                    node['id'] = versioned_node_id
-                    variable_versions[node['id']] = updated_content
-
-        # Update edges to point to the new versioned node IDs
-        for edge in edges:
-            if edge['from'] in variable_versions:
-                edge['from'] += f"_v{recursion_depth + 1}"
-            if edge['to'] in variable_versions:
-                edge['to'] += f"_v{recursion_depth + 1}"
-
-        # Save the updated nodes and edges
-        self.save_graph_data(nodes, edges)
-
-        logger.debug(f"Saving updated graph data with nodes: {graph_data['nodes']} and edges: {graph_data['edges']}")
+                # Assign a versioned node ID
+                node['id'] = f"{node['id']}_v1"  # Assuming recursion_depth is always 1 for simplicity
 
         return graph_data
+
+    # def populate_variable_nodes(self, graph_data, gpt_response, recursion_depth=0):
+    #     import re
+    #
+    #     nodes = graph_data["nodes"]
+    #     edges = graph_data["edges"]
+    #
+    #     # Regular expression to find @variable placeholders with optional suffix
+    #     variable_pattern = re.compile(r'@variable(?:_(\d+))?')
+    #
+    #     # Track the versions of variables
+    #     variable_versions = {}
+    #
+    #     for node in nodes:
+    #         print(f"Processing node with id {node['id']} and label {node['label']}")
+    #
+    #         content = node['label']
+    #         matches = list(variable_pattern.finditer(content))
+    #         matches.sort(key=lambda match: int(match.group(1)) if match.group(1) else 0)
+    #
+    #         for match in matches:
+    #             suffix = match.group(1)
+    #             variable_full = match.group(0)
+    #
+    #             if suffix:
+    #                 print(f"Found versioned variable with suffix {suffix} in node {node['id']}")
+    #                 print(f"Found base @variable in node {node['id']}")
+    #
+    #                 # This is a versioned variable
+    #                 required_version = int(suffix)
+    #                 versioned_node_id = f"{node['id']}_v{required_version}"
+    #
+    #                 if versioned_node_id in variable_versions:
+    #                     # Use the versioned content
+    #                     previous_content = variable_versions[versioned_node_id]
+    #                     updated_content = content.replace(variable_full, previous_content)
+    #                 else:
+    #                     # Recursive call to resolve variable
+    #                     updated_graph = self.populate_variable_nodes(graph_data, gpt_response, recursion_depth + 1)
+    #                     updated_node = next(node for node in updated_graph['nodes'] if node['id'] == versioned_node_id)
+    #                     previous_content = updated_node['label']
+    #                     updated_content = content.replace(variable_full, previous_content)
+    #
+    #                 # Update node label with resolved content
+    #                 node['label'] = updated_content
+    #                 node['id'] = versioned_node_id  # Update node ID with version
+    #                 variable_versions[node['id']] = updated_content
+    #             else:
+    #                 # It's the base @variable
+    #                 updated_content = content.replace(variable_full, gpt_response)
+    #                 node['label'] = updated_content
+    #                 print(f"Node {node['id']} updated to {node['label']}")
+    #
+    #                 versioned_node_id = f"{node['id']}_v{recursion_depth + 1}"
+    #                 node['id'] = versioned_node_id
+    #                 variable_versions[node['id']] = updated_content
+    #
+    #     # Update edges to point to the new versioned node IDs
+    #     for edge in edges:
+    #         if edge['from'] in variable_versions:
+    #             edge['from'] += f"_v{recursion_depth + 1}"
+    #         if edge['to'] in variable_versions:
+    #             edge['to'] += f"_v{recursion_depth + 1}"
+    #
+    #     return graph_data
+
+    # def populate_variable_nodes(self, graph_data, gpt_response, recursion_depth=0):
+    #     import re
+    #
+    #     nodes = graph_data["nodes"]
+    #     edges = graph_data["edges"]
+    #
+    #     # Regular expression to find @variable placeholders with optional suffix
+    #     variable_pattern = re.compile(r'@variable(?:_(\d+))?')
+    #
+    #     # Track the versions of variables
+    #     variable_versions = {}
+    #
+    #     for node in nodes:
+    #         print(f"Processing node with id {node['id']} and label {node['label']}")
+    #
+    #         content = node['label']
+    #         matches = list(variable_pattern.finditer(content))
+    #         matches.sort(key=lambda match: int(match.group(1)) if match.group(1) else 0)
+    #
+    #         for match in matches:
+    #             suffix = match.group(1)
+    #             variable_full = match.group(0)
+    #
+    #             if suffix:
+    #                 print(f"Found versioned variable with suffix {suffix} in node {node['id']}")
+    #                 print(f"Found base @variable in node {node['id']}")
+    #
+    #                 # This is a versioned variable
+    #                 required_version = int(suffix)
+    #                 versioned_node_id = f"{node['id']}_v{required_version}"
+    #
+    #                 if versioned_node_id in variable_versions:
+    #                     # Use the versioned content
+    #                     previous_content = variable_versions[versioned_node_id]
+    #                     updated_content = content.replace(variable_full, previous_content)
+    #                 else:
+    #                     # Recursive call to resolve variable
+    #                     processed_data = self.translate_graph_to_gpt_sequence(graph_data)
+    #                     print(f"populate_variable_nodes, processed_data {processed_data}")
+    #
+    #                     gpt_response = self.get_gpt_response(processed_data)
+    #                     self.populate_variable_nodes(graph_data, gpt_response, recursion_depth + 1)
+    #                     print(f"Populating variable nodes at recursion depth {recursion_depth}")
+    #
+    #                 # Update node label with resolved content
+    #                 node['label'] = updated_content
+    #                 node['id'] = versioned_node_id  # Update node ID with version
+    #                 variable_versions[node['id']] = updated_content
+    #             else:
+    #                 # It's the base @variable
+    #                 updated_content = content.replace(variable_full, gpt_response)
+    #                 node['label'] = updated_content
+    #                 print(f"Node {node['id']} updated to {node['label']}")
+    #
+    #                 versioned_node_id = f"{node['id']}_v{recursion_depth + 1}"
+    #                 node['id'] = versioned_node_id
+    #                 variable_versions[node['id']] = updated_content
+    #
+    #     # Update edges to point to the new versioned node IDs
+    #     for edge in edges:
+    #         if edge['from'] in variable_versions:
+    #             edge['from'] += f"_v{recursion_depth + 1}"
+    #         if edge['to'] in variable_versions:
+    #             edge['to'] += f"_v{recursion_depth + 1}"
+    #
+    #     # Save the updated nodes and edges
+    #     self.save_graph_data(nodes, edges)
+    #
+    #     print(f"Saving updated graph data with nodes: {graph_data['nodes']} and edges: {graph_data['edges']}")
+    #
+    #     return graph_data
 
     def save_graph_data(self, graph_data, graph_id):
         try:
@@ -408,20 +485,20 @@ class GptAgentInteractions:
             nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
 
             # Log the transformed data for debugging
-            logger.debug(f"controller save_graph_data, Transformed Nodes: {nodes_for_bq}")
-            logger.debug(f"controller save_graph_data, Transformed Edges: {edges_for_bq}")
+            print(f"controller save_graph_data, Transformed Nodes: {nodes_for_bq}")
+            print(f"controller save_graph_data, Transformed Edges: {edges_for_bq}")
 
             # Insert nodes and pass in the schema explicitly
             errors_nodes = self.bigquery_client.insert_rows(nodes_table, nodes_for_bq,
                                                             selected_fields=nodes_table.schema)
             if errors_nodes:
-                logger.warning(f"Encountered errors while inserting nodes: {errors_nodes}")
+                print(f"Encountered errors while inserting nodes: {errors_nodes}")
 
             # Insert edges and pass in the schema explicitly
             errors_edges = self.bigquery_client.insert_rows(edges_table, edges_for_bq,
                                                             selected_fields=edges_table.schema)
             if errors_edges:
-                logger.warning(f"Encountered errors while inserting edges: {errors_edges}")
+                print(f"Encountered errors while inserting edges: {errors_edges}")
 
             # Compile all errors
             all_errors = {
@@ -430,7 +507,7 @@ class GptAgentInteractions:
             }
 
             if errors_nodes or errors_edges:
-                logger.error("Errors occurred during the saving of graph data.")
+                self.logger.error("Errors occurred during the saving of graph data.")
 
             # Save the transformed data as dictionaries for the workflow
             # This assumes that the data is already in a dictionary format suitable for the workflow
@@ -439,7 +516,7 @@ class GptAgentInteractions:
                 "edges": edges_for_bq
             }
 
-            logger.debug(f"graph_data_as_dicts: {graph_data_as_dicts}")
+            print(f"graph_data_as_dicts: {graph_data_as_dicts}")
 
             # Return both BigQuery errors and processed data
             return {
@@ -447,7 +524,7 @@ class GptAgentInteractions:
             }
 
         except Exception as e:
-            logger.exception("An unexpected error occurred during save_graph_data:")
+            self.logger.error("An unexpected error occurred during save_graph_data:")
         raise
 
 # GptAgentInteractions
