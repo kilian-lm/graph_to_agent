@@ -76,7 +76,7 @@ class App:
                 # Call the populate_variable_nodes method
                 # Note: You need to obtain the initial GPT response to populate the base @variable
                 initial_gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
-                graph_data = self.gpt_agent_interactions.populate_variable_nodes(graph_data, initial_gpt_response)
+                updated_graph = self.gpt_agent_interactions.populate_variable_nodes(graph_data, initial_gpt_response)
             else:
                 # Continue with the legacy workflow
                 gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
