@@ -317,12 +317,10 @@ class GptAgentInteractions:
         return graph_data
 
     def populate_variable_nodes(self, graph_data, gpt_response, recursion_depth=0):
-        """
-        Populate @variable placeholders with GPT responses and handle versioning.
-        """
         import re
 
         nodes = graph_data["nodes"]
+        edges = graph_data["edges"]
 
         # Regular expression to find @variable placeholders with optional suffix
         variable_pattern = re.compile(r'@variable(?:_(\d+))?')
@@ -331,10 +329,10 @@ class GptAgentInteractions:
         variable_versions = {}
 
         for node in nodes:
+            logger.debug(f"Processing node with id {node['id']} and label {node['label']}")
+
             content = node['label']
             matches = list(variable_pattern.finditer(content))
-
-            # Sort matches by the numeric suffix, so we handle them in order
             matches.sort(key=lambda match: int(match.group(1)) if match.group(1) else 0)
 
             for match in matches:
@@ -342,31 +340,49 @@ class GptAgentInteractions:
                 variable_full = match.group(0)
 
                 if suffix:
-                    # This is a versioned variable, get the previous version
-                    required_version = int(suffix) - 1
-                    previous_version_id = f"{node['id']}_@variable_{required_version}"
+                    logger.debug(f"Found versioned variable with suffix {suffix} in node {node['id']}")
+                    logger.debug(f"Found base @variable in node {node['id']}")
 
-                    if required_version > 0 and previous_version_id in variable_versions:
-                        # Use the previous version's content
-                        previous_content = variable_versions[previous_version_id]
+                    # This is a versioned variable
+                    required_version = int(suffix)
+                    versioned_node_id = f"{node['id']}_v{required_version}"
+
+                    if versioned_node_id in variable_versions:
+                        # Use the versioned content
+                        previous_content = variable_versions[versioned_node_id]
                         updated_content = content.replace(variable_full, previous_content)
-                        node['label'] = updated_content
-                        variable_versions[node['id']] = updated_content
                     else:
-                        # Need to get the response from GPT for the previous version
+                        # Recursive call to resolve variable
                         processed_data = self.translate_graph_to_gpt_sequence(graph_data)
                         gpt_response = self.get_gpt_response(processed_data)
-                        # Call this function recursively until the base variable is resolved
                         self.populate_variable_nodes(graph_data, gpt_response, recursion_depth + 1)
+                        logger.debug(f"Populating variable nodes at recursion depth {recursion_depth}")
+
+                    # Update node label with resolved content
+                    node['label'] = updated_content
+                    node['id'] = versioned_node_id  # Update node ID with version
+                    variable_versions[node['id']] = updated_content
                 else:
-                    # It's the base @variable, replace with the current GPT response
+                    # It's the base @variable
                     updated_content = content.replace(variable_full, gpt_response)
                     node['label'] = updated_content
+                    logger.debug(f"Node {node['id']} updated to {node['label']}")
+
+                    versioned_node_id = f"{node['id']}_v{recursion_depth + 1}"
+                    node['id'] = versioned_node_id
                     variable_versions[node['id']] = updated_content
 
-                # Save the graph data with the updated node
-                graph_id = f"{self.dataset_id}_version_{recursion_depth}"
-                self.save_graph_data(graph_data, graph_id)
+        # Update edges to point to the new versioned node IDs
+        for edge in edges:
+            if edge['from'] in variable_versions:
+                edge['from'] += f"_v{recursion_depth + 1}"
+            if edge['to'] in variable_versions:
+                edge['to'] += f"_v{recursion_depth + 1}"
+
+        # Save the updated nodes and edges
+        self.save_graph_data(nodes, edges)
+
+        logger.debug(f"Saving updated graph data with nodes: {graph_data['nodes']} and edges: {graph_data['edges']}")
 
         return graph_data
 
