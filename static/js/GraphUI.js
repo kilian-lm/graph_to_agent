@@ -21,6 +21,17 @@ class GraphUI {
         this.updateGraphFromJSON = this.updateGraphFromJSON.bind(this);
         this.gptPostRequest = this.gptPostRequest.bind(this);
 
+        // physics
+
+        this.defaultPhysics = {
+            centralGravity: 0.01,
+            springLength: 50,
+            springConstant: 0.01,
+            nodeDistance: 50,
+            damping: 0.1,
+            solver: 'hierarchicalRepulsion'
+        };
+
         // msg passing
         this.createMessagePassingDropdown = this.createMessagePassingDropdown.bind(this);
         this.handleMessagePassingChange = this.handleMessagePassingChange.bind(this);
@@ -202,14 +213,14 @@ class GraphUI {
             },
             physics: {
                 enabled: true,
-                hierarchicalRepulsion: {
-                    centralGravity: 0.0,
-                    springLength: 10,
-                    springConstant: 0.01,
-                    nodeDistance: 100,
-                    damping: 0.02
+                [this.defaultPhysics.solver]: {
+                    centralGravity: this.defaultPhysics.centralGravity,
+                    springLength: this.defaultPhysics.springLength,
+                    springConstant: this.defaultPhysics.springConstant,
+                    nodeDistance: this.defaultPhysics.nodeDistance,
+                    damping: this.defaultPhysics.damping
                 },
-                solver: 'hierarchicalRepulsion'
+                solver: this.defaultPhysics.solver
             }
         };
 
@@ -217,6 +228,23 @@ class GraphUI {
     }
 
     attachEventListeners() {
+
+        // Set the initial values for the HTML elements from the default physics settings
+        document.getElementById('centralGravity').value = this.defaultPhysics.centralGravity;
+        document.getElementById('springLength').value = this.defaultPhysics.springLength;
+        document.getElementById('springConstant').value = this.defaultPhysics.springConstant;
+        document.getElementById('nodeDistance').value = this.defaultPhysics.nodeDistance;
+        document.getElementById('damping').value = this.defaultPhysics.damping;
+        document.getElementById('physicsSolver').value = this.defaultPhysics.solver;
+
+        // Update physics settings when control values are changed by the user
+        document.getElementById('centralGravity').addEventListener('change', () => this.updatePhysics());
+        document.getElementById('springLength').addEventListener('change', () => this.updatePhysics());
+        document.getElementById('springConstant').addEventListener('change', () => this.updatePhysics());
+        document.getElementById('nodeDistance').addEventListener('change', () => this.updatePhysics());
+        document.getElementById('damping').addEventListener('change', () => this.updatePhysics());
+        document.getElementById('physicsSolver').addEventListener('change', () => this.updatePhysics());
+
         // Event listener for graph selection dropdown
         document.getElementById('graphDropdown').addEventListener('change', (event) => {
             const selectedGraphId = event.target.value;
@@ -360,25 +388,32 @@ class GraphUI {
     }
 
     updatePhysics() {
+        // Get the values from the HTML elements
         var centralGravity = parseFloat(document.getElementById("centralGravity").value);
         var springLength = parseInt(document.getElementById("springLength").value);
         var springConstant = parseFloat(document.getElementById("springConstant").value);
         var nodeDistance = parseInt(document.getElementById("nodeDistance").value);
         var damping = parseFloat(document.getElementById("damping").value);
+        var solver = document.getElementById("physicsSolver").value;
+
+        // Apply the new physics settings to the network
         var newOptions = {
             physics: {
-                hierarchicalRepulsion: {
+                enabled: true,
+                [solver]: {
                     centralGravity: centralGravity,
                     springLength: springLength,
                     springConstant: springConstant,
                     nodeDistance: nodeDistance,
                     damping: damping
-                }
+                },
+                solver: solver
             }
         };
         this.network.setOptions(newOptions);
         console.log('Physics updated:', newOptions);
     }
+
 
     updateGraphFromJSON() {
         var jsonData = document.getElementById('jsonData').value;
