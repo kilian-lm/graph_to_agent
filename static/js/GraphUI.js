@@ -25,7 +25,40 @@ class GraphUI {
         this.createMessagePassingDropdown = this.createMessagePassingDropdown.bind(this);
         this.handleMessagePassingChange = this.handleMessagePassingChange.bind(this);
 
+        // add copy-paste
+        this.copiedData = null;
 
+    }
+
+    // add copy
+    copySelection() {
+        const selectedNodes = this.nodes.get(this.network.getSelectedNodes());
+        const selectedEdges = this.edges.get(this.network.getSelectedEdges());
+
+        const timestamp = new Date().getTime();
+        this.copiedData = {
+            nodes: selectedNodes.map(node => ({...node, id: `copied-${timestamp}-${node.id}`})),
+            edges: selectedEdges.map(edge => ({
+                ...edge,
+                id: `copied-${timestamp}-${edge.id}`,
+                from: selectedNodes.some(n => n.id === edge.from) ? `copied-${timestamp}-${edge.from}` : edge.from,
+                to: selectedNodes.some(n => n.id === edge.to) ? `copied-${timestamp}-${edge.to}` : edge.to,
+            }))
+        };
+    }
+
+    // paste functionality
+    pasteSelection() {
+        if (!this.copiedData) {
+            alert('No nodes copied!');
+            return;
+        }
+
+        this.nodes.add(this.copiedData.nodes);
+        this.edges.add(this.copiedData.edges);
+
+        // Clear the copiedData after pasting
+        this.copiedData = null;
     }
 
     // msg passing
@@ -193,12 +226,25 @@ class GraphUI {
             }
         });
 
+        // ToDo :: Message passing dropdown  (still to do, but very complex, consider RL)
+
         const messagePassingDropdown = document.getElementById('messagePassingDropdown');
         if (messagePassingDropdown) {
             messagePassingDropdown.addEventListener('change', this.handleMessagePassingChange);
         } else {
             console.error('Message passing dropdown not found');
         }
+
+        // Add event listeners for copy and paste actions
+        document.addEventListener('keydown', (event) => {
+            if (event.ctrlKey && event.key === 'c') { // Ctrl+C for copy
+                event.preventDefault(); // Prevent the default copy action
+                this.copySelection();
+            } else if (event.ctrlKey && event.key === 'v') { // Ctrl+V for paste
+                event.preventDefault(); // Prevent the default paste action
+                this.pasteSelection();
+            }
+        });
 
 
         // Event listeners for other buttons and inputs
