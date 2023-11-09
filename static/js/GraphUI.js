@@ -204,9 +204,9 @@ class GraphUI {
                 enabled: true,
                 hierarchicalRepulsion: {
                     centralGravity: 0.0,
-                    springLength: 400,
+                    springLength: 10,
                     springConstant: 0.01,
-                    nodeDistance: 420,
+                    nodeDistance: 100,
                     damping: 0.02
                 },
                 solver: 'hierarchicalRepulsion'
