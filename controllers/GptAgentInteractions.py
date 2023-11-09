@@ -87,6 +87,34 @@ class GptAgentInteractions:
             bigquery.SchemaField("to", "STRING", mode="REQUIRED")
         ]
 
+    def get_available_graphs(self):
+        # Query to get distinct graph_ids from the nodes_table
+        query = f"SELECT DISTINCT graph_id FROM `{self.dataset_id}.nodes_table`"
+        query_job = self.bigquery_client.query(query)
+        results = query_job.result()
+
+        return [{"graph_id": row["graph_id"], "graph_name": row["graph_id"]} for row in results]
+
+    def load_graph_data_by_id(self, graph_id):
+        nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
+        edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
+
+        # Fetch nodes for given graph_id
+        nodes_query = f"SELECT * FROM `{self.dataset_id}.nodes_table` WHERE graph_id = '{graph_id}'"
+        nodes_query_job = self.bigquery_client.query(nodes_query)
+        nodes_results = nodes_query_job.result()
+        nodes = [{"id": row['id'], "label": row['label']} for row in nodes_results]
+
+        logger.info(f"nodes loaded by graph id {nodes} already exists.")
+
+        # Fetch edges for given graph_id
+        edges_query = f"SELECT * FROM `{self.dataset_id}.edges_table` WHERE graph_id = '{graph_id}'"
+        edges_query_job = self.bigquery_client.query(edges_query)
+        edges_results = edges_query_job.result()
+        edges = [{"from": row['from'], "to": row['to']} for row in edges_results]
+
+        return {"nodes": nodes, "edges": edges}
+
     def translate_graph_data_for_bigquery(self, graph_data, graph_id):
         # Extract nodes and edges from the graph data
         raw_nodes = graph_data.get('nodes', [])
@@ -242,6 +270,17 @@ class GptAgentInteractions:
                 return node
         return None
 
+    def get_gpt_response(self, processed_data):
+        post_data = {
+            "model": os.getenv("MODEL"),
+            "messages": processed_data["messages"]
+        }
+        response = requests.post(self.openai_base_url, headers=self.headers, json=post_data)
+        if response.status_code == 200:
+            return response.json()["choices"][0]["message"]["content"]
+        else:
+            raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
+
     def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
         last_content_node = self.get_last_content_node(graph_data['edges'], graph_data['nodes'])
 
@@ -277,6 +316,59 @@ class GptAgentInteractions:
         self.save_graph_data(graph_data, graph_id)
         return graph_data
 
+    def populate_variable_nodes(self, graph_data, gpt_response, recursion_depth=0):
+        """
+        Populate @variable placeholders with GPT responses and handle versioning.
+        """
+        import re
+
+        nodes = graph_data["nodes"]
+
+        # Regular expression to find @variable placeholders with optional suffix
+        variable_pattern = re.compile(r'@variable(?:_(\d+))?')
+
+        # Track the versions of variables
+        variable_versions = {}
+
+        for node in nodes:
+            content = node['label']
+            matches = list(variable_pattern.finditer(content))
+
+            # Sort matches by the numeric suffix, so we handle them in order
+            matches.sort(key=lambda match: int(match.group(1)) if match.group(1) else 0)
+
+            for match in matches:
+                suffix = match.group(1)
+                variable_full = match.group(0)
+
+                if suffix:
+                    # This is a versioned variable, get the previous version
+                    required_version = int(suffix) - 1
+                    previous_version_id = f"{node['id']}_@variable_{required_version}"
+
+                    if required_version > 0 and previous_version_id in variable_versions:
+                        # Use the previous version's content
+                        previous_content = variable_versions[previous_version_id]
+                        updated_content = content.replace(variable_full, previous_content)
+                        node['label'] = updated_content
+                        variable_versions[node['id']] = updated_content
+                    else:
+                        # Need to get the response from GPT for the previous version
+                        processed_data = self.translate_graph_to_gpt_sequence(graph_data)
+                        gpt_response = self.get_gpt_response(processed_data)
+                        # Call this function recursively until the base variable is resolved
+                        self.populate_variable_nodes(graph_data, gpt_response, recursion_depth + 1)
+                else:
+                    # It's the base @variable, replace with the current GPT response
+                    updated_content = content.replace(variable_full, gpt_response)
+                    node['label'] = updated_content
+                    variable_versions[node['id']] = updated_content
+
+                # Save the graph data with the updated node
+                graph_id = f"{self.dataset_id}_version_{recursion_depth}"
+                self.save_graph_data(graph_data, graph_id)
+
+        return graph_data
 
     def save_graph_data(self, graph_data, graph_id):
         try:
@@ -342,85 +434,6 @@ class GptAgentInteractions:
             logger.exception("An unexpected error occurred during save_graph_data:")
         raise
 
-    # New method to interact with the GPT API
-    def get_gpt_response(self, processed_data):
-        post_data = {
-            "model": os.getenv("MODEL"),
-            "messages": processed_data["messages"]
-        }
-        response = requests.post(self.openai_base_url, headers=self.headers, json=post_data)
-        if response.status_code == 200:
-            return response.json()["choices"][0]["message"]["content"]
-        else:
-            raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
-
-    def get_available_graphs(self):
-        # Query to get distinct graph_ids from the nodes_table
-        query = f"SELECT DISTINCT graph_id FROM `{self.dataset_id}.nodes_table`"
-        query_job = self.bigquery_client.query(query)
-        results = query_job.result()
-
-        return [{"graph_id": row["graph_id"], "graph_name": row["graph_id"]} for row in results]
-
-    def load_graph_data_by_id(self, graph_id):
-        nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
-        edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
-
-        # Fetch nodes for given graph_id
-        nodes_query = f"SELECT * FROM `{self.dataset_id}.nodes_table` WHERE graph_id = '{graph_id}'"
-        nodes_query_job = self.bigquery_client.query(nodes_query)
-        nodes_results = nodes_query_job.result()
-        nodes = [{"id": row['id'], "label": row['label']} for row in nodes_results]
-
-        logger.info(f"nodes loaded by graph id {nodes} already exists.")
-
-        # Fetch edges for given graph_id
-        edges_query = f"SELECT * FROM `{self.dataset_id}.edges_table` WHERE graph_id = '{graph_id}'"
-        edges_query_job = self.bigquery_client.query(edges_query)
-        edges_results = edges_query_job.result()
-        edges = [{"from": row['from'], "to": row['to']} for row in edges_results]
-
-        return {"nodes": nodes, "edges": edges}
-    # Add the process_recursive_graph method
-
-# def process_recursive_graph(self, graph_data):  # ToDo :: Implementation
-#         # Update valid transitions to include 'variable' nodes
-#         valid_transitions = {
-#             'user': 'content',
-#             'content': ['system', 'variable'],
-#             'system': 'content',
-#             'variable': 'content'
-#         }
-#
-#         # Process the graph in a sequence
-#         processed_data = {"messages": []}
-#         variable_content = None
-#
-#         for edge in graph_data["edges"]:
-#             from_node = graph_data["nodes"][edge['from']]
-#             to_node = graph_data["nodes"][edge['to']]
-#
-#             from_node_type = self.get_node_type(from_node)
-#             to_node_type = self.get_node_type(to_node)
-#
-#             # Check for valid transitions
-#             if valid_transitions[from_node_type] == to_node_type or to_node_type in valid_transitions[from_node_type]:
-#                 if from_node_type == 'variable':
-#                     # Replace 'variable' node content with the previous GPT API response
-#                     from_node['label'] = variable_content
-#
-#                 # Add the interaction to the processed data
-#                 processed_data['messages'].append({
-#                     "role": from_node_type,
-#                     "content": from_node['label']
-#                 })
-#
-#                 # If the 'to' node is a 'variable', get response from GPT API
-#                 if to_node_type == 'variable':
-#                     gpt_response = self.get_gpt_response(processed_data)
-#                     variable_content = gpt_response
-#
-#         return processed_data
 # GptAgentInteractions
 #
 # help(GptAgentInteractions)
