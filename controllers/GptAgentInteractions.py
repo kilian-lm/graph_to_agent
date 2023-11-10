@@ -17,15 +17,19 @@ import inspect
 load_dotenv()
 
 
-class GptAgentInteractions(CustomLogger):
+class GptAgentInteractions():
 
     def __init__(self, dataset_id):
         # First logging
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        print(timestamp)
         self.log_file = f'{timestamp}_gpt_agent_interactions.log'
+        print(self.log_file)
         self.log_dir = './temp_log'
+        print(self.log_dir)
         self.log_level = logging.DEBUG
-        super().__init__(self.log_file, self.log_level, self.log_dir)
+        print(self.log_level)
+        self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.openai_base_url = "https://api.openai.com/v1/chat/completions"
@@ -34,7 +38,6 @@ class GptAgentInteractions(CustomLogger):
             'Authorization': f'Bearer {self.openai_api_key}'
         }
         self.dataset_id = dataset_id
-        self.logger = CustomLogger()
         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
 
         try:
@@ -541,7 +544,7 @@ class GptAgentInteractions(CustomLogger):
         raise
 
 
-gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
+# gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
 
 #
 # help(GptAgentInteractions)
