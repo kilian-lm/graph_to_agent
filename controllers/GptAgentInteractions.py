@@ -166,10 +166,6 @@ class GptAgentInteractions():
         nodes = graph_data["nodes"]
         edges = graph_data["edges"]
 
-        # valid = self.check_valid_transitions(graph_data)
-        # if not valid:
-        #     self.logger.info(f"Ignoring graph {graph_data['graph_id']} as it doesn't follow the valid transitions.")
-        #     raise Exception
 
         # Build a mapping of node IDs to nodes
         node_mapping = {node['id']: node for node in nodes}
@@ -207,22 +203,7 @@ class GptAgentInteractions():
             self.logger.info(f"from_node_type: {from_node_type}")
             self.logger.info(f"to_node_type: {to_node_type}")
 
-            breakpoint() # todo ::
 
-            # Validate the transition
-            if from_node_type == current_expected and valid_transitions.get(from_node_type) == to_node_type:
-                # Append the content of the 'to' node if it's a 'content' node
-                if to_node_type == 'content':
-                    translated_data['messages'].append({
-                        "role": from_node_type,
-                        "content": to_node['label']
-                    })
-                # Update the expected type for the next node
-                current_expected = to_node_type
-
-            # Reset to 'user' after a 'system' to 'content' transition
-            if from_node_type == 'system' and to_node_type == 'content':
-                current_expected = 'user'
 
         # Serialize data to json
         json_data = json.dumps(translated_data, indent=4)
@@ -236,6 +217,9 @@ class GptAgentInteractions():
         # Save the JSON data to the file
         with open(filename, 'w') as json_file:
             json_file.write(json_data)
+
+        breakpoint()  # todo ::
+
 
         return {
             'bigquery_errors': {'node_errors': [], 'edge_errors': []},
