@@ -1,40 +1,30 @@
-from flask import Flask, render_template, request, jsonify, session
 import os
-import json
-from google.cloud import bigquery
-from google.oauth2.service_account import Credentials
-from dotenv import load_dotenv
-from google.api_core.exceptions import NotFound
-import logging
-from google.oauth2.service_account import Credentials
-from google.oauth2 import service_account
-
 import datetime
-import json
-
-from google.cloud import bigquery
-from google.oauth2.service_account import Credentials
-from google.cloud.exceptions import NotFound
-
-from flask import Flask, render_template
-import json
-
 from flask import Flask, render_template, jsonify, request
 import json
-from controllers.BigQueryHandler import BigQueryHandler
 from controllers.GptAgentInteractions import GptAgentInteractions
 from logger.CustomLogger import CustomLogger
+import logging
 
 app = Flask(__name__)
 
-gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
+# gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
 
 
-class App:
+class App():
     def __init__(self):
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        print(timestamp)
+        self.log_file = f'{timestamp}_app.log'
+        print(self.log_file)
+        self.log_dir = './temp_log'
+        print(self.log_dir)
+        self.log_level = logging.DEBUG
+        print(self.log_level)
+        self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
+
         self.app = Flask(__name__)
         self.gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
-        self.logger = CustomLogger()
         self.setup_routes()
 
     def index_call(self):
