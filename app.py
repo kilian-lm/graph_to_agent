@@ -30,7 +30,6 @@ app = Flask(__name__)
 gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
 
 
-
 class App:
     def __init__(self):
         self.app = Flask(__name__)
@@ -60,7 +59,7 @@ class App:
 
     def return_gpt_agent_answer_to_graph(self):
         graph_data = request.json
-        print(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
+        self.logger.info(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
 
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         filename = f"temp_local/debugging_var_method_{timestamp}.json"
@@ -74,26 +73,26 @@ class App:
             json_file.write(json.dumps(graph_data))  # Serialize dict to JSON formatted string
 
         processed_data = self.gpt_agent_interactions.translate_graph_to_gpt_sequence(graph_data)
-        print(f"return_gpt_agent_answer_to_graph, processed_data: {processed_data}")
+        self.logger.info(f"return_gpt_agent_answer_to_graph, processed_data: {processed_data}")
 
         # Identify if any @variable placeholders are present
         variable_node_present = any('@variable' in node['label'] for node in graph_data['nodes'])
-        print(f"return_gpt_agent_answer_to_graph, variable_node_present: {variable_node_present}")
+        self.logger.info(f"return_gpt_agent_answer_to_graph, variable_node_present: {variable_node_present}")
 
         if variable_node_present:
             # Call the populate_variable_nodes method
             # Note: You need to obtain the initial GPT response to populate the base @variable
             initial_gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
-            print(f"return_gpt_agent_answer_to_graph, initial_gpt_response: {initial_gpt_response}")
+            self.logger.info(f"return_gpt_agent_answer_to_graph, initial_gpt_response: {initial_gpt_response}")
             updated_graph = self.gpt_agent_interactions.populate_variable_nodes(graph_data, initial_gpt_response)
-            print(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
+            self.logger.info(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
 
         else:
             # Continue with the legacy workflow
             gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
-            print(f"return_gpt_agent_answer_to_graph, gpt_response: {gpt_response}")
+            self.logger.info(f"return_gpt_agent_answer_to_graph, gpt_response: {gpt_response}")
             updated_graph = self.gpt_agent_interactions.process_gpt_response_and_update_graph(gpt_response, graph_data)
-            print(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
+            self.logger.info(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
 
         return jsonify({"status": "success", "updatedGraph": updated_graph})
 
@@ -104,19 +103,19 @@ class App:
     # def return_gpt_agent_answer_to_graph(self):
     #     try:
     #         graph_data = request.json
-    #         print(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
+    #         self.logger.info(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
     #         processed_data = self.gpt_agent_interactions.translate_graph_to_gpt_sequence(graph_data)
-    #         print(f"return_gpt_agent_answer_to_graph, processed_data: {processed_data}")
+    #         self.logger.info(f"return_gpt_agent_answer_to_graph, processed_data: {processed_data}")
     #
     #         # todo :: check via if else for @variable node, if no var, than legacy workflow
     #         self.gpt_agent_interactions.populate_variable_nodes()
     #
     #
     #         gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
-    #         print(f"return_gpt_agent_answer_to_graph, gpt_response: {gpt_response}")
+    #         self.logger.info(f"return_gpt_agent_answer_to_graph, gpt_response: {gpt_response}")
     #
     #         updated_graph = self.gpt_agent_interactions.process_gpt_response_and_update_graph(gpt_response, graph_data)
-    #         print(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
+    #         self.logger.info(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
     #
     #         return jsonify({"status": "success", "updatedGraph": updated_graph})
     #     except Exception as e:
@@ -126,10 +125,10 @@ class App:
     def save_graph(self):
         try:
             graph_data = request.json
-            print(f"save_graph, graph_data: {graph_data}")
+            self.logger.info(f"save_graph, graph_data: {graph_data}")
 
             graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            print(f"save_graph, graph_id: {graph_id}")
+            self.logger.info(f"save_graph, graph_id: {graph_id}")
             errors = self.gpt_agent_interactions.save_graph_data(graph_data, graph_id)
 
             self.logger.error(f"save_graph, errors: {errors}")
