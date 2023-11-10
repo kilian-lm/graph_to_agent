@@ -1,4 +1,12 @@
-# Redefining all necessary components and functions in a single code block for the test
+import json
+import logging
+import os
+import inspect
+
+from logger.CustomLogger import CustomLogger
+# Initialize the custom logger
+logger = CustomLogger(log_file='graph_processing.log').logger
+
 
 class ContextManager:
     def __init__(self):
@@ -9,6 +17,40 @@ class ContextManager:
 
     def get_response(self, label):
         return self.responses.get(label, '')
+
+def get_node_type(node):
+    # Adjust this logic to correctly determine the node type
+    node_type = node['label'].split()[0].lower()
+    logger.debug(f"Node ID: {node['id']}, Node Type: {node_type}")
+    return node_type
+
+def is_valid_sequence(component):
+    expected_sequence = ['user', 'content', 'system', 'content', 'user', 'content']
+    actual_sequence = [get_node_type(node) for node in component]
+    logger.debug(f"Expected: {expected_sequence}")
+    logger.debug(f"Actual: {actual_sequence}")
+    return actual_sequence == expected_sequence
+
+def process_component(component, context_manager):
+    if not is_valid_sequence(component):
+        logger.error("Component does not follow the required sequence")
+        raise ValueError("Component does not follow the required sequence")
+
+    processed_data = {"messages": []}
+    for node in component:
+        label = node["label"]
+        if label.startswith('@'):
+            variable_label = label[1:]
+            label = context_manager.get_response(variable_label)
+
+        processed_data["messages"].append({"content": label if get_node_type(node) != 'content' else "GPT response for: " + label})
+    return processed_data
+
+def identify_and_process_components(graph_data, context_manager):
+    nodes, edges = graph_data["nodes"], graph_data["edges"]
+    components = identify_graph_components(nodes, edges)
+    logger.info(f"Identified {len(components)} components")
+    return [process_component(component, context_manager) for component in components]
 
 
 def identify_graph_components(nodes, edges):
@@ -32,26 +74,8 @@ def identify_graph_components(nodes, edges):
 
     return components
 
-
-def process_component(component, context_manager):
-    processed_data = {"messages": []}
-    for node in component:
-        label = node["label"]
-        if label.startswith('@'):
-            variable_label = label[1:]
-            label = context_manager.get_response(variable_label)
-        processed_data["messages"].append({"content": label})
-    return processed_data
-
-
-def identify_and_process_components(graph_data, context_manager):
-    nodes, edges = graph_data["nodes"], graph_data["edges"]
-    components = identify_graph_components(nodes, edges)
-    return [process_component(component, context_manager) for component in components]
-
-
-# Initialize context manager and process components
 context_manager = ContextManager()
+
 
 graph_data = """
 {
@@ -86,7 +110,7 @@ graph_data = """
       "id": "6f2c004b-b1e2-463b-964e-ab53cdf63d7a",
       "x": -1065.8683757853405,
       "y": 45.175328912081966,
-      "label": "sequenceDiagramAlice->>John: Hello John, how are you?John-->>Alice: Great!Alice-)John: See you later!"
+      "label": "@variable"
     }
   ],
   "edges": [
@@ -114,45 +138,6 @@ graph_data = """
 }
 """
 
-
-# todo :: v2
-
-def is_valid_sequence(component):
-    # Define the expected sequence of node types
-    expected_sequence = ['user', 'content', 'system', 'content', 'user', 'content']
-    actual_sequence = [get_node_type(node) for node in component]
-    return actual_sequence == expected_sequence
-
-
-def get_node_type(node):
-    # Determine the node type based on its label or other attributes
-    # This is a placeholder, adjust this function based on your actual node type determination logic
-    return node['label'].split()[0].lower()
-
-
-def process_component(component, context_manager):
-    if not is_valid_sequence(component):
-        raise ValueError("Component does not follow the required sequence")
-
-    processed_data = {"messages": []}
-    for node in component:
-        label = node["label"]
-        if label.startswith('@'):
-            variable_label = label[1:]
-            label = context_manager.get_response(variable_label)
-
-        # Append the GPT response or the label itself if it's not a 'content' node
-        processed_data["messages"].append(
-            {"content": label if get_node_type(node) != 'content' else "GPT response for: " + label})
-    return processed_data
-
-
-# Assuming the rest of the code (ContextManager, identify_graph_components) remains the same
-
-
-import json
-
-# Convert the JSON string to a Python dictionary
 graph_data = json.loads(graph_data)
 
 processed_components = identify_and_process_components(graph_data, context_manager)
