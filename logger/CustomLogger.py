@@ -28,8 +28,7 @@ class CustomLogger():
         self.stream_handler.setLevel(log_level)
 
         # Add method and line number to the log formatter
-        self.formatter = logging.Formatter(
-            '%(asctime)s [%(levelname)s] %(name)s - %(funcName)s:%(lineno)d - %(message)s')
+        self.formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s - %(funcName)s:%(lineno)d - %(message)s')
         self.file_handler.setFormatter(self.formatter)
         self.stream_handler.setFormatter(self.formatter)
 
