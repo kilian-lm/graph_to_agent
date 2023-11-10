@@ -13,26 +13,20 @@ import datetime
 import requests
 from logger.CustomLogger import CustomLogger
 import inspect
+
 load_dotenv()
 
 
 class GptAgentInteractions(CustomLogger):
 
     def __init__(self, dataset_id):
+        # First logging
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         self.log_file = f'{timestamp}_gpt_agent_interactions.log'
-        print(self.log_file)
         self.log_dir = './temp_log'
-        print(self.log_dir)
         self.log_level = logging.DEBUG
-        print(self.log_level)
         super().__init__(self.log_file, self.log_level, self.log_dir)
 
-        # First logging
-        # self.logger = CustomLogger(log_dir='../temp_log', log_file=log_file)
-
-        self.logger.info(f'Old logfiles do not exist/ already deleted')
-        breakpoint()
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.openai_base_url = "https://api.openai.com/v1/chat/completions"
         self.headers = {
@@ -141,7 +135,7 @@ class GptAgentInteractions(CustomLogger):
             for node in raw_nodes
         ]
 
-        print(f"nodes_for_bq: {nodes_for_bq}")
+        self.logger.info(f"nodes_for_bq: {nodes_for_bq}")
 
         # Translate edges
         edges_for_bq = [
@@ -153,7 +147,7 @@ class GptAgentInteractions(CustomLogger):
             for edge in raw_edges
         ]
 
-        print(f"edges_for_bq: {edges_for_bq}")
+        self.logger.info(f"edges_for_bq: {edges_for_bq}")
 
         return nodes_for_bq, edges_for_bq
 
@@ -256,30 +250,30 @@ class GptAgentInteractions(CustomLogger):
 
         nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
         # Log the transformed data for debugging
-        print(f"extract_gpt_interactions_before_save, Transformed Nodes: {nodes_for_bq}")
-        print(f"extract_gpt_interactions_before_save, Transformed Edges: {edges_for_bq}")
+        self.logger.info(f"extract_gpt_interactions_before_save, Transformed Nodes: {nodes_for_bq}")
+        self.logger.info(f"extract_gpt_interactions_before_save, Transformed Edges: {edges_for_bq}")
 
         graph_data_as_dicts = {
             "nodes": nodes_for_bq,
             "edges": edges_for_bq
         }
 
-        print(f"extract_gpt_interactions_before_save, graph_data_as_dicts: {graph_data_as_dicts}")
+        self.logger.info(f"extract_gpt_interactions_before_save, graph_data_as_dicts: {graph_data_as_dicts}")
 
         # Pass the dictionaries to the workflow logic
         processed_data = self.translate_graph_to_gpt_sequence(graph_data_as_dicts)
 
         processed_data = processed_data["processed_data"]
-        print(f"processed_data: {processed_data}")
+        self.logger.info(f"processed_data: {processed_data}")
         agent_content = self.extract_and_send_to_gpt(processed_data)
-        print(f"agent_content: {agent_content}")
+        self.logger.info(f"agent_content: {agent_content}")
 
     def get_last_content_node(self, edges, nodes):
         # Assuming edges are ordered
         last_edge = edges[-1]
         last_node_id = last_edge['to']
 
-        print(f"get_last_content_node, last_node_id : {last_node_id}")
+        self.logger.info(f"get_last_content_node, last_node_id : {last_node_id}")
 
         for node in nodes:
             if node['id'] == last_node_id:
@@ -300,7 +294,7 @@ class GptAgentInteractions(CustomLogger):
     def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
         last_content_node = self.get_last_content_node(graph_data['edges'], graph_data['nodes'])
 
-        print(f"process_gpt_response_and_update_graph, last_content_node : {last_content_node}")
+        self.logger.info(f"process_gpt_response_and_update_graph, last_content_node : {last_content_node}")
 
         # Generate a unique ID for the new node
         new_node_id = f"agent_response_based_on{last_content_node['id']}"
@@ -309,7 +303,7 @@ class GptAgentInteractions(CustomLogger):
             'label': gpt_response,
         }
 
-        print(f"process_gpt_response_and_update_graph, new_node : {new_node}")
+        self.logger.info(f"process_gpt_response_and_update_graph, new_node : {new_node}")
 
         # Check if a node with the new ID already exists
         existing_node_ids = {node['id'] for node in graph_data['nodes']}
@@ -321,11 +315,11 @@ class GptAgentInteractions(CustomLogger):
                 'to': new_node_id,
             }
             graph_data['edges'].append(new_edge)
-            print(f"process_gpt_response_and_update_graph, new_edge : {new_edge}")
+            self.logger.info(f"process_gpt_response_and_update_graph, new_edge : {new_edge}")
         else:
-            print(f"Node with ID {new_node_id} already exists. Skipping node and edge addition.")
+            self.logger.info(f"Node with ID {new_node_id} already exists. Skipping node and edge addition.")
 
-        print(f"process_gpt_response_and_update_graph, graph_data : {graph_data}")
+        self.logger.info(f"process_gpt_response_and_update_graph, graph_data : {graph_data}")
 
         # debugging:
         graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -358,7 +352,7 @@ class GptAgentInteractions(CustomLogger):
     #     variable_versions = {}
     #
     #     for node in nodes:
-    #         print(f"Processing node with id {node['id']} and label {node['label']}")
+    #         self.logger.info(f"Processing node with id {node['id']} and label {node['label']}")
     #
     #         content = node['label']
     #         matches = list(variable_pattern.finditer(content))
@@ -369,8 +363,8 @@ class GptAgentInteractions(CustomLogger):
     #             variable_full = match.group(0)
     #
     #             if suffix:
-    #                 print(f"Found versioned variable with suffix {suffix} in node {node['id']}")
-    #                 print(f"Found base @variable in node {node['id']}")
+    #                 self.logger.info(f"Found versioned variable with suffix {suffix} in node {node['id']}")
+    #                 self.logger.info(f"Found base @variable in node {node['id']}")
     #
     #                 # This is a versioned variable
     #                 required_version = int(suffix)
@@ -395,7 +389,7 @@ class GptAgentInteractions(CustomLogger):
     #                 # It's the base @variable
     #                 updated_content = content.replace(variable_full, gpt_response)
     #                 node['label'] = updated_content
-    #                 print(f"Node {node['id']} updated to {node['label']}")
+    #                 self.logger.info(f"Node {node['id']} updated to {node['label']}")
     #
     #                 versioned_node_id = f"{node['id']}_v{recursion_depth + 1}"
     #                 node['id'] = versioned_node_id
@@ -423,7 +417,7 @@ class GptAgentInteractions(CustomLogger):
     #     variable_versions = {}
     #
     #     for node in nodes:
-    #         print(f"Processing node with id {node['id']} and label {node['label']}")
+    #         self.logger.info(f"Processing node with id {node['id']} and label {node['label']}")
     #
     #         content = node['label']
     #         matches = list(variable_pattern.finditer(content))
@@ -434,8 +428,8 @@ class GptAgentInteractions(CustomLogger):
     #             variable_full = match.group(0)
     #
     #             if suffix:
-    #                 print(f"Found versioned variable with suffix {suffix} in node {node['id']}")
-    #                 print(f"Found base @variable in node {node['id']}")
+    #                 self.logger.info(f"Found versioned variable with suffix {suffix} in node {node['id']}")
+    #                 self.logger.info(f"Found base @variable in node {node['id']}")
     #
     #                 # This is a versioned variable
     #                 required_version = int(suffix)
@@ -448,11 +442,11 @@ class GptAgentInteractions(CustomLogger):
     #                 else:
     #                     # Recursive call to resolve variable
     #                     processed_data = self.translate_graph_to_gpt_sequence(graph_data)
-    #                     print(f"populate_variable_nodes, processed_data {processed_data}")
+    #                     self.logger.info(f"populate_variable_nodes, processed_data {processed_data}")
     #
     #                     gpt_response = self.get_gpt_response(processed_data)
     #                     self.populate_variable_nodes(graph_data, gpt_response, recursion_depth + 1)
-    #                     print(f"Populating variable nodes at recursion depth {recursion_depth}")
+    #                     self.logger.info(f"Populating variable nodes at recursion depth {recursion_depth}")
     #
     #                 # Update node label with resolved content
     #                 node['label'] = updated_content
@@ -462,7 +456,7 @@ class GptAgentInteractions(CustomLogger):
     #                 # It's the base @variable
     #                 updated_content = content.replace(variable_full, gpt_response)
     #                 node['label'] = updated_content
-    #                 print(f"Node {node['id']} updated to {node['label']}")
+    #                 self.logger.info(f"Node {node['id']} updated to {node['label']}")
     #
     #                 versioned_node_id = f"{node['id']}_v{recursion_depth + 1}"
     #                 node['id'] = versioned_node_id
@@ -478,7 +472,7 @@ class GptAgentInteractions(CustomLogger):
     #     # Save the updated nodes and edges
     #     self.save_graph_data(nodes, edges)
     #
-    #     print(f"Saving updated graph data with nodes: {graph_data['nodes']} and edges: {graph_data['edges']}")
+    #     self.logger.info(f"Saving updated graph data with nodes: {graph_data['nodes']} and edges: {graph_data['edges']}")
     #
     #     return graph_data
 
@@ -504,20 +498,20 @@ class GptAgentInteractions(CustomLogger):
             nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
 
             # Log the transformed data for debugging
-            print(f"controller save_graph_data, Transformed Nodes: {nodes_for_bq}")
-            print(f"controller save_graph_data, Transformed Edges: {edges_for_bq}")
+            self.logger.info(f"controller save_graph_data, Transformed Nodes: {nodes_for_bq}")
+            self.logger.info(f"controller save_graph_data, Transformed Edges: {edges_for_bq}")
 
             # Insert nodes and pass in the schema explicitly
             errors_nodes = self.bigquery_client.insert_rows(nodes_table, nodes_for_bq,
                                                             selected_fields=nodes_table.schema)
             if errors_nodes:
-                print(f"Encountered errors while inserting nodes: {errors_nodes}")
+                self.logger.info(f"Encountered errors while inserting nodes: {errors_nodes}")
 
             # Insert edges and pass in the schema explicitly
             errors_edges = self.bigquery_client.insert_rows(edges_table, edges_for_bq,
                                                             selected_fields=edges_table.schema)
             if errors_edges:
-                print(f"Encountered errors while inserting edges: {errors_edges}")
+                self.logger.info(f"Encountered errors while inserting edges: {errors_edges}")
 
             # Compile all errors
             all_errors = {
@@ -535,7 +529,7 @@ class GptAgentInteractions(CustomLogger):
                 "edges": edges_for_bq
             }
 
-            print(f"graph_data_as_dicts: {graph_data_as_dicts}")
+            self.logger.info(f"graph_data_as_dicts: {graph_data_as_dicts}")
 
             # Return both BigQuery errors and processed data
             return {
