@@ -1,1 +1,0 @@
-print('entered dir LoggerPublisher')
