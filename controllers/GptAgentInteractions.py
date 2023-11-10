@@ -12,13 +12,27 @@ import json
 import datetime
 import requests
 from logger.CustomLogger import CustomLogger
-
+import inspect
 load_dotenv()
 
 
-class GptAgentInteractions:
+class GptAgentInteractions(CustomLogger):
 
     def __init__(self, dataset_id):
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        self.log_file = f'{timestamp}_gpt_agent_interactions.log'
+        print(self.log_file)
+        self.log_dir = './temp_log'
+        print(self.log_dir)
+        self.log_level = logging.DEBUG
+        print(self.log_level)
+        super().__init__(self.log_file, self.log_level, self.log_dir)
+
+        # First logging
+        # self.logger = CustomLogger(log_dir='../temp_log', log_file=log_file)
+
+        self.logger.info(f'Old logfiles do not exist/ already deleted')
+        breakpoint()
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.openai_base_url = "https://api.openai.com/v1/chat/completions"
         self.headers = {
@@ -154,6 +168,11 @@ class GptAgentInteractions:
     def translate_graph_to_gpt_sequence(self, graph_data):
         nodes = graph_data["nodes"]
         edges = graph_data["edges"]
+
+        # valid = self.check_valid_transitions(graph_data)
+        # if not valid:
+        #     self.logger.info(f"Ignoring graph {graph_data['graph_id']} as it doesn't follow the valid transitions.")
+        #     raise Exception
 
         # Build a mapping of node IDs to nodes
         node_mapping = {node['id']: node for node in nodes}
@@ -527,6 +546,8 @@ class GptAgentInteractions:
             self.logger.error("An unexpected error occurred during save_graph_data:")
         raise
 
-# GptAgentInteractions
+
+gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
+
 #
 # help(GptAgentInteractions)
