@@ -173,12 +173,15 @@ class GptAgentInteractions():
 
         # Build a mapping of node IDs to nodes
         node_mapping = {node['id']: node for node in nodes}
+        self.logger.info(f"node_map: {node_mapping}")
 
         # Initialize the data structure
         translated_data = {
             "model": os.getenv("MODEL"),
             "messages": []
         }
+
+        self.logger.info(f"translated_data: {translated_data}")
 
         # Define valid transitions
         valid_transitions = {
@@ -187,6 +190,7 @@ class GptAgentInteractions():
             'system': 'content'
         }
 
+
         # Start from 'user' nodes and follow the valid transitions
         current_expected = 'user'
 
@@ -194,8 +198,16 @@ class GptAgentInteractions():
             from_node = node_mapping[edge['from']]
             to_node = node_mapping[edge['to']]
 
+            self.logger.info(f"from_node: {from_node}")
+            self.logger.info(f"to_node: {to_node}")
+
             from_node_type = self.get_node_type(from_node)
             to_node_type = self.get_node_type(to_node)
+
+            self.logger.info(f"from_node_type: {from_node_type}")
+            self.logger.info(f"to_node_type: {to_node_type}")
+
+            breakpoint() # todo ::
 
             # Validate the transition
             if from_node_type == current_expected and valid_transitions.get(from_node_type) == to_node_type:
