@@ -9,12 +9,6 @@ import logging
 from google.oauth2.service_account import Credentials
 from google.oauth2 import service_account
 
-# from app.Solver import Solver
-# from app.LoggerPublisher.MainPublisher import MainPublisher
-# from app.LoggerPublisher.MainLogger import MainLogger
-
-# load_dotenv()
-
 import datetime
 import json
 
@@ -25,277 +19,140 @@ from google.cloud.exceptions import NotFound
 from flask import Flask, render_template
 import json
 
+from flask import Flask, render_template, jsonify, request
+import json
+from controllers.BigQueryHandler import BigQueryHandler
+from controllers.GptAgentInteractions import GptAgentInteractions
+from logger.CustomLogger import CustomLogger
+
 app = Flask(__name__)
 
+gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
 
 
-def translate_to_visjs(agent_interactions):
-    nodes = []
-    edges = []
-    node_id = 0
 
-    prev_content_node_id = None
+class App:
+    def __init__(self):
+        self.app = Flask(__name__)
+        self.gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
+        self.logger = CustomLogger()
+        self.setup_routes()
 
-    for interaction_group in agent_interactions:
-        messages = interaction_group['messages']
-        for interaction in messages:
-            # Extract role and content
-            role = interaction['role']
-            # content = interaction['content'][:100] + "..."  # Truncate content for brevity
-            content = interaction['content']
+    def index_call(self):
+        return render_template('graph.html')
 
-            # Create nodes
-            role_node = {"id": node_id, "label": role}
-            nodes.append(role_node)
-            role_node_id = node_id
-            node_id += 1
+    def get_graph_data(self):
+        try:
+            graph_id = request.json['graph_id']
+            graph_data = self.gpt_agent_interactions.load_graph_data_by_id(graph_id)
+            return jsonify(graph_data)
+        except Exception as e:
+            self.logger.error(f"Error fetching graph data: {e}")
+            return jsonify({"status": "error", "message": str(e)})
 
-            content_node = {"id": node_id, "label": content}
-            nodes.append(content_node)
-            content_node_id = node_id
-            node_id += 1
+    def get_available_graphs(self):
+        try:
+            available_graphs = self.gpt_agent_interactions.get_available_graphs()
+            return jsonify(available_graphs)
+        except Exception as e:
+            self.logger.error(f"Error loading available graphs: {e}")
+            return jsonify({"status": "error", "message": str(e)})
 
-            # Create edges
-            edges.append({"from": role_node_id, "to": content_node_id})  # Role to content
-            if prev_content_node_id is not None:
-                edges.append({"from": prev_content_node_id, "to": role_node_id})  # Previous content to current role
+    def return_gpt_agent_answer_to_graph(self):
+        graph_data = request.json
+        print(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
 
-            prev_content_node_id = content_node_id
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = f"temp_local/debugging_var_method_{timestamp}.json"
 
-    return {"nodes": nodes, "edges": edges}
+        # Check if the temp_local directory exists
+        if not os.path.exists('temp_local'):
+            os.makedirs('temp_local')
 
+        # Save the JSON data to the file
+        with open(filename, 'w') as json_file:
+            json_file.write(json.dumps(graph_data))  # Serialize dict to JSON formatted string
 
-@app.route('/')
-def serve_graph():
-    # Load the JSON data
-    with open("../agent_interactions_20231031_185854.json", "r") as file:
-        data = json.load(file)
+        processed_data = self.gpt_agent_interactions.translate_graph_to_gpt_sequence(graph_data)
+        print(f"return_gpt_agent_answer_to_graph, processed_data: {processed_data}")
 
-    agent_interactions = data['agent_interactions']
+        # Identify if any @variable placeholders are present
+        variable_node_present = any('@variable' in node['label'] for node in graph_data['nodes'])
+        print(f"return_gpt_agent_answer_to_graph, variable_node_present: {variable_node_present}")
 
-    visjs_data = translate_to_visjs(agent_interactions)
+        if variable_node_present:
+            # Call the populate_variable_nodes method
+            # Note: You need to obtain the initial GPT response to populate the base @variable
+            initial_gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
+            print(f"return_gpt_agent_answer_to_graph, initial_gpt_response: {initial_gpt_response}")
+            updated_graph = self.gpt_agent_interactions.populate_variable_nodes(graph_data, initial_gpt_response)
+            print(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
 
-    # Return the rendered HTML template and pass the visjs_data
-    return render_template('graph.html', data=visjs_data)
+        else:
+            # Continue with the legacy workflow
+            gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
+            print(f"return_gpt_agent_answer_to_graph, gpt_response: {gpt_response}")
+            updated_graph = self.gpt_agent_interactions.process_gpt_response_and_update_graph(gpt_response, graph_data)
+            print(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
 
+        return jsonify({"status": "success", "updatedGraph": updated_graph})
 
+    # except Exception as e:
+    #     self.logger.error(f"Error processing GPT agent request: {e}")
+    #     return jsonify({"status": "error", "message": str(e)})
+
+    # def return_gpt_agent_answer_to_graph(self):
+    #     try:
+    #         graph_data = request.json
+    #         print(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
+    #         processed_data = self.gpt_agent_interactions.translate_graph_to_gpt_sequence(graph_data)
+    #         print(f"return_gpt_agent_answer_to_graph, processed_data: {processed_data}")
+    #
+    #         # todo :: check via if else for @variable node, if no var, than legacy workflow
+    #         self.gpt_agent_interactions.populate_variable_nodes()
+    #
+    #
+    #         gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
+    #         print(f"return_gpt_agent_answer_to_graph, gpt_response: {gpt_response}")
+    #
+    #         updated_graph = self.gpt_agent_interactions.process_gpt_response_and_update_graph(gpt_response, graph_data)
+    #         print(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
+    #
+    #         return jsonify({"status": "success", "updatedGraph": updated_graph})
+    #     except Exception as e:
+    #         self.logger.error(f"Error processing GPT agent request: {e}")
+    #         return jsonify({"status": "error", "message": str(e)})
+
+    def save_graph(self):
+        try:
+            graph_data = request.json
+            print(f"save_graph, graph_data: {graph_data}")
+
+            graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            print(f"save_graph, graph_id: {graph_id}")
+            errors = self.gpt_agent_interactions.save_graph_data(graph_data, graph_id)
+
+            self.logger.error(f"save_graph, errors: {errors}")
+
+            if errors:
+                return jsonify({"status": "error", "message": "Failed to save some data.", "errors": errors})
+
+            return jsonify({"status": "success", "message": "Graph saved successfully!"})
+        except Exception as e:
+            self.logger.error(f"Error saving graph: {e}")
+            return jsonify({"status": "error", "message": str(e)})
+
+    def setup_routes(self):
+        self.app.route('/')(self.index_call)
+        self.app.route('/get-graph-data', methods=['POST'])(self.get_graph_data)
+        self.app.route('/get-available-graphs', methods=['GET'])(self.get_available_graphs)
+        self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.return_gpt_agent_answer_to_graph)
+        self.app.route('/save-graph', methods=['POST'])(self.save_graph)
+
+    def run(self):
+        self.app.run(debug=True)
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
-
-# TODO ::
-
-# class AgentModelerApp:
-#     def __init__(self, openai_api_key: str, url: str):
-#         self.app = Flask(__name__)
-#         self.app.secret_key = 'some_secret_key'
-#         self.setup_routes()
-#         self.openai_api_key = openai_api_key
-#         self.openai_base_url = url
-#
-#         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
-#
-#         bq_client_secrets_parsed = json.loads(bq_client_secrets)
-#         bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
-#         self.bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
-#         self.bigquery_client = bigquery.Client(credentials=self.bq_client_secrets,
-#                                                project=self.bq_client_secrets.project_id)
-#         self.project_id = self.bq_client_secrets.project_id
-#         self.project_id = "enter-universes"
-#         self.topic_id = "enter-universes"
-#         self.bucket_name = 'logs-graph-to-agents'
-#         # AWS parameters
-#         ACCESS_KEY = os.environ.get('ACCESS_KEY')
-#         SECRET_KEY = os.environ.get('SECRET_KEY')
-#         REGION = os.environ.get('REGION')
-#
-#         log_dir = 'temp_log'
-#
-#         timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-#         log_file = f'graph_to_agents_{timestamp}.log'
-#         self.param_bucket_name = self.bucket_name
-#         self.logger = MainLogger(self.param_bucket_name, log_dir='temp_log', log_file=log_file)
-#
-#         # Assuming you've set up logger and publisher already
-#
-#         self.log_dir = 'temp_log'
-#         self.publisher = MainPublisher(project_id=self.project_id, topic_name=self.topic_id)
-#
-#     # def _log_and_raise_error(self, method_name, e):
-#     #     error_msg = f'{self.__class__.__name__}.{method_name} encountered the Error: {str(e)}'
-#     #     self.logger.error(error_msg)
-#     #     self.publisher.publish_message(error_msg)
-#     #     raise Exception(e)
-#
-#     def _data_to_jsonl(self, data):
-#         try:
-#             return '\n'.join(json.dumps(item) for item in data)
-#         except Exception as e:
-#             error_msg = f'{self.__class__.__name__}.{self._data_to_jsonl.__name__} encountered the Error: {str(e)}'
-#             self.logger.error(error_msg)
-#             self.publisher.publish_message(error_msg)
-#             raise Exception(e)
-#
-#     def setup_routes(self):
-#         try:
-#             self.app.route('/')(self.index)
-#             self.app.route('/save_to_bigquery', methods=['POST'])(self.save_to_bigquery)
-#             self.app.route('/get_saved_setups', methods=['GET'])(self.get_saved_setups)
-#             self.app.route('/trigger_agent_pool', methods=['POST'])(self.trigger_agent_pool)
-#             self.app.route('/get_agents', methods=['GET'])(self.get_agents)
-#
-#         except Exception as e:
-#             error_msg = f'{self.__class__.__name__}.{self.setup_routes.__name__} encountered the Error: {str(e)}'
-#             self.logger.error(error_msg)
-#             self.publisher.publish_message(error_msg)
-#             raise Exception(e)
-#
-#     def index(self):
-#         try:
-#             return render_template('index.html')
-#         except Exception as e:
-#             error_msg = f'{self.__class__.__name__}.{self.setup_routes.__name__} encountered the Error: {str(e)}'
-#             self.logger.error(error_msg)
-#             self.publisher.publish_message(error_msg)
-#             raise Exception(e)
-#
-#     def trigger_agent_pool(self):
-#         try:
-#             data = request.json
-#             table_id = f"{self.project_id}.graph_to_agent.graph_to_agent_20231027"
-#             if not self._table_exists(table_id):
-#                 self._create_table(table_id)
-#
-#             timestamp_str = datetime.datetime.utcnow().isoformat()
-#             data_as_jsonl = self._data_to_jsonl(data)
-#
-#             rows_to_insert = [{"timestamp": timestamp_str, "data": data_as_jsonl}]
-#             errors = self.bigquery_client.insert_rows_json(table_id, rows_to_insert)
-#             if errors == []:
-#                 msg = jsonify({"message": "Saved to BigQuery and triggered agent pool successfully"})
-#                 msg_log = f'{self.__class__.__name__}.{self.trigger_agent_pool.__name__} Saved to BigQuery and triggered agent pool successfully'
-#
-#                 self.publisher.publish_message(msg_log)
-#
-#                 return msg
-#             else:
-#                 return jsonify({"message": f"Encountered errors: {errors}"})
-#
-#         except Exception as e:
-#             error_msg = f'{self.__class__.__name__}.{self.trigger_agent_pool.__name__} encountered the Error: {str(e)}'
-#             self.logger.error(error_msg)
-#             self.publisher.publish_message(error_msg)
-#             raise Exception(e)
-#
-#     def get_saved_setups(self):
-#         try:
-#             table_id = f"{self.project_id}.graph_to_agent.graph_to_agent_20231027"
-#             if not self._table_exists(table_id):
-#                 self._create_table(table_id)
-#
-#             query = f"SELECT timestamp, data FROM `{table_id}`"
-#             results = self.bigquery_client.query(query).result()
-#             setups = [{"timestamp": row.timestamp, "data": [json.loads(item) for item in row.data.split('\n')]} for row
-#                       in results]
-#             return jsonify(setups)
-#
-#         except Exception as e:
-#             error_msg = f'{self.__class__.__name__}.{self.get_saved_setups.__name__} encountered the Error: {str(e)}'
-#             self.logger.error(error_msg)
-#             self.publisher.publish_message(error_msg)
-#             raise Exception(e)
-#
-#     def _fetch_agents_from_db(self):
-#         try:
-#             table_id = f"{self.project_id}.some_database.some_table_for_agents"
-#             query = f"SELECT * FROM `{table_id}`"
-#             results = self.bigquery_client.query(query).result()
-#             agents = [dict(row) for row in results]
-#             return agents
-#         except NotFound:
-#             return []
-#         except Exception as e:
-#             error_msg = f'{self.__class__.__name__}.{self._fetch_agents_from_db.__name__} encountered the Error: {str(e)}'
-#             self.logger.error(error_msg)
-#             self.publisher.publish_message(error_msg)
-#             raise Exception(e)
-#
-#     def save_to_bigquery(self):
-#         try:
-#             data = request.json
-#             table_id = f"{self.project_id}.graph_to_agent.graph_to_agent_20231027"
-#             if not self._table_exists(table_id):
-#                 self._create_table(table_id)
-#
-#             timestamp_str = datetime.datetime.utcnow().isoformat()
-#             data_as_jsonl = self._data_to_jsonl(data)
-#
-#             rows_to_insert = [{"timestamp": timestamp_str, "data": data_as_jsonl}]
-#             errors = self.bigquery_client.insert_rows_json(table_id, rows_to_insert)
-#             if errors == []:
-#                 return jsonify({"message": "Saved to BigQuery successfully"})
-#             else:
-#                 return jsonify({"message": f"Encountered errors: {errors}"})
-#
-#         except Exception as e:
-#             error_msg = f'{self.__class__.__name__}.{self.save_to_bigquery.__name__} encountered the Error: {str(e)}'
-#             self.logger.error(error_msg)
-#             self.publisher.publish_message(error_msg)
-#             raise Exception(e)
-#
-#     def _table_exists(self, table_id):
-#         try:
-#             self.bigquery_client.get_table(table_id)
-#             return True
-#         except NotFound:
-#             return False
-#
-#     def _create_table(self, table_id):
-#         try:
-#             schema = [
-#                 bigquery.SchemaField("timestamp", "TIMESTAMP", mode="REQUIRED"),
-#                 bigquery.SchemaField("data", "STRING", mode="REQUIRED")
-#             ]
-#             table = bigquery.Table(table_id, schema=schema)
-#             table = self.bigquery_client.create_table(table)
-#             self.logger.info(f"Table {table_id} created successfully.")
-#
-#         except Exception as e:
-#             error_msg = f'{self.__class__.__name__}.{self._create_table.__name__} encountered the Error: {str(e)}'
-#             self.logger.error(error_msg)
-#             self.publisher.publish_message(error_msg)
-#             raise Exception(e)
-#
-#     def get_agents(self):
-#         try:
-#             # Your logic for fetching agents goes here
-#             agents = self._fetch_agents_from_db()
-#             return jsonify(agents)
-#         except Exception as e:
-#             error_msg = f'{self.__class__.__name__}.{self.get_agents.__name__} encountered the Error: {str(e)}'
-#             self.logger.error(error_msg)
-#             self.publisher.publish_message(error_msg)
-#             raise Exception(e)
-#
-#     def run(self):
-#         try:
-#             self.app.run(debug=True)
-#         except Exception as e:
-#             error_msg = f'{self.__class__.__name__}.{self.run.__name__} encountered the Error: {str(e)}'
-#             self.logger.error(error_msg)
-#             self.publisher.publish_message(error_msg)
-#             raise Exception(e)
-#
-#
-# if __name__ == '__main__':
-#     openai_api_key = os.getenv('OPEN_AI_KEY')
-#     open_ai_url = "https://api.openai.com/v1/chat/completions"
-#     app = AgentModelerApp(openai_api_key, open_ai_url)
-#     app.run()
-
-# openai_api_key = os.getenv('OPEN_AI_KEY')
-# open_ai_url = "https://api.openai.com/v1/chat/completions"
-# app = AgentModelerApp(openai_api_key, open_ai_url)
-#
-# app.run()
+    server = App()
+    server.run()
