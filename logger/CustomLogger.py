@@ -1,67 +1,63 @@
 import logging
-import inspect
 import os
-from datetime import datetime
+# import boto3
+from dotenv import load_dotenv
+
+load_dotenv()
+
+import logging
+import os
+import inspect
 
 
-class CustomLogger:
-    def __init__(self, log_level=logging.INFO):
-        self.logger = logging.getLogger(__name__)
+class CustomLogger():
+    def __init__(self, log_file, log_level=logging.DEBUG, log_dir='temp_log'):
+        self.logger = logging.getLogger(self.get_caller_info())
         self.logger.setLevel(log_level)
-        formatter = logging.Formatter(
-            '%(asctime)s %(levelname)s %(pathname)s %(class)s %(method)s:%(lineno)d - %(message)s'
-        )
 
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
+        self.log_dir = log_dir
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
 
-    def log(self, log_level, message):
-        frame = inspect.currentframe().f_back
-        directory = os.path.dirname(os.path.abspath(__file__))
-        class_name = frame.f_globals['__name__']
-        method_name = frame.f_code.co_name
-        line_number = frame.f_lineno
+        self.log_file = os.path.join(log_dir, log_file)
 
-        log_message = message
-        extra_info = {
-            'directory': directory,
-            'class': class_name,
-            'method': method_name,
-            'line_number': line_number,
-        }
+        self.file_handler = logging.FileHandler(self.log_file)
+        self.file_handler.setLevel(log_level)
 
-        if log_level == 'DEBUG':
-            self.logger.debug(log_message, extra=extra_info)
-        elif log_level == 'INFO':
-            self.logger.info(log_message, extra=extra_info)
-        elif log_level == 'WARNING':
-            self.logger.warning(log_message, extra=extra_info)
-        elif log_level == 'ERROR':
-            self.logger.error(log_message, extra=extra_info)
-        elif log_level == 'CRITICAL':
-            self.logger.critical(log_message, extra=extra_info)
+        self.stream_handler = logging.StreamHandler()
+        self.stream_handler.setLevel(log_level)
+
+        # Add method and line number to the log formatter
+        self.formatter = logging.Formatter(
+            '%(asctime)s [%(levelname)s] %(name)s - %(funcName)s:%(lineno)d - %(message)s')
+        self.file_handler.setFormatter(self.formatter)
+        self.stream_handler.setFormatter(self.formatter)
+
+        self.logger.addHandler(self.file_handler)
+        self.logger.addHandler(self.stream_handler)
+
+    def get_caller_info(self):
+        frame = inspect.stack()[2]
+        module = inspect.getmodule(frame[0])
+        class_name = None
+        method_name = None
+        if module:
+            class_name = module.__name__
+        if 'self' in frame[0].f_locals:
+            method_name = frame[0].f_code.co_name
+        return f'{class_name}.{method_name}' if class_name and method_name else class_name
 
     def debug(self, message):
-        self.log('DEBUG', message)
+        self.logger.debug(message)
 
     def info(self, message):
-        self.log('INFO', message)
+        self.logger.info(message)
 
     def warning(self, message):
-        self.log('WARNING', message)
+        self.logger.warning(message)
 
     def error(self, message):
-        self.log('ERROR', message)
+        self.logger.error(message)
 
     def critical(self, message):
-        self.log('CRITICAL', message)
-
-
-# if __name__ == "__main__":
-#     logger = CustomLogger()
-#     logger.debug("This is a debug message")
-#     logger.info("This is an info message")
-#     logger.warning("This is a warning message")
-#     logger.error("This is an error message")
-#     logger.critical("This is a critical message")
+        self.logger.critical(message)
