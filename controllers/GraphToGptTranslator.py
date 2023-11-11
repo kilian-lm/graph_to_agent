@@ -39,6 +39,7 @@ class GraphToGPTTranslator:
                 messages.extend(seq_messages)
 
         return json.dumps({"model": "gpt-3.5-turbo", "messages": messages}, indent=4)
+
     def log_edges_and_nodes(self, edges, nodes):
         for edge in edges:
             self.logger.debug(f"Edge from {edge['from']} to {edge['to']}")
@@ -101,7 +102,6 @@ class GraphToGPTTranslator:
             self.logger.info(f"Node ID: {node_id}, Role: {self.get_role(node)}, Content: {node['label']}")
 
 
-# Example usage
 translator = GraphToGPTTranslator()
 
 graph_data_json = """
@@ -163,6 +163,63 @@ graph_data_json = """
   ]
 }
 """
+
+
+graph_data = json.loads(graph_data_json)
+graph_data
+nodes = {node['id']: node for node in graph_data['nodes']}
+nodes
+edges = graph_data['edges']
+edges
+
+
+
+def build_tree_structure(nodes, edges):
+    tree = {}
+    for node in nodes:
+        tree[node['id']] = {
+            'label': node['label'],
+            'children': []
+        }
+    for edge in edges:
+        tree[edge['from']]['children'].append(edge['to'])
+    return tree
+
+def print_tree(tree, node_id, depth=0):
+    # This function recursively prints the tree.
+    indent = ' ' * depth * 2
+    print(f"{indent}- {tree[node_id]['label']}")
+    for child_id in tree[node_id]['children']:
+        print_tree(tree, child_id, depth + 1)
+
+
+tree = build_tree_structure(graph_data['nodes'], graph_data['edges'])
+
+# Print the tree starting from the root node. Assuming the root has no incoming edges.
+root_nodes = [node['id'] for node in graph_data['nodes'] if not any(edge['to'] == node['id'] for edge in graph_data['edges'])]
+
+# Now let's print the trees. There may be multiple roots if the graph is not a single tree.
+for root_id in root_nodes:
+    print_tree(tree, root_id)
+    print("\n")  # Add spacing between different trees (if any)
+
+
+
+
+
+
+
+
+
+
+translator.log_edges_and_nodes(edges, nodes)
+sequences = translator.identify_and_log_sequences(nodes, edges)
+
+messages = []
+for seq in sequences:
+    if translator.is_valid_sequence(seq, nodes):
+        seq_messages = translator.format_sequence_to_messages(seq, nodes)
+        messages.extend(seq_messages)
 
 translated_data = translator.translate_graph_to_gpt(graph_data_json)
 translated_data
