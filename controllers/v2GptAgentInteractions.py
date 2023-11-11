@@ -17,6 +17,8 @@ import inspect
 load_dotenv()
 
 
+# assumption: new methods allows chaining of agents but != recursive calls because @var isnt integrated yet
+
 class GptAgentInteractions():
 
     def __init__(self, dataset_id):
@@ -149,18 +151,59 @@ class GptAgentInteractions():
         for child_id in tree[node_id]['children']:
             self.print_tree(tree, child_id, depth + 1)
 
-    def call_tree(self, graph_data):
-        graph_data = json.loads(graph_data)
+    def load_json_graph(self, json_graph_data):
+        graph_data = json.loads(json_graph_data)
+        return graph_data
 
+    def provide_root_nodes(self, json_graph_data):
         root_nodes = [node['id'] for node in graph_data['nodes'] if
                       not any(edge['to'] == node['id'] for edge in graph_data['edges'])]
 
-        tree = self.build_tree_structure(graph_data['nodes'], graph_data['edges'])
+        return root_nodes
+
+    def call_tree(self, root_nodes, tree):
+
+        # tree = self.build_tree_structure(graph_data['nodes'], graph_data['edges'])
 
         # Now let's print the trees. There may be multiple roots if the graph is not a single tree.
         for root_id in root_nodes:
             self.print_tree(tree, root_id)
             print("\n")  # Add spacing between different trees (if any)
+
+    def tree_to_gpt_call(self, tree, node_id, is_user=True):
+        messages = []
+        node = tree[node_id]
+
+        # If the current node is a 'user' or 'system', process its first child as the content.
+        if node['label'] in ['user', 'system']:
+            role = 'user' if is_user else 'system'
+            if node['children']:
+                content_node_id = node['children'][0]  # First child is the content.
+                content = tree[content_node_id]['label']
+                messages.append({"role": role, "content": content})
+
+                # Process the response (next child of the content node).
+                if len(tree[content_node_id]['children']) > 0:
+                    response_node_id = tree[content_node_id]['children'][0]
+                    messages.extend(self.tree_to_gpt_call(tree, response_node_id, not is_user))
+
+        return messages
+
+    def tree_based_design_general(self, root_nodes, tree):
+        gpt_calls = []
+
+        for root_id in root_nodes:
+            messages = self.tree_to_gpt_call(tree, root_id)
+            gpt_call = {
+                "model": "gpt-3.5-turbo",
+                "messages": messages
+            }
+            gpt_calls.append(gpt_call)
+
+        return gpt_calls
+
+    def main_tree_based_design_general(self, json_graph_data, edges):
+        root_nodes = self.provide_root_nodes(json_graph_data)
 
     def translate_graph_data_for_bigquery(self, graph_data, graph_id):
         # Extract nodes and edges from the graph data
@@ -633,7 +676,6 @@ graph_data_json = """
   ]
 }
 """
-
 
 gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
 
