@@ -56,7 +56,7 @@ class App():
         self.logger.info(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
         gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data)
         print(gpt_response)
-        breakpoint()
+        # breakpoint()
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         filename = f"temp_local/debugging_var_method_{timestamp}.json"
 
@@ -85,10 +85,11 @@ class App():
 
         else:
             # Continue with the legacy workflow
-            gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
+            # gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
 
             # gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data)
             # gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data_json)
+            gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data)
 
             self.logger.info(f"return_gpt_agent_answer_to_graph, gpt_response: {gpt_response}")
             updated_graph = self.gpt_agent_interactions.process_gpt_response_and_update_graph(gpt_response, graph_data)
