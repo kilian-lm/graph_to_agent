@@ -125,10 +125,6 @@ class GptAgentInteractions():
 
         return {"nodes": nodes, "edges": edges}
 
-    def json_graph_data(self, graph_data):
-        graph_data = json.loads(graph_data)
-        return (graph_data)
-
     def build_tree_structure(self, nodes, edges):
         # graph_data = json.loads(graph_data)
         # nodes = graph_data['nodes']
@@ -155,7 +151,7 @@ class GptAgentInteractions():
         graph_data = json.loads(json_graph_data)
         return graph_data
 
-    def provide_root_nodes(self, json_graph_data):
+    def provide_root_nodes(self, graph_data):
         root_nodes = [node['id'] for node in graph_data['nodes'] if
                       not any(edge['to'] == node['id'] for edge in graph_data['edges'])]
 
@@ -189,21 +185,49 @@ class GptAgentInteractions():
 
         return messages
 
+    # def tree_based_design_general(self, root_nodes, tree):
+    #     gpt_calls = []
+    #
+    #     for root_id in root_nodes:
+    #         messages = self.tree_to_gpt_call(tree, root_id)
+    #         gpt_call = {
+    #             "model": "gpt-3.5-turbo",
+    #             "messages": messages
+    #         }
+    #         gpt_calls.append(gpt_call)
+    #
+    #     return gpt_calls
+
     def tree_based_design_general(self, root_nodes, tree):
-        gpt_calls = []
+        all_messages = []
 
         for root_id in root_nodes:
             messages = self.tree_to_gpt_call(tree, root_id)
-            gpt_call = {
-                "model": "gpt-3.5-turbo",
-                "messages": messages
-            }
-            gpt_calls.append(gpt_call)
+            all_messages.extend(messages)
 
-        return gpt_calls
+        gpt_call = {
+            "model": "gpt-3.5-turbo",
+            "messages": all_messages
+        }
 
-    def main_tree_based_design_general(self, json_graph_data, edges):
-        root_nodes = self.provide_root_nodes(json_graph_data)
+        return gpt_call
+
+    def main_tree_based_design_general(self, json_graph_data):
+        graph_data = self.load_json_graph(json_graph_data)
+        self.logger.info(graph_data)
+        tree = self.build_tree_structure(graph_data['nodes'], graph_data['edges'])
+        self.logger.info(tree)
+
+        root_nodes = self.provide_root_nodes(graph_data)
+        self.logger.info(root_nodes)
+
+        gpt_calls = self.tree_based_design_general(root_nodes, tree)
+        self.logger.info(gpt_calls)
+        response = self.get_gpt_response(gpt_calls)
+
+        # process_gpt_response_and_update_graph
+
+        return response
 
     def translate_graph_data_for_bigquery(self, graph_data, graph_id):
         # Extract nodes and edges from the graph data
@@ -357,11 +381,13 @@ class GptAgentInteractions():
         return None
 
     def get_gpt_response(self, processed_data):
-        post_data = {
-            "model": os.getenv("MODEL"),
-            "messages": processed_data["messages"]
-        }
-        response = requests.post(self.openai_base_url, headers=self.headers, json=post_data)
+        # post_data = {
+        #     # "model": os.getenv("MODEL"),
+        #     "model":processed_data["model"],
+        #     "messages": processed_data["messages"]
+        # }
+        self.logger.debug(processed_data)
+        response = requests.post(self.openai_base_url, headers=self.headers, json=processed_data)
         if response.status_code == 200:
             return response.json()["choices"][0]["message"]["content"]
         else:
@@ -414,143 +440,6 @@ class GptAgentInteractions():
                 node['id'] = f"{node['id']}_v1"  # Assuming recursion_depth is always 1 for simplicity
 
         return graph_data
-
-    # def populate_variable_nodes(self, graph_data, gpt_response, recursion_depth=0):
-    #     import re
-    #
-    #     nodes = graph_data["nodes"]
-    #     edges = graph_data["edges"]
-    #
-    #     # Regular expression to find @variable placeholders with optional suffix
-    #     variable_pattern = re.compile(r'@variable(?:_(\d+))?')
-    #
-    #     # Track the versions of variables
-    #     variable_versions = {}
-    #
-    #     for node in nodes:
-    #         self.logger.info(f"Processing node with id {node['id']} and label {node['label']}")
-    #
-    #         content = node['label']
-    #         matches = list(variable_pattern.finditer(content))
-    #         matches.sort(key=lambda match: int(match.group(1)) if match.group(1) else 0)
-    #
-    #         for match in matches:
-    #             suffix = match.group(1)
-    #             variable_full = match.group(0)
-    #
-    #             if suffix:
-    #                 self.logger.info(f"Found versioned variable with suffix {suffix} in node {node['id']}")
-    #                 self.logger.info(f"Found base @variable in node {node['id']}")
-    #
-    #                 # This is a versioned variable
-    #                 required_version = int(suffix)
-    #                 versioned_node_id = f"{node['id']}_v{required_version}"
-    #
-    #                 if versioned_node_id in variable_versions:
-    #                     # Use the versioned content
-    #                     previous_content = variable_versions[versioned_node_id]
-    #                     updated_content = content.replace(variable_full, previous_content)
-    #                 else:
-    #                     # Recursive call to resolve variable
-    #                     updated_graph = self.populate_variable_nodes(graph_data, gpt_response, recursion_depth + 1)
-    #                     updated_node = next(node for node in updated_graph['nodes'] if node['id'] == versioned_node_id)
-    #                     previous_content = updated_node['label']
-    #                     updated_content = content.replace(variable_full, previous_content)
-    #
-    #                 # Update node label with resolved content
-    #                 node['label'] = updated_content
-    #                 node['id'] = versioned_node_id  # Update node ID with version
-    #                 variable_versions[node['id']] = updated_content
-    #             else:
-    #                 # It's the base @variable
-    #                 updated_content = content.replace(variable_full, gpt_response)
-    #                 node['label'] = updated_content
-    #                 self.logger.info(f"Node {node['id']} updated to {node['label']}")
-    #
-    #                 versioned_node_id = f"{node['id']}_v{recursion_depth + 1}"
-    #                 node['id'] = versioned_node_id
-    #                 variable_versions[node['id']] = updated_content
-    #
-    #     # Update edges to point to the new versioned node IDs
-    #     for edge in edges:
-    #         if edge['from'] in variable_versions:
-    #             edge['from'] += f"_v{recursion_depth + 1}"
-    #         if edge['to'] in variable_versions:
-    #             edge['to'] += f"_v{recursion_depth + 1}"
-    #
-    #     return graph_data
-
-    # def populate_variable_nodes(self, graph_data, gpt_response, recursion_depth=0):
-    #     import re
-    #
-    #     nodes = graph_data["nodes"]
-    #     edges = graph_data["edges"]
-    #
-    #     # Regular expression to find @variable placeholders with optional suffix
-    #     variable_pattern = re.compile(r'@variable(?:_(\d+))?')
-    #
-    #     # Track the versions of variables
-    #     variable_versions = {}
-    #
-    #     for node in nodes:
-    #         self.logger.info(f"Processing node with id {node['id']} and label {node['label']}")
-    #
-    #         content = node['label']
-    #         matches = list(variable_pattern.finditer(content))
-    #         matches.sort(key=lambda match: int(match.group(1)) if match.group(1) else 0)
-    #
-    #         for match in matches:
-    #             suffix = match.group(1)
-    #             variable_full = match.group(0)
-    #
-    #             if suffix:
-    #                 self.logger.info(f"Found versioned variable with suffix {suffix} in node {node['id']}")
-    #                 self.logger.info(f"Found base @variable in node {node['id']}")
-    #
-    #                 # This is a versioned variable
-    #                 required_version = int(suffix)
-    #                 versioned_node_id = f"{node['id']}_v{required_version}"
-    #
-    #                 if versioned_node_id in variable_versions:
-    #                     # Use the versioned content
-    #                     previous_content = variable_versions[versioned_node_id]
-    #                     updated_content = content.replace(variable_full, previous_content)
-    #                 else:
-    #                     # Recursive call to resolve variable
-    #                     processed_data = self.translate_graph_to_gpt_sequence(graph_data)
-    #                     self.logger.info(f"populate_variable_nodes, processed_data {processed_data}")
-    #
-    #                     gpt_response = self.get_gpt_response(processed_data)
-    #                     self.populate_variable_nodes(graph_data, gpt_response, recursion_depth + 1)
-    #                     self.logger.info(f"Populating variable nodes at recursion depth {recursion_depth}")
-    #
-    #                 # Update node label with resolved content
-    #                 node['label'] = updated_content
-    #                 node['id'] = versioned_node_id  # Update node ID with version
-    #                 variable_versions[node['id']] = updated_content
-    #             else:
-    #                 # It's the base @variable
-    #                 updated_content = content.replace(variable_full, gpt_response)
-    #                 node['label'] = updated_content
-    #                 self.logger.info(f"Node {node['id']} updated to {node['label']}")
-    #
-    #                 versioned_node_id = f"{node['id']}_v{recursion_depth + 1}"
-    #                 node['id'] = versioned_node_id
-    #                 variable_versions[node['id']] = updated_content
-    #
-    #     # Update edges to point to the new versioned node IDs
-    #     for edge in edges:
-    #         if edge['from'] in variable_versions:
-    #             edge['from'] += f"_v{recursion_depth + 1}"
-    #         if edge['to'] in variable_versions:
-    #             edge['to'] += f"_v{recursion_depth + 1}"
-    #
-    #     # Save the updated nodes and edges
-    #     self.save_graph_data(nodes, edges)
-    #
-    #     self.logger.info(f"Saving updated graph data with nodes: {graph_data['nodes']} and edges: {graph_data['edges']}")
-    #
-    #     return graph_data
 
     def save_graph_data(self, graph_data, graph_id):
         try:
@@ -678,6 +567,38 @@ graph_data_json = """
 """
 
 gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
+
+graph_data = gpt_agent_interactions.load_json_graph(graph_data_json)
+
+gpt_agent_interactions.logger.info(graph_data)
+tree = gpt_agent_interactions.build_tree_structure(graph_data['nodes'], graph_data['edges'])
+gpt_agent_interactions.logger.info(tree)
+
+root_nodes = gpt_agent_interactions.provide_root_nodes(graph_data)
+gpt_agent_interactions.logger.info(root_nodes)
+
+gpt_calls = gpt_agent_interactions.tree_based_design_general(root_nodes, tree)
+gpt_agent_interactions.logger.info(gpt_calls)
+
+type(gpt_calls)
+
+test = json.dumps(gpt_calls)
+
+# post_data = {
+#     # "model": os.getenv("MODEL"),
+#     "model": test["model"],
+#     "messages": gpt_calls["messages"]
+# }
+
+# gpt_agent_interactions.extract_and_send_to_gpt(gpt_calls)
+
+response =gpt_agent_interactions.get_gpt_response(gpt_calls)
+
+response = gpt_agent_interactions.get_gpt_response(gpt_calls)
+response
+
+gpt_agent_interactions.main_tree_based_design_general(graph_data_json)
+
 
 gpt_agent_interactions.call_tree(graph_data_json)
 nodes_for_bq, edges_for_bq = gpt_agent_interactions.translate_graph_data_for_bigquery(graph_data_json, "test")
