@@ -2,7 +2,10 @@ import os
 import datetime
 from flask import Flask, render_template, jsonify, request
 import json
-from controllers.GptAgentInteractions import GptAgentInteractions
+# from controllers.GptAgentInteractions import GptAgentInteractions
+from controllers.v2GptAgentInteractions import v2GptAgentInteractions
+
+
 from logger.CustomLogger import CustomLogger
 import logging
 
@@ -24,7 +27,8 @@ class App():
         self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
         self.app = Flask(__name__)
-        self.gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
+        # self.gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
+        self.gpt_agent_interactions = v2GptAgentInteractions('graph_to_agent')
         self.setup_routes()
 
     def index_call(self):
@@ -50,7 +54,9 @@ class App():
     def return_gpt_agent_answer_to_graph(self):
         graph_data = request.json
         self.logger.info(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
-
+        gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data)
+        print(gpt_response)
+        breakpoint()
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         filename = f"temp_local/debugging_var_method_{timestamp}.json"
 
@@ -80,6 +86,10 @@ class App():
         else:
             # Continue with the legacy workflow
             gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
+
+            # gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data)
+            # gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data_json)
+
             self.logger.info(f"return_gpt_agent_answer_to_graph, gpt_response: {gpt_response}")
             updated_graph = self.gpt_agent_interactions.process_gpt_response_and_update_graph(gpt_response, graph_data)
             self.logger.info(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
