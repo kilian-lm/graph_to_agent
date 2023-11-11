@@ -196,6 +196,7 @@ def print_tree(tree, node_id, depth=0):
 tree = build_tree_structure(graph_data['nodes'], graph_data['edges'])
 
 # Print the tree starting from the root node. Assuming the root has no incoming edges.
+# root_nodes = [node['id'] for node in graph_data['nodes'] if not any(edge['to'] == node['id'] for edge in graph_data['edges'])]
 root_nodes = [node['id'] for node in graph_data['nodes'] if not any(edge['to'] == node['id'] for edge in graph_data['edges'])]
 
 # Now let's print the trees. There may be multiple roots if the graph is not a single tree.
@@ -204,8 +205,93 @@ for root_id in root_nodes:
     print("\n")  # Add spacing between different trees (if any)
 
 
+def tree_to_gpt_call(tree, node_id, is_user=True):
+    messages = []
+    node = tree[node_id]
+
+    # If the current node is a 'user' or 'system', process its first child as the content.
+    if node['label'] in ['user', 'system']:
+        role = 'user' if is_user else 'system'
+        if node['children']:
+            content_node_id = node['children'][0]  # First child is the content.
+            content = tree[content_node_id]['label']
+            messages.append({"role": role, "content": content})
+
+            # Process the response (next child of the content node).
+            if len(tree[content_node_id]['children']) > 0:
+                response_node_id = tree[content_node_id]['children'][0]
+                messages.extend(tree_to_gpt_call(tree, response_node_id, not is_user))
+
+    return messages
+
+gpt_calls = []
+
+for root_id in root_nodes:
+    messages = tree_to_gpt_call(tree, root_id)
+    gpt_call = {
+        "model": "gpt-3.5-turbo",
+        "messages": messages
+    }
+    gpt_calls.append(gpt_call)
+
+gpt_calls
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# This results in a list of GPT call data structures that correctly follow the conversation pattern of the tree.
+
+
+# This results in a list of GPT call data structures, following the tree's structure.
+
+
+def convert_tree_to_gpt_call(tree, node_id, messages, depth=0):
+    # Determine the role based on the depth of the node
+    role = 'user' if depth % 2 == 0 else 'system'
+
+    # Add the current node's content to the messages list
+    # Skip adding for 'user' or 'system' label, add only their children's content
+    if tree[node_id]['label'] not in ['user', 'system']:
+        messages.append({
+            "role": role,
+            "content": tree[node_id]['label']
+        })
+
+    # Recursively process each child node
+    for child_id in tree[node_id]['children']:
+        convert_tree_to_gpt_call(tree, child_id, messages, depth + 1)
+
+    return messages
+
+messages = []
+
+# Assuming the root has no incoming edges
+root_nodes_translator = [node['id'] for node in graph_data['nodes'] if not any(edge['to'] == node['id'] for edge in graph_data['edges'])]
+
+# Convert the tree to GPT agent call format
+for root_id in root_nodes_translator:
+    messages = convert_tree_to_gpt_call(tree, root_id, messages)
+
+# Final data structure for the GPT agent call
+data = {
+    "model": "gpt-3.5-turbo",
+    "messages": messages
+}
+
+
+data
 
 
 
