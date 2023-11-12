@@ -19,7 +19,7 @@ load_dotenv()
 
 # assumption: new methods allows chaining of agents but != recursive calls because @var isnt integrated yet
 
-class v2GptAgentInteractions():
+class EngineRoom():
 
     def __init__(self, dataset_id):
         # First logging
@@ -129,23 +129,7 @@ class v2GptAgentInteractions():
 
         return gpt_call
 
-    def main_tree_based_design_general(self, graph_data):
-        # graph_data = self.load_json_graph(json_graph_data)
-        self.logger.info(graph_data)
-        tree = self.build_tree_structure(graph_data['nodes'], graph_data['edges'])
-        self.logger.info(tree)
 
-        root_nodes = self.provide_root_nodes(graph_data)
-        self.logger.info(root_nodes)
-
-        gpt_calls = self.prepare_gpt_format(root_nodes, tree)
-        self.logger.info(gpt_calls)
-        self.logger.info(self.call_tree(root_nodes, tree))
-        response = self.get_gpt_response(gpt_calls)
-
-        # process_gpt_response_and_update_graph
-
-        return response
 
     def get_node_type(self, node):
         if 'user' in node['label'].lower():
@@ -180,39 +164,94 @@ class v2GptAgentInteractions():
         else:
             raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
 
+    # def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
+    #     last_content_node = self.get_last_content_node(graph_data['edges'], graph_data['nodes'])
+    #
+    #     self.logger.info(f"process_gpt_response_and_update_graph, last_content_node : {last_content_node}")
+    #
+    #     # Generate a unique ID for the new node
+    #     new_node_id = f"agent_response_based_on{last_content_node['id']}"
+    #     new_node = {
+    #         'id': new_node_id,
+    #         'label': gpt_response,
+    #     }
+    #
+    #     self.logger.info(f"process_gpt_response_and_update_graph, new_node : {new_node}")
+    #
+    #     # Check if a node with the new ID already exists
+    #     existing_node_ids = {node['id'] for node in graph_data['nodes']}
+    #     if new_node_id not in existing_node_ids:
+    #         graph_data['nodes'].append(new_node)
+    #         # Create a new edge from the last content node to the new node
+    #         new_edge = {
+    #             'from': last_content_node['id'],
+    #             'to': new_node_id,
+    #         }
+    #         graph_data['edges'].append(new_edge)
+    #         self.logger.info(f"process_gpt_response_and_update_graph, new_edge : {new_edge}")
+    #     else:
+    #         self.logger.info(f"Node with ID {new_node_id} already exists. Skipping node and edge addition.")
+    #
+    #     self.logger.info(f"process_gpt_response_and_update_graph, graph_data : {graph_data}")
+    #
+    #     # debugging:
+    #     # graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    #     # self.save_graph_data(graph_data, graph_id)
+    #     return graph_data
+
     def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
-        last_content_node = self.get_last_content_node(graph_data['edges'], graph_data['nodes'])
+        # Find the last 'user' node in the graph_data
+        last_user_node = None
+        for edge in reversed(graph_data['edges']):  # Reverse to start from the end
+            for node in graph_data['nodes']:
+                if node['id'] == edge['to'] and self.get_node_type(node) == 'user':
+                    last_user_node = node
+                    break
+            if last_user_node:
+                break
 
-        self.logger.info(f"process_gpt_response_and_update_graph, last_content_node : {last_content_node}")
+        if last_user_node is None:
+            raise Exception("Last user node could not be found.")
 
-        # Generate a unique ID for the new node
-        new_node_id = f"agent_response_based_on{last_content_node['id']}"
-        new_node = {
-            'id': new_node_id,
+        self.logger.info(f"process_gpt_response_and_update_graph, last_user_node : {last_user_node}")
+
+        # Generate a unique ID for the new content node based on the last user node
+        new_content_node_id = f"content_{int(datetime.datetime.now().timestamp() * 1000)}"
+        new_content_node = {
+            'id': new_content_node_id,
             'label': gpt_response,
         }
 
-        self.logger.info(f"process_gpt_response_and_update_graph, new_node : {new_node}")
+        # Add the new content node to the nodes list
+        graph_data['nodes'].append(new_content_node)
 
-        # Check if a node with the new ID already exists
-        existing_node_ids = {node['id'] for node in graph_data['nodes']}
-        if new_node_id not in existing_node_ids:
-            graph_data['nodes'].append(new_node)
-            # Create a new edge from the last content node to the new node
-            new_edge = {
-                'from': last_content_node['id'],
-                'to': new_node_id,
-            }
-            graph_data['edges'].append(new_edge)
-            self.logger.info(f"process_gpt_response_and_update_graph, new_edge : {new_edge}")
-        else:
-            self.logger.info(f"Node with ID {new_node_id} already exists. Skipping node and edge addition.")
+        # Create a new edge from the last user node to the new content node
+        new_edge_to_content = {
+            'from': last_user_node['id'],
+            'to': new_content_node_id,
+        }
+        graph_data['edges'].append(new_edge_to_content)
 
-        self.logger.info(f"process_gpt_response_and_update_graph, graph_data : {graph_data}")
+        # Create a new edge from the new content node to the GPT agent response node
+        new_agent_response_node_id = f"agent_response_{int(datetime.datetime.now().timestamp() * 1000)}"
+        new_agent_response_node = {
+            'id': new_agent_response_node_id,
+            'label': 'GPT response based on the content node'
+        }
+        graph_data['nodes'].append(new_agent_response_node)
 
-        # debugging:
-        # graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        # self.save_graph_data(graph_data, graph_id)
+        new_edge_to_agent_response = {
+            'from': new_content_node_id,
+            'to': new_agent_response_node_id,
+        }
+        graph_data['edges'].append(new_edge_to_agent_response)
+
+        self.logger.info(f"process_gpt_response_and_update_graph, new_content_node : {new_content_node}")
+        self.logger.info(f"process_gpt_response_and_update_graph, new_edge_to_content : {new_edge_to_content}")
+        self.logger.info(f"process_gpt_response_and_update_graph, new_agent_response_node : {new_agent_response_node}")
+        self.logger.info(
+            f"process_gpt_response_and_update_graph, new_edge_to_agent_response : {new_edge_to_agent_response}")
+
         return graph_data
 
     def populate_variable_nodes(self, graph_data, gpt_response):
@@ -227,6 +266,27 @@ class v2GptAgentInteractions():
                 node['id'] = f"{node['id']}_v1"  # Assuming recursion_depth is always 1 for simplicity
 
         return graph_data
+
+    def main_tree_based_design_general(self, graph_data):
+        # graph_data = self.load_json_graph(json_graph_data)
+        self.logger.info(graph_data)
+        tree = self.build_tree_structure(graph_data['nodes'], graph_data['edges'])
+        self.logger.info(tree)
+
+        root_nodes = self.provide_root_nodes(graph_data)
+        self.logger.info(root_nodes)
+
+        gpt_calls = self.prepare_gpt_format(root_nodes, tree)
+        self.logger.info(gpt_calls)
+        self.logger.info(self.call_tree(root_nodes, tree))
+        response = self.get_gpt_response(gpt_calls)
+
+        self.logger.info(f"return_gpt_agent_answer_to_graph, gpt_response: {response}")
+        updated_graph = self.process_gpt_response_and_update_graph(response, graph_data)
+        self.logger.info(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
+
+
+        return updated_graph
 
 # graph_data_json = """
 # {
