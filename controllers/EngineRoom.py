@@ -164,47 +164,13 @@ class EngineRoom():
         else:
             raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
 
-    # def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
-    #     last_content_node = self.get_last_content_node(graph_data['edges'], graph_data['nodes'])
-    #
-    #     self.logger.info(f"process_gpt_response_and_update_graph, last_content_node : {last_content_node}")
-    #
-    #     # Generate a unique ID for the new node
-    #     new_node_id = f"agent_response_based_on{last_content_node['id']}"
-    #     new_node = {
-    #         'id': new_node_id,
-    #         'label': gpt_response,
-    #     }
-    #
-    #     self.logger.info(f"process_gpt_response_and_update_graph, new_node : {new_node}")
-    #
-    #     # Check if a node with the new ID already exists
-    #     existing_node_ids = {node['id'] for node in graph_data['nodes']}
-    #     if new_node_id not in existing_node_ids:
-    #         graph_data['nodes'].append(new_node)
-    #         # Create a new edge from the last content node to the new node
-    #         new_edge = {
-    #             'from': last_content_node['id'],
-    #             'to': new_node_id,
-    #         }
-    #         graph_data['edges'].append(new_edge)
-    #         self.logger.info(f"process_gpt_response_and_update_graph, new_edge : {new_edge}")
-    #     else:
-    #         self.logger.info(f"Node with ID {new_node_id} already exists. Skipping node and edge addition.")
-    #
-    #     self.logger.info(f"process_gpt_response_and_update_graph, graph_data : {graph_data}")
-    #
-    #     # debugging:
-    #     # graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    #     # self.save_graph_data(graph_data, graph_id)
-    #     return graph_data
 
     def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
         # Find the last 'user' node in the graph_data
         last_user_node = None
         for edge in reversed(graph_data['edges']):  # Reverse to start from the end
             for node in graph_data['nodes']:
-                if node['id'] == edge['to'] and self.get_node_type(node) == 'user':
+                if node['id'] == edge['to'] and self.get_node_type(node) == 'content':
                     last_user_node = node
                     break
             if last_user_node:
@@ -233,24 +199,52 @@ class EngineRoom():
         graph_data['edges'].append(new_edge_to_content)
 
         # Create a new edge from the new content node to the GPT agent response node
-        new_agent_response_node_id = f"agent_response_{int(datetime.datetime.now().timestamp() * 1000)}"
-        new_agent_response_node = {
-            'id': new_agent_response_node_id,
-            'label': 'GPT response based on the content node'
-        }
-        graph_data['nodes'].append(new_agent_response_node)
+        # new_agent_response_node_id = f"agent_response_{int(datetime.datetime.now().timestamp() * 1000)}"
+        # new_agent_response_node = {
+        #     'id': new_agent_response_node_id,
+        #     'label': 'GPT response based on the content node'
+        # }
+        # graph_data['nodes'].append(new_agent_response_node)
 
-        new_edge_to_agent_response = {
-            'from': new_content_node_id,
-            'to': new_agent_response_node_id,
-        }
-        graph_data['edges'].append(new_edge_to_agent_response)
+        # new_edge_to_agent_response = {
+        #     'from': new_content_node_id,
+        #     'to': new_agent_response_node_id,
+        # }
+        # graph_data['edges'].append(new_edge_to_agent_response)
 
         self.logger.info(f"process_gpt_response_and_update_graph, new_content_node : {new_content_node}")
         self.logger.info(f"process_gpt_response_and_update_graph, new_edge_to_content : {new_edge_to_content}")
-        self.logger.info(f"process_gpt_response_and_update_graph, new_agent_response_node : {new_agent_response_node}")
-        self.logger.info(
-            f"process_gpt_response_and_update_graph, new_edge_to_agent_response : {new_edge_to_agent_response}")
+        # self.logger.info(f"process_gpt_response_and_update_graph, new_agent_response_node : {new_agent_response_node}")
+        # self.logger.info(
+            # f"process_gpt_response_and_update_graph, new_edge_to_agent_response : {new_edge_to_agent_response}")
+
+        return graph_data
+
+    def v2_subgraphs_process_gpt_response_and_update_graph(self, gpt_responses, graph_data):
+        # This assumes that gpt_responses is a list of responses for each disconnected subgraph
+        # If it's a single string, you'll need to modify this to make the call for each subgraph and collect the responses.
+
+        # Identify all root nodes, which are starting points for each disconnected subgraph
+        root_nodes = self.provide_root_nodes(graph_data)
+
+        # Build a tree structure for each subgraph
+        trees = [self.build_tree_structure(graph_data['nodes'], graph_data['edges'], root) for root in root_nodes]
+
+        # Find the last content node for each subgraph and connect the GPT response
+        for i, tree in enumerate(trees):
+            last_content_node = self.find_last_content_node_in_tree(tree)
+            # Get corresponding GPT response for this subgraph
+            gpt_response = gpt_responses[
+                i]  # This line is just an example. Adjust it to fit how you get your GPT responses.
+
+            # Create a new node for the GPT response and add it to the graph
+            new_node_id = f"agent_response_{i}_{int(datetime.datetime.now().timestamp() * 1000)}"
+            new_node = {'id': new_node_id, 'label': gpt_response}
+            graph_data['nodes'].append(new_node)
+
+            # Connect this new node to the last content node
+            new_edge = {'from': last_content_node['id'], 'to': new_node_id}
+            graph_data['edges'].append(new_edge)
 
         return graph_data
 
