@@ -1,4 +1,3 @@
-
 import os
 import json
 from google.cloud import bigquery
@@ -17,7 +16,6 @@ import inspect
 import re
 
 load_dotenv()
-
 
 json_graph_data = """{
   "nodes": [
@@ -294,8 +292,8 @@ json_graph_data = """{
   ]
 }"""
 
-
 graph_data = json.loads(json_graph_data)
+
 
 class Matrix3D:
     def __init__(self, graph_data):
@@ -310,6 +308,59 @@ class Matrix3D:
         self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
         self.graph_data = graph_data
+
+    def find_connected_subtrees(self):
+        # Find connected subtrees in the 3D matrix
+        binary_layer = self.create_binary_layer()
+        self.logger.info(binary_layer)
+        nodes = self.graph_data["nodes"]
+        self.logger.info(nodes)
+
+        visited = set()
+        subtrees = []
+
+        def dfs(node_id, subtree):
+            visited.add(node_id)
+
+            self.logger.info(node_id)
+
+            subtree.append(node_id)
+            self.logger.info(subtree)
+
+            for neighbor_id, is_connected in binary_layer[node_id].items():
+                if is_connected == 1 and neighbor_id not in visited:
+                    dfs(neighbor_id, subtree)
+                    self.logger.info(dfs)
+
+        for node in nodes:
+            if node["id"] not in visited:
+                subtree = []
+                dfs(node["id"], subtree)
+                subtrees.append(subtree)
+
+        return subtrees
+
+    def count_connected_subtrees(self):
+        # Count the number of connected subtrees in the 3D matrix
+        binary_layer = self.create_binary_layer()  # Call create_binary_layer after it's defined
+
+        connected_subtrees = self.find_connected_subtrees()
+        num_connected_trees = 0
+
+        for subtree in connected_subtrees:
+            # Check if the subtree has only one connecting node
+            connecting_nodes = 0
+            for node_id in subtree:
+                neighbors = binary_layer[node_id]
+                num_neighbors = sum(neighbors.values())
+                if num_neighbors == 1:
+                    connecting_nodes += 1
+
+            if connecting_nodes == 1:
+                num_connected_trees += 1
+
+        return num_connected_trees
+
 
     def create_binary_layer(self):
         # Create a binary layer based on node connections
@@ -343,45 +394,52 @@ class Matrix3D:
         # Find hierarchical patterns in the 3D matrix
         patterns = []
         nodes = self.graph_data["nodes"]
-        self.logger.info(nodes)
+        edges = self.graph_data["edges"]
 
         def is_valid_pattern(pattern):
             # Check if a pattern is valid (e.g., "user", "system", "user")
             if len(pattern) != 6:
                 return False
             return (
-                    pattern[0].startswith("user") and
-                    pattern[2].startswith("system") and
-                    pattern[4].startswith("user")
+                    pattern[0] == "user" and
+                    pattern[2] == "system" and
+                    pattern[4] == "user"
             )
 
-        binary_layer = self.create_binary_layer()  # Call the method with parentheses
+        def dfs(node, pattern):
+            # Depth-first search to traverse the hierarchy and find patterns
+            pattern.append(node["label"])
 
-        for i in range(len(nodes)):
-            for j in range(i + 1, len(nodes)):
-                if binary_layer[nodes[i]["id"]][nodes[j]["id"]] == 1:  # Use the result of the method
-                    for k in range(j + 1, len(nodes)):
-                        if (
-                                binary_layer[nodes[j]["id"]][nodes[k]["id"]] == 1
-                                and binary_layer[nodes[i]["id"]][nodes[k]["id"]] == 1
-                        ):
-                            pattern = (
-                                nodes[i]["label"],
-                                nodes[j]["label"],
-                                nodes[j]["label"],  # some text
-                                nodes[k]["label"],
-                                nodes[k]["label"],  # some text
-                                nodes[i]["label"],
-                            )
-                            if is_valid_pattern(pattern):
-                                patterns.append(pattern)
-        return patterns
+            if node["label"] == "system" and len(pattern) > 1:
+                for edge in edges:
+                    if edge["from"] == node["id"]:
+                        next_node = next(n for n in nodes if n["id"] == edge["to"])
+                        dfs(next_node, pattern)
+
+            if node["label"] == "user" and len(pattern) > 1:
+                patterns.append(tuple(pattern))
+
+            pattern.pop()
+
+        for node in nodes:
+            if node["label"] == "user":
+                dfs(node, [])
+
+        valid_patterns = [p for p in patterns if is_valid_pattern(p)]
+        return valid_patterns
+
+    # Example usage:
+    # patterns = your_matrix_instance.find_patterns()
+    # print(patterns)
     # def get_patterns(self):
-        # Return the found patterns
-        # return self.find_patterns()
+    # Return the found patterns
+    # return self.find_patterns()
 
 
 mat_3d = Matrix3D(graph_data)
 
+mat_3d.count_connected_subtrees()
+
+mat_3d.find_connected_subtrees()
 
 mat_3d.find_patterns()
