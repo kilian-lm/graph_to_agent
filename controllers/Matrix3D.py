@@ -361,7 +361,6 @@ class Matrix3D:
 
         return num_connected_trees
 
-
     def create_binary_layer(self):
         # Create a binary layer based on node connections
         nodes = self.graph_data["nodes"]
@@ -428,6 +427,35 @@ class Matrix3D:
         valid_patterns = [p for p in patterns if is_valid_pattern(p)]
         return valid_patterns
 
+    def print_binary_layer(self):
+        """
+        Print the binary layer in a human-readable format.
+        """
+        binary_layer = self.create_binary_layer()
+        for node_id, connections in binary_layer.items():
+            print(f"Node {node_id}: ", end="")
+            for connected_node, is_connected in connections.items():
+                if is_connected:
+                    print(f"{connected_node} ", end="")
+            print()  # New line after each node's connections
+
+    def print_second_layer(self):
+        """
+        Print the second layer, assuming it deals with relationships between nodes.
+        """
+        # Example: Print edges in a human-readable format
+        edges = self.graph_data.get("edges", [])
+        for edge in edges:
+            print(f"From {edge['from']} to {edge['to']}")
+
+    def prepare_and_identify_label(self, search_label):
+        """
+        Prepare a third layer and identify a single string in the label data.
+        """
+        label_layer = self.create_label_layer()
+        matching_nodes = [node_id for node_id, label in label_layer.items() if label == search_label]
+        print(f"Nodes with label '{search_label}': {matching_nodes}")
+        return matching_nodes
     # Example usage:
     # patterns = your_matrix_instance.find_patterns()
     # print(patterns)
