@@ -43,6 +43,43 @@ class BigQueryHandler:
             logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
+    # def create_bq_table_schema(self):
+    #     """
+    #     Create a BigQuery table schema for the adjacency matrix.
+    #     """
+    #     schema = [
+    #         bigquery.SchemaField("node_id", "STRING", mode="REQUIRED"),
+    #     ]
+    #     for node in self.graph_data["nodes"]:
+    #         schema.append(bigquery.SchemaField(str(node["id"]), "INTEGER"))
+    #     return schema
+    #
+    # def save_matrix_to_bq(self, dataset_name, table_name):
+    #     """
+    #     Save the adjacency matrix to a BigQuery table.
+    #     """
+    #     client = bigquery.Client()
+    #     table_id = f"{client.project}.{dataset_name}.{table_name}"
+    #
+    #     schema = self.create_bq_table_schema()
+    #     table = bigquery.Table(table_id, schema=schema)
+    #     table = client.create_table(table, exists_ok=True)
+    #
+    #     binary_layer = self.create_binary_layer()
+    #     rows_to_insert = []
+    #
+    #     for node_id, connections in binary_layer.items():
+    #         row = {"node_id": str(node_id)}
+    #         for other_node_id, connection in connections.items():
+    #             row[str(other_node_id)] = connection
+    #         rows_to_insert.append(row)
+    #
+    #     errors = client.insert_rows_json(table, rows_to_insert)
+    #     if errors == []:
+    #         print("New rows have been added.")
+    #     else:
+    #         print("Encountered errors while inserting rows: {}".format(errors))
+
     def create_dataset_if_not_exists(self):
         dataset_ref = self.bigquery_client.dataset(self.dataset_id)
         try:
@@ -180,72 +217,6 @@ class BigQueryHandler:
             logger.exception("An unexpected error occurred during save_graph_data:")
         raise
 
-    # A helper function to determine a node's type (user, system, or content)
-    # def get_node_type(self, node):
-    #     if 'user' in node['label'].lower():
-    #         return 'user'
-    #     elif 'system' in node['label'].lower():
-    #         return 'system'
-    #     else:
-    #         return 'content'
-
-    # def translate_graph_to_gpt_sequence(self, graph_data):
-    #     nodes = graph_data["nodes"]
-    #     edges = graph_data["edges"]
-    #
-    #     # Build a mapping of node IDs to nodes
-    #     node_mapping = {node['id']: node for node in nodes}
-    #
-    #     # Initialize the data structure
-    #     translated_data = {
-    #         "model": os.getenv("MODEL"),
-    #         "messages": []
-    #     }
-    #
-    #     # Define valid transitions
-    #     valid_transitions = {
-    #         'user': 'content',
-    #         'content': 'system',
-    #         'system': 'content'
-    #     }
-    #
-    #     # Start from 'user' nodes and follow the valid transitions
-    #     current_expected = 'user'
-    #
-    #     for edge in edges:
-    #         from_node = node_mapping[edge['from']]
-    #         to_node = node_mapping[edge['to']]
-    #
-    #         from_node_type = self.get_node_type(from_node)
-    #         to_node_type = self.get_node_type(to_node)
-    #
-    #         # Validate the transition
-    #         if from_node_type == current_expected and valid_transitions.get(from_node_type) == to_node_type:
-    #             # Append the content of the 'to' node if it's a 'content' node
-    #             if to_node_type == 'content':
-    #                 translated_data['messages'].append({
-    #                     "role": from_node_type,
-    #                     "content": to_node['label']
-    #                 })
-    #             # Update the expected type for the next node
-    #             current_expected = to_node_type
-    #
-    #         # Reset to 'user' after a 'system' to 'content' transition
-    #         if from_node_type == 'system' and to_node_type == 'content':
-    #             current_expected = 'user'
-    #
-    #     # Serialize data to json
-    #     json_data = json.dumps(translated_data, indent=4)
-    #     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    #     json_filename = f"processed_graph_{timestamp}.json"
-    #
-    #     with open(json_filename, "w") as json_file:
-    #         json_file.write(json_data)
-    #
-    #     return {
-    #         'bigquery_errors': {'node_errors': [], 'edge_errors': []},
-    #         'processed_data': translated_data
-    #     }
 
     def load_graph_data_by_id(self, graph_id):
         nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
@@ -275,24 +246,6 @@ class BigQueryHandler:
 
         return [{"graph_id": row["graph_id"], "graph_name": row["graph_id"]} for row in results]
 
-    # def extract_and_send_to_gpt(self, processed_data):
-    #
-    #     # Prepare the data for the POST request
-    #     # Assuming 'processed_data' contains the necessary format for GPT-4 API
-    #     post_data = {
-    #         "model": os.getenv("MODEL"),
-    #         "messages": processed_data["messages"]
-    #     }
-    #
-    #     # Send POST request to GPT
-    #     response = requests.post(self.openai_base_url, headers=self.headers, json=post_data)
-    #
-    #     # Check if the request was successful and extract PUML content
-    #     if response.status_code == 200:
-    #         agent_content = response.json()["choices"][0]["message"]["content"]
-    #         return agent_content
-    #     else:
-    #         raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
 
 # openai_api_key = os.getenv('OPEN_AI_KEY')
 # open_ai_url = "https://api.openai.com/v1/chat/completions"

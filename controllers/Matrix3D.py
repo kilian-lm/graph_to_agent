@@ -11,9 +11,11 @@ from google.cloud import bigquery
 import json
 import datetime
 import requests
-from logger.CustomLogger import CustomLogger
 import inspect
 import re
+
+from logger.CustomLogger import CustomLogger
+from controllers.BigQueryHandler import BigQueryHandler
 
 load_dotenv()
 
@@ -296,18 +298,66 @@ graph_data = json.loads(json_graph_data)
 
 
 class Matrix3D:
-    def __init__(self, graph_data):
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        print(timestamp)
-        self.log_file = f'{timestamp}_blueprint_designer.log'
-        print(self.log_file)
-        self.log_dir = './temp_log'
-        print(self.log_dir)
-        self.log_level = logging.DEBUG
-        print(self.log_level)
-        self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
+    def __init__(self, graph_data, dataset_id):
+        try:
+            timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+            print(timestamp)
+            self.log_file = f'{timestamp}_blueprint_designer.log'
+            print(self.log_file)
+            self.log_dir = './temp_log'
+            print(self.log_dir)
+            self.log_level = logging.DEBUG
+            print(self.log_level)
+            self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
-        self.graph_data = graph_data
+            self.graph_data = graph_data
+
+            self.dataset_id = dataset_id
+            self.bq_handler = BigQueryHandler(self.dataset_id)
+            bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
+
+            bq_client_secrets_parsed = json.loads(bq_client_secrets)
+            self.bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
+            self.bigquery_client = bigquery.Client(credentials=self.bq_client_secrets,
+                                                   project=self.bq_client_secrets.project_id)
+            self.logger.info("BigQuery client successfully initialized.")
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
+            raise
+        except Exception as e:
+            self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
+            raise
+
+    def create_bq_table_schema(self):
+        """
+        Create a BigQuery table schema for the adjacency matrix.
+        """
+        schema = [
+            bigquery.SchemaField("node_id", "STRING", mode="REQUIRED"),
+        ]
+        for node in self.graph_data["nodes"]:
+            schema.append(bigquery.SchemaField(str(node["id"]), "INTEGER"))
+        return schema
+
+    def save_matrix_to_bq(self, table_name):
+        """
+        Save the adjacency matrix to a BigQuery table using the BigQueryHandler class.
+        """
+        schema = self.create_bq_table_schema()
+        self.bq_handler.create_dataset_if_not_exists()
+        self.bq_handler.create_table_if_not_exists(table_name, schema)
+
+        binary_layer = self.create_binary_layer()
+        rows_to_insert = []
+
+        for node_id, connections in binary_layer.items():
+            row = {"node_id": str(node_id)}
+            for other_node_id, connection in connections.items():
+                row[str(other_node_id)] = connection
+            rows_to_insert.append(row)
+
+        # Assuming your BigQueryHandler class has a method to insert rows
+        self.bigquery_client.insert_rows(table_name, rows_to_insert)
 
     def find_connected_subtrees(self):
         # Find connected subtrees in the 3D matrix
@@ -427,17 +477,26 @@ class Matrix3D:
         valid_patterns = [p for p in patterns if is_valid_pattern(p)]
         return valid_patterns
 
-    def print_binary_layer(self):
+    def print_binary_layer_matrix(self):
         """
-        Print the binary layer in a human-readable format.
+        Print the binary layer as an adjacency matrix.
         """
         binary_layer = self.create_binary_layer()
-        for node_id, connections in binary_layer.items():
-            print(f"Node {node_id}: ", end="")
-            for connected_node, is_connected in connections.items():
-                if is_connected:
-                    print(f"{connected_node} ", end="")
-            print()  # New line after each node's connections
+        nodes = sorted(self.graph_data["nodes"], key=lambda x: x["id"])
+        print("Adjacency Matrix:")
+
+        # Print header row
+        print("   ", end="")
+        for node in nodes:
+            print(f"{node['id']} ", end="")
+        print()
+
+        # Print each row of the matrix
+        for node in nodes:
+            print(f"{node['id']} ", end="")
+            for other_node in nodes:
+                print(f"{binary_layer[node['id']][other_node['id']]} ", end="")
+            print()  # New line after each row
 
     def print_second_layer(self):
         """
@@ -466,6 +525,7 @@ class Matrix3D:
 
 mat_3d = Matrix3D(graph_data)
 
+mat_3d.print_binary_layer_matrix()
 mat_3d.count_connected_subtrees()
 
 mat_3d.find_connected_subtrees()
