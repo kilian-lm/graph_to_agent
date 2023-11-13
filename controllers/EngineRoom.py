@@ -25,7 +25,7 @@ class EngineRoom():
         # First logging
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         print(timestamp)
-        self.log_file = f'{timestamp}_gpt_agent_interactions.log'
+        self.log_file = f'{timestamp}_engine_room.log'
         print(self.log_file)
         self.log_dir = './temp_log'
         print(self.log_dir)
@@ -170,11 +170,6 @@ class EngineRoom():
         return None
 
     def get_gpt_response(self, processed_data):
-        # post_data = {
-        #     # "model": os.getenv("MODEL"),
-        #     "model":processed_data["model"],
-        #     "messages": processed_data["messages"]
-        # }
         self.logger.debug(processed_data)
         response = requests.post(self.openai_base_url, headers=self.headers, json=processed_data)
         if response.status_code == 200:
