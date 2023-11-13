@@ -55,7 +55,6 @@ class EngineRoom():
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-
     def load_json_graph(self, json_graph_data):
         graph_data = json.loads(json_graph_data)
         return graph_data
@@ -65,17 +64,6 @@ class EngineRoom():
                       not any(edge['to'] == node['id'] for edge in graph_data['edges'])]
 
         return root_nodes
-
-    # def tree_counter(self, graph_data):
-    #
-    #     identified_root_nodes = self.provide_root_nodes(graph_data)
-    #     counter = len(identified_root_nodes)
-    #
-    #     if counter >= 0:
-    #         self.logger.info(f"identified identified_root_nodes: {counter}")
-    #     else:
-    #         self.logger.debug(f"No root-node provided: {counter}")
-    #     return counter
 
     def tree_counter(self, graph_data):
         """
@@ -161,7 +149,6 @@ class EngineRoom():
 
         return gpt_call
 
-
     def get_node_type(self, node):
         if 'user' in node['label'].lower():
             return 'user'
@@ -194,7 +181,6 @@ class EngineRoom():
             return response.json()["choices"][0]["message"]["content"]
         else:
             raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
-
 
     def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
         # Find the last 'user' node in the graph_data
@@ -247,7 +233,7 @@ class EngineRoom():
         self.logger.info(f"process_gpt_response_and_update_graph, new_edge_to_content : {new_edge_to_content}")
         # self.logger.info(f"process_gpt_response_and_update_graph, new_agent_response_node : {new_agent_response_node}")
         # self.logger.info(
-            # f"process_gpt_response_and_update_graph, new_edge_to_agent_response : {new_edge_to_agent_response}")
+        # f"process_gpt_response_and_update_graph, new_edge_to_agent_response : {new_edge_to_agent_response}")
 
         return graph_data
 
@@ -310,8 +296,8 @@ class EngineRoom():
         updated_graph = self.process_gpt_response_and_update_graph(response, graph_data)
         self.logger.info(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
 
-
         return updated_graph
+
 
 graph_data_json = """
 {
@@ -433,6 +419,8 @@ engine_room = EngineRoom('graph_to_agent')
 
 graph_data = engine_room.load_json_graph(graph_data_json)
 identified_nodes = engine_room.provide_root_nodes(graph_data)
+
+engine_room.tree_counter(graph_data)
 
 identified_nodes
 tree = engine_room.build_tree_structure(graph_data['nodes'], graph_data['edges'])
