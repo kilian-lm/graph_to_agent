@@ -298,7 +298,7 @@ graph_data = json.loads(json_graph_data)
 
 
 class Matrix3D:
-    def __init__(self, graph_data, dataset_id):
+    def __init__(self, graph_data, dataset_id, graph_id):
         try:
             timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
             print(timestamp)
@@ -309,6 +309,10 @@ class Matrix3D:
             self.log_level = logging.DEBUG
             print(self.log_level)
             self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
+
+            # todo: hand form app.py graph_id , think about coherent logic to ident nodes with matrix
+            self.graph_id = graph_id
+            self.table_name = self.graph_id
 
             self.graph_data = graph_data
 
@@ -333,19 +337,22 @@ class Matrix3D:
         Create a BigQuery table schema for the adjacency matrix.
         """
         schema = [
-            bigquery.SchemaField("node_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("node_id", "STRING", mode="NULLABLE"),
         ]
         for node in self.graph_data["nodes"]:
             schema.append(bigquery.SchemaField(str(node["id"]), "INTEGER"))
+
+        self.logger.info(schema)
         return schema
 
-    def save_matrix_to_bq(self, table_name):
-        """
-        Save the adjacency matrix to a BigQuery table using the BigQueryHandler class.
-        """
+    def save_matrix_to_bq(self):
+        self.logger.info(self.table_name)
+        table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.table_name)
+
         schema = self.create_bq_table_schema()
+        # self.logger.info(schema)
         self.bq_handler.create_dataset_if_not_exists()
-        self.bq_handler.create_table_if_not_exists(table_name, schema)
+        self.bq_handler.create_table_if_not_exists(table_ref, schema)
 
         binary_layer = self.create_binary_layer()
         rows_to_insert = []
@@ -356,8 +363,45 @@ class Matrix3D:
                 row[str(other_node_id)] = connection
             rows_to_insert.append(row)
 
-        # Assuming your BigQueryHandler class has a method to insert rows
-        self.bigquery_client.insert_rows(table_name, rows_to_insert)
+        self.bigquery_client.insert_rows(self.table_name, rows_to_insert)
+
+    # todo :: try bq via jsonl dup
+
+    def save_matrix_to_jsonl(self, file_path):
+        binary_layer = self.create_binary_layer()
+        with open(file_path, 'w') as file:
+            for node_id, connections in binary_layer.items():
+                row = {"node_id": str(node_id)}
+                self.logger.info(row)
+                for other_node_id, connection in connections.items():
+                    row[str(other_node_id)] = connection
+                json.dump(row, file)
+                file.write('\n')  # New line for next JSON object
+
+        return file_path
+
+    def generate_bigquery_schema_from_graph(self):
+        # Initialize schema with 'node_id' field
+        schema = [bigquery.SchemaField('node_id', 'STRING', 'NULLABLE')]
+
+        # Extract node IDs and create schema fields for each
+        node_ids = [node['id'] for node in self.graph_data['nodes']]
+        for node_id in node_ids:
+            schema.append(bigquery.SchemaField(node_id, 'INTEGER', 'NULLABLE'))
+
+        return schema
+
+    def upload_jsonl_to_bq(self, table_name, file_path):
+        table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.table_name)
+
+        # self.logger.info(schema)
+        self.bq_handler.create_dataset_if_not_exists()
+
+        schema = self.generate_bigquery_schema_from_graph()
+
+        self.bq_handler.create_table_if_not_exists(table_ref, schema)
+
+        # self.bq_handler.load_jsonl_to_bq(self.dataset_id, table_name, file_path)
 
     def find_connected_subtrees(self):
         # Find connected subtrees in the 3D matrix
@@ -390,10 +434,39 @@ class Matrix3D:
 
         return subtrees
 
+    def upload_to_bigquery(self, dataset_id, table_id):
+        # Initialize a BigQuery client
+
+        # Generate the binary layer
+        binary_layer = self.create_binary_layer()
+
+        # Generate the schema from the graph data
+        schema = self.generate_bigquery_schema_from_graph()
+
+        # Define the table reference
+        table_ref = self.bigquery_client.dataset(dataset_id).table(table_id)
+
+        # Create or overwrite the table
+        table = bigquery.Table(table_ref, schema=schema)
+        table = self.bigquery_client.create_table(table, exists_ok=True)
+
+        # Prepare rows to insert
+        rows_to_insert = []
+        for node_id, connections in binary_layer.items():
+            row = {'node_id': node_id}
+            row.update(connections)
+            rows_to_insert.append(row)
+
+        # Insert data into the table
+        errors = self.bigquery_client.insert_rows_json(table, rows_to_insert)
+        if errors:
+            print("Errors occurred while inserting rows: {}".format(errors))
+        else:
+            print("Data uploaded successfully.")
+
     def count_connected_subtrees(self):
         # Count the number of connected subtrees in the 3D matrix
-        binary_layer = self.create_binary_layer()  # Call create_binary_layer after it's defined
-
+        binary_layer = self.create_binary_layer()
         connected_subtrees = self.find_connected_subtrees()
         num_connected_trees = 0
 
@@ -522,8 +595,25 @@ class Matrix3D:
     # Return the found patterns
     # return self.find_patterns()
 
+import datetime
 
-mat_3d = Matrix3D(graph_data)
+graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+mat_3d = Matrix3D(graph_data, "graph_to_agent_adjacency_matrices", f"{graph_id}_2")
+
+mat_3d.upload_to_bigquery("graph_to_agent_adjacency_matrices",f"{graph_id}_2")
+mat_3d.upload_jsonl_to_bq(f"{graph_id}_2","test.jsonl")
+mat_3d.save_matrix_to_jsonl("test.jsonl")
+
+mat_3d.bq_handler.load_jsonl_to_bq("graph_to_agent_adjacency_matrices", graph_id, "test.jsonl")
+
+mat_3d.save_matrix_to_bq()
+
+mat_3d.create_binary_layer()
+
+mat_3d.bigquery_client.schema_from_json('test.jsonl')
+
+mat_3d.bigquery_client.get_table("enter-universes.graph_to_agent_adjacency_matrices.test").schema
 
 mat_3d.print_binary_layer_matrix()
 mat_3d.count_connected_subtrees()
