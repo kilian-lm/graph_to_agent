@@ -1,0 +1,73 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\usepackage[backend=biber, style=numeric]{biblatex}
+\addbibresource{references.bib}
+
+% Define git-like colors
+\definecolor{gitdark}{HTML}{0F0F0F}
+\definecolor{gitlight}{HTML}{E1E1E1}
+\definecolor{gitred}{HTML}{F92672}
+\definecolor{gitgreen}{HTML}{A6E22E}
+\definecolor{gitblue}{HTML}{66D9EF}
+\definecolor{gitorange}{HTML}{FD971F}
+
+% Set page geometry
+\geometry{left=25mm,right=25mm,top=20mm,bottom=20mm}
+
+% Customize hyperlinks
+\hypersetup{
+    colorlinks=true,
+    linkcolor=gitblue,
+    filecolor=gitmagenta,
+    urlcolor=gitblue,
+}
+
+% Custom tcolorbox environments
+\newtcolorbox{gitbox}[1][]{
+    colback=gitdark,
+    colframe=gitgreen,
+    coltext=gitlight,
+    boxrule=0.5pt,
+    #1
+}
+
+% Customize section color
+\usepackage{sectsty}
+\sectionfont{\color{gitgreen}}
+
+% Set overall page color
+\pagecolor{gitdark}
+\color{gitlight}
+
+% Use XeTeX or LuaTeX and set a custom font (Inconsolata in this example)
+\usepackage{fontspec}
+\setmonofont{Inconsolata}
+
+\begin{document}
+
+    \title{\color{gitred}Proposal for Re-Use and Re-Design flawed reward system}
+    \author{\color{gitgreen}Your Name}
+    \date{\color{gitorange}\today}
+    \maketitle
+
+    \tableofcontents % This will create a clickable table of contents
+    \newpage % Start the content on a new page
+
+    \begin{gitbox}
+        \section*{Abstract}
+        \textbf{Goal:}
+    \end{gitbox}
+
+    \begin{gitbox}[colframe=gitred]
+        \section*{The Problem}
+        Today's "infinite scroll" presents content... This disconnect impedes users from delving into interconnected topics...
+    \end{gitbox}
+
+\end{document}
