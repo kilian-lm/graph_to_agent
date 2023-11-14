@@ -367,18 +367,18 @@ class Matrix3D:
 
     # todo :: try bq via jsonl dup
 
-    def save_matrix_to_jsonl(self, file_path):
-        binary_layer = self.create_binary_layer()
-        with open(file_path, 'w') as file:
-            for node_id, connections in binary_layer.items():
-                row = {"node_id": str(node_id)}
-                self.logger.info(row)
-                for other_node_id, connection in connections.items():
-                    row[str(other_node_id)] = connection
-                json.dump(row, file)
-                file.write('\n')  # New line for next JSON object
-
-        return file_path
+    # def save_matrix_to_jsonl(self, file_path):
+    #     binary_layer = self.create_binary_layer()
+    #     with open(file_path, 'w') as file:
+    #         for node_id, connections in binary_layer.items():
+    #             row = {"node_id": str(node_id)}
+    #             self.logger.info(row)
+    #             for other_node_id, connection in connections.items():
+    #                 row[str(other_node_id)] = connection
+    #             json.dump(row, file)
+    #             file.write('\n')  # New line for next JSON object
+    #
+    #     return file_path
 
     def generate_bigquery_schema_from_graph(self):
         # Initialize schema with 'node_id' field
@@ -391,17 +391,17 @@ class Matrix3D:
 
         return schema
 
-    def upload_jsonl_to_bq(self, table_name, file_path):
-        table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.table_name)
-
-        # self.logger.info(schema)
-        self.bq_handler.create_dataset_if_not_exists()
-
-        schema = self.generate_bigquery_schema_from_graph()
-
-        self.bq_handler.create_table_if_not_exists(table_ref, schema)
-
-        # self.bq_handler.load_jsonl_to_bq(self.dataset_id, table_name, file_path)
+    # def upload_jsonl_to_bq(self, table_name, file_path):
+    #     table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.table_name)
+    #
+    #     # self.logger.info(schema)
+    #     self.bq_handler.create_dataset_if_not_exists()
+    #
+    #     schema = self.generate_bigquery_schema_from_graph()
+    #
+    #     self.bq_handler.create_table_if_not_exists(table_ref, schema)
+    #
+    #     # self.bq_handler.load_jsonl_to_bq(self.dataset_id, table_name, file_path)
 
     def find_connected_subtrees(self):
         # Find connected subtrees in the 3D matrix
@@ -484,6 +484,27 @@ class Matrix3D:
 
         return num_connected_trees
 
+    def count_trees_in_matrix(self, df):
+        """
+        Count the number of distinct trees (connected components) in the adjacency matrix represented by a pandas DataFrame.
+        """
+
+        def dfs(node, visited):
+            visited.add(node)
+            for neighbor in range(len(df)):
+                # Check if there's an edge and the neighbor hasn't been visited
+                if df.iloc[node, neighbor] == 1 and neighbor not in visited:
+                    dfs(neighbor, visited)
+
+        visited = set()
+        tree_count = 0
+
+        for node in range(len(df)):
+            if node not in visited:
+                dfs(node, visited)
+                tree_count += 1
+
+        return tree_count
     def create_binary_layer(self):
         # Create a binary layer based on node connections
         nodes = self.graph_data["nodes"]
@@ -600,6 +621,18 @@ import datetime
 graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
 mat_3d = Matrix3D(graph_data, "graph_to_agent_adjacency_matrices", f"{graph_id}_2")
+
+mat_1 = mat_3d.create_binary_layer()
+mat_1
+
+tbl = mat_3d.bigquery_client.get_table("enter-universes.graph_to_agent_adjacency_matrices.20231114115221_2")
+
+tbl_id = "enter-universes.graph_to_agent_adjacency_matrices.20231114115221_2"
+
+df = mat_3d.bigquery_client.query(f"SELECT * FROM `{tbl_id}`").to_dataframe()
+df
+
+mat_3d.count_trees_in_matrix(df)
 
 mat_3d.upload_to_bigquery("graph_to_agent_adjacency_matrices",f"{graph_id}_2")
 mat_3d.upload_jsonl_to_bq(f"{graph_id}_2","test.jsonl")
