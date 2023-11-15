@@ -14,8 +14,13 @@ import requests
 import inspect
 import re
 
+import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
+
 from logger.CustomLogger import CustomLogger
 from controllers.BigQueryHandler import BigQueryHandler
+from sql_queries.q_one_matrix_layer_two import Q_ONE_MATRIX_LAYER_TWO
 
 load_dotenv()
 
@@ -297,12 +302,12 @@ json_graph_data = """{
 graph_data = json.loads(json_graph_data)
 
 
-class Matrix3D:
+class MatrixLayerTwo:
     def __init__(self, graph_data, dataset_id, graph_id):
         try:
             timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
             print(timestamp)
-            self.log_file = f'{timestamp}_matrix_3d.log'
+            self.log_file = f'{timestamp}_blueprint_designer.log'
             print(self.log_file)
             self.log_dir = './temp_log'
             print(self.log_dir)
@@ -332,325 +337,74 @@ class Matrix3D:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    def create_bq_table_schema(self):
+    def get_q_one_matrix_layer_two(self, matrix_layer_two):
+        query = Q_ONE_MATRIX_LAYER_TWO.format(
+            adjacency_matrix=matrix_layer_two)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d")
+
+        self.bq_handler.create_view(self.dataset_id,
+                                    f'q_one_matrix_layer_two_{timestamp}',
+                                    query)
+
+    def matrix_prepper(self):
+        # df_2 = pd.DataFrame(results)
+        # df_3 = df_2.set_index("node_id")
+        # print(df_3.head())
+        pass
+
+    def create_graph_from_adjacency(self, df):
         """
-        Create a BigQuery table schema for the adjacency matrix.
+        Create a NetworkX graph from an adjacency matrix DataFrame.
+        Assumes that node identifiers are in the DataFrame's index.
         """
-        schema = [
-            bigquery.SchemaField("node_id", "STRING", mode="NULLABLE"),
-        ]
-        for node in self.graph_data["nodes"]:
-            schema.append(bigquery.SchemaField(str(node["id"]), "INTEGER"))
-
-        self.logger.info(schema)
-        return schema
-
-    def save_matrix_to_bq(self):
-        self.logger.info(self.table_name)
-        table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.table_name)
-
-        schema = self.create_bq_table_schema()
-        # self.logger.info(schema)
-        self.bq_handler.create_dataset_if_not_exists()
-        self.bq_handler.create_table_if_not_exists(table_ref, schema)
-
-        binary_layer = self.create_binary_layer()
-        rows_to_insert = []
-
-        for node_id, connections in binary_layer.items():
-            row = {"node_id": str(node_id)}
-            for other_node_id, connection in connections.items():
-                row[str(other_node_id)] = connection
-            rows_to_insert.append(row)
-
-        self.bigquery_client.insert_rows(self.table_name, rows_to_insert)
-
-    # todo :: try bq via jsonl dup
-
-    # def save_matrix_to_jsonl(self, file_path):
-    #     binary_layer = self.create_binary_layer()
-    #     with open(file_path, 'w') as file:
-    #         for node_id, connections in binary_layer.items():
-    #             row = {"node_id": str(node_id)}
-    #             self.logger.info(row)
-    #             for other_node_id, connection in connections.items():
-    #                 row[str(other_node_id)] = connection
-    #             json.dump(row, file)
-    #             file.write('\n')  # New line for next JSON object
-    #
-    #     return file_path
-
-    def generate_bigquery_schema_from_graph(self):
-        # Initialize schema with 'node_id' field
-        schema = [bigquery.SchemaField('node_id', 'STRING', 'NULLABLE')]
-
-        # Extract node IDs and create schema fields for each
-        node_ids = [node['id'] for node in self.graph_data['nodes']]
-        for node_id in node_ids:
-            schema.append(bigquery.SchemaField(node_id, 'INTEGER', 'NULLABLE'))
-
-        return schema
-
-    # def upload_jsonl_to_bq(self, table_name, file_path):
-    #     table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.table_name)
-    #
-    #     # self.logger.info(schema)
-    #     self.bq_handler.create_dataset_if_not_exists()
-    #
-    #     schema = self.generate_bigquery_schema_from_graph()
-    #
-    #     self.bq_handler.create_table_if_not_exists(table_ref, schema)
-    #
-    #     # self.bq_handler.load_jsonl_to_bq(self.dataset_id, table_name, file_path)
-
-    def find_connected_subtrees(self):
-        # Find connected subtrees in the 3D matrix
-        binary_layer = self.create_binary_layer()
-        self.logger.info(binary_layer)
-        nodes = self.graph_data["nodes"]
-        self.logger.info(nodes)
-
-        visited = set()
-        subtrees = []
-
-        def dfs(node_id, subtree):
-            visited.add(node_id)
-
-            self.logger.info(node_id)
-
-            subtree.append(node_id)
-            self.logger.info(subtree)
-
-            for neighbor_id, is_connected in binary_layer[node_id].items():
-                if is_connected == 1 and neighbor_id not in visited:
-                    dfs(neighbor_id, subtree)
-                    self.logger.info(dfs)
-
-        for node in nodes:
-            if node["id"] not in visited:
-                subtree = []
-                dfs(node["id"], subtree)
-                subtrees.append(subtree)
-
-        return subtrees
-
-    def upload_to_bigquery(self, dataset_id, table_id):
-        # Initialize a BigQuery client
-
-        # Generate the binary layer
-        binary_layer = self.create_binary_layer()
-
-        # Generate the schema from the graph data
-        schema = self.generate_bigquery_schema_from_graph()
-
-        # Define the table reference
-        table_ref = self.bigquery_client.dataset(dataset_id).table(table_id)
-
-        # Create or overwrite the table
-        table = bigquery.Table(table_ref, schema=schema)
-        table = self.bigquery_client.create_table(table, exists_ok=True)
-
-        # Prepare rows to insert
-        rows_to_insert = []
-        for node_id, connections in binary_layer.items():
-            row = {'node_id': node_id}
-            row.update(connections)
-            rows_to_insert.append(row)
-
-        # Insert data into the table
-        errors = self.bigquery_client.insert_rows_json(table, rows_to_insert)
-        if errors:
-            print("Errors occurred while inserting rows: {}".format(errors))
-        else:
-            print("Data uploaded successfully.")
-
-    def count_connected_subtrees(self):
-        # Count the number of connected subtrees in the 3D matrix
-        binary_layer = self.create_binary_layer()
-        connected_subtrees = self.find_connected_subtrees()
-        num_connected_trees = 0
-
-        for subtree in connected_subtrees:
-            # Check if the subtree has only one connecting node
-            connecting_nodes = 0
-            for node_id in subtree:
-                neighbors = binary_layer[node_id]
-                num_neighbors = sum(neighbors.values())
-                if num_neighbors == 1:
-                    connecting_nodes += 1
-
-            if connecting_nodes == 1:
-                num_connected_trees += 1
-
-        return num_connected_trees
-
-    def count_trees_in_matrix(self, df):
-        """
-        Count the number of distinct trees (connected components) in the adjacency matrix represented by a pandas DataFrame.
-        """
-
-        def dfs(node, visited):
-            visited.add(node)
-            for neighbor in range(len(df)):
-                # Check if there's an edge and the neighbor hasn't been visited
-                if df.iloc[node, neighbor] == 1 and neighbor not in visited:
-                    dfs(neighbor, visited)
-
-        visited = set()
-        tree_count = 0
-
-        for node in range(len(df)):
-            if node not in visited:
-                dfs(node, visited)
-                tree_count += 1
-
-        return tree_count
-    def create_binary_layer(self):
-        # Create a binary layer based on node connections
-        nodes = self.graph_data["nodes"]
-        self.logger.info(nodes)
-        edges = self.graph_data["edges"]
-        self.logger.info(edges)
-
-        binary_layer = {}
-        for node in nodes:
-            binary_layer[node["id"]] = {}
-            for other_node in nodes:
-                if any(edge["from"] == node["id"] and edge["to"] == other_node["id"] for edge in edges):
-                    binary_layer[node["id"]][other_node["id"]] = 1
-                else:
-                    binary_layer[node["id"]][other_node["id"]] = 0
-
-        self.logger.info(binary_layer)
-
-        return binary_layer
-
-    def create_label_layer(self):
-        # Create a label layer based on node labels
-        nodes = self.graph_data["nodes"]
-        label_layer = {}
-        for node in nodes:
-            label_layer[node["id"]] = node["label"]
-        return label_layer
-
-    def find_patterns(self):
-        # Find hierarchical patterns in the 3D matrix
-        patterns = []
-        nodes = self.graph_data["nodes"]
-        edges = self.graph_data["edges"]
-
-        def is_valid_pattern(pattern):
-            # Check if a pattern is valid (e.g., "user", "system", "user")
-            if len(pattern) != 6:
-                return False
-            return (
-                    pattern[0] == "user" and
-                    pattern[2] == "system" and
-                    pattern[4] == "user"
-            )
-
-        def dfs(node, pattern):
-            # Depth-first search to traverse the hierarchy and find patterns
-            pattern.append(node["label"])
-
-            if node["label"] == "system" and len(pattern) > 1:
-                for edge in edges:
-                    if edge["from"] == node["id"]:
-                        next_node = next(n for n in nodes if n["id"] == edge["to"])
-                        dfs(next_node, pattern)
-
-            if node["label"] == "user" and len(pattern) > 1:
-                patterns.append(tuple(pattern))
-
-            pattern.pop()
-
-        for node in nodes:
-            if node["label"] == "user":
-                dfs(node, [])
-
-        valid_patterns = [p for p in patterns if is_valid_pattern(p)]
-        return valid_patterns
-
-    def print_binary_layer_matrix(self):
-        """
-        Print the binary layer as an adjacency matrix.
-        """
-        binary_layer = self.create_binary_layer()
-        nodes = sorted(self.graph_data["nodes"], key=lambda x: x["id"])
-        print("Adjacency Matrix:")
-
-        # Print header row
-        print("   ", end="")
-        for node in nodes:
-            print(f"{node['id']} ", end="")
-        print()
-
-        # Print each row of the matrix
-        for node in nodes:
-            print(f"{node['id']} ", end="")
-            for other_node in nodes:
-                print(f"{binary_layer[node['id']][other_node['id']]} ", end="")
-            print()  # New line after each row
-
-    def print_second_layer(self):
-        """
-        Print the second layer, assuming it deals with relationships between nodes.
-        """
-        # Example: Print edges in a human-readable format
-        edges = self.graph_data.get("edges", [])
-        for edge in edges:
-            print(f"From {edge['from']} to {edge['to']}")
-
-    def prepare_and_identify_label(self, search_label):
-        """
-        Prepare a third layer and identify a single string in the label data.
-        """
-        label_layer = self.create_label_layer()
-        matching_nodes = [node_id for node_id, label in label_layer.items() if label == search_label]
-        print(f"Nodes with label '{search_label}': {matching_nodes}")
-        return matching_nodes
-    # Example usage:
-    # patterns = your_matrix_instance.find_patterns()
-    # print(patterns)
-    # def get_patterns(self):
-    # Return the found patterns
-    # return self.find_patterns()
-
-import datetime
-
-graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-
-mat_3d = Matrix3D(graph_data, "graph_to_agent_adjacency_matrices", f"{graph_id}_2")
-
-mat_1 = mat_3d.create_binary_layer()
-mat_1
-
-tbl = mat_3d.bigquery_client.get_table("enter-universes.graph_to_agent_adjacency_matrices.20231114115221_2")
-
-tbl_id = "enter-universes.graph_to_agent_adjacency_matrices.20231114115221_2"
-
-df = mat_3d.bigquery_client.query(f"SELECT * FROM `{tbl_id}`").to_dataframe()
-df
-
-mat_3d.count_trees_in_matrix(df)
-
-mat_3d.upload_to_bigquery("graph_to_agent_adjacency_matrices",f"{graph_id}_2")
-mat_3d.upload_jsonl_to_bq(f"{graph_id}_2","test.jsonl")
-mat_3d.save_matrix_to_jsonl("test.jsonl")
-
-mat_3d.bq_handler.load_jsonl_to_bq("graph_to_agent_adjacency_matrices", graph_id, "test.jsonl")
-
-mat_3d.save_matrix_to_bq()
-
-mat_3d.create_binary_layer()
-
-mat_3d.bigquery_client.schema_from_json('test.jsonl')
-
-mat_3d.bigquery_client.get_table("enter-universes.graph_to_agent_adjacency_matrices.test").schema
-
-mat_3d.print_binary_layer_matrix()
-mat_3d.count_connected_subtrees()
-
-mat_3d.find_connected_subtrees()
-
-mat_3d.find_patterns()
+        import networkx as nx
+
+        # Create a graph
+        G = nx.Graph()
+
+        # Add nodes
+        for node in df.index:
+            G.add_node(node)
+
+        # Add edges
+        for i, row in df.iterrows():
+            for j, val in row.items():
+                if val != 0:  # Assuming non-zero values indicate an edge
+                    G.add_edge(i, j)
+
+        return G
+
+    def check_graph_correctly_recveied_via_matrix(self, G):
+        import networkx as nx
+
+        connected_components = list(nx.connected_components(G))
+        number_of_subgraphs = len(connected_components)
+
+        print("Number of connected components (subgraphs):", number_of_subgraphs)
+
+        num_nodes = G.number_of_nodes()
+        num_edges = G.number_of_edges()
+
+        # Basic Graph Properties
+        num_nodes = G.number_of_nodes()
+        num_edges = G.number_of_edges()
+        is_directed = nx.is_directed(G)
+
+        print(is_directed)
+
+        # Draw the Graph
+        plt.figure(figsize=(8, 6))
+        nx.draw(G, with_labels=False, font_weight='bold', node_color='skyblue', node_size=700)
+        plt.title("Graph Visualization")
+        plt.show()
+
+    def check_degree_distribution(self, G):
+        # Degree Distribution
+        degrees = [G.degree(n) for n in G.nodes()]
+        plt.figure(figsize=(8, 6))
+        plt.hist(degrees, bins=range(min(degrees), max(degrees) + 1, 1), align='left')
+        plt.title("Degree Distribution")
+        plt.xlabel("Degree")
+        plt.ylabel("Number of Nodes")
+        plt.xticks(range(min(degrees), max(degrees) + 1, 1))
+        plt.show()
