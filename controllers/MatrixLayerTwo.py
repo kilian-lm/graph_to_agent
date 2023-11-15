@@ -307,7 +307,7 @@ class MatrixLayerTwo:
         try:
             timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
             print(timestamp)
-            self.log_file = f'{timestamp}_blueprint_designer.log'
+            self.log_file = f'{timestamp}_matrix_layer_two.log'
             print(self.log_file)
             self.log_dir = './temp_log'
             print(self.log_dir)
@@ -337,7 +337,25 @@ class MatrixLayerTwo:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    def get_q_one_matrix_layer_two(self, matrix_layer_two):
+    def get_adjacency_matrix(self, matrix_layer_two):
+        query = Q_ONE_MATRIX_LAYER_TWO.format(
+            adjacency_matrix=matrix_layer_two)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d")
+
+        self.bq_handler.create_view(self.dataset_id,
+                                    f'q_one_matrix_layer_two_{timestamp}',
+                                    query)
+
+    def get_nodes(self, matrix_layer_two):
+        query = Q_ONE_MATRIX_LAYER_TWO.format(
+            adjacency_matrix=matrix_layer_two)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d")
+
+        self.bq_handler.create_view(self.dataset_id,
+                                    f'q_one_matrix_layer_two_{timestamp}',
+                                    query)
+
+    def get_edges(self, matrix_layer_two):
         query = Q_ONE_MATRIX_LAYER_TWO.format(
             adjacency_matrix=matrix_layer_two)
         timestamp = datetime.datetime.now().strftime("%Y%m%d")
@@ -408,3 +426,36 @@ class MatrixLayerTwo:
         plt.ylabel("Number of Nodes")
         plt.xticks(range(min(degrees), max(degrees) + 1, 1))
         plt.show()
+
+    def check_diameter_and_centrality(self, G):
+        num_nodes = G.number_of_nodes()
+        num_edges = G.number_of_edges()
+        degrees = [G.degree(n) for n in G.nodes()]
+        # Average Degree
+        average_degree = sum(degrees) / num_nodes
+
+        # Diameter of the graph
+        # As the graph might not be fully connected, we consider the largest connected component
+        largest_cc = max(nx.connected_components(G), key=len)
+        subgraph = G.subgraph(largest_cc)
+        diameter = nx.diameter(subgraph)
+
+        # Average Shortest Path Length
+        avg_shortest_path_length = nx.average_shortest_path_length(subgraph)
+
+        # Clustering Coefficient
+        clustering_coefficient = nx.average_clustering(G)
+
+        # Degree Centrality
+        degree_centrality = nx.degree_centrality(G)
+
+        # Display Advanced Statistics
+        advanced_stats = {
+            "Average Degree": average_degree,
+            "Diameter": diameter,
+            "Average Shortest Path Length": avg_shortest_path_length,
+            "Average Clustering Coefficient": clustering_coefficient,
+            "Degree Centrality": degree_centrality
+        }
+
+        return advanced_stats
