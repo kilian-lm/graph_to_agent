@@ -1,4 +1,3 @@
-Q_ONE_MATRIX_LAYER_TWO = """
+ADJACENCY_MATRIX_QUERY = """
 SELECT * FROM `{adjacency_matrix}`
-
 """
