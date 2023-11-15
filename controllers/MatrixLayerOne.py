@@ -297,12 +297,12 @@ json_graph_data = """{
 graph_data = json.loads(json_graph_data)
 
 
-class Matrix3D:
+class MatrixLayerOne:
     def __init__(self, graph_data, dataset_id, graph_id):
         try:
             timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
             print(timestamp)
-            self.log_file = f'{timestamp}_matrix_3d.log'
+            self.log_file = f'{timestamp}_matrix_layer_one.log'
             print(self.log_file)
             self.log_dir = './temp_log'
             print(self.log_dir)
