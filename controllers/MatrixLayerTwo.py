@@ -20,7 +20,9 @@ import matplotlib.pyplot as plt
 
 from logger.CustomLogger import CustomLogger
 from controllers.BigQueryHandler import BigQueryHandler
-from sql_queries.q_one_matrix_layer_two import Q_ONE_MATRIX_LAYER_TWO
+from sql_queries.adjacency_matrix_query import ADJACENCY_MATRIX_QUERY
+from sql_queries.edges_query import EDGES_QUERY
+from sql_queries.nodes_query import NODES_QUERY
 
 load_dotenv()
 
@@ -338,7 +340,7 @@ class MatrixLayerTwo:
             raise
 
     def get_adjacency_matrix(self, matrix_layer_two):
-        query = Q_ONE_MATRIX_LAYER_TWO.format(
+        query = ADJACENCY_MATRIX_QUERY.format(
             adjacency_matrix=matrix_layer_two)
         timestamp = datetime.datetime.now().strftime("%Y%m%d")
 
@@ -347,7 +349,7 @@ class MatrixLayerTwo:
                                     query)
 
     def get_nodes(self, matrix_layer_two):
-        query = Q_ONE_MATRIX_LAYER_TWO.format(
+        query = NODES_QUERY.format(
             adjacency_matrix=matrix_layer_two)
         timestamp = datetime.datetime.now().strftime("%Y%m%d")
 
@@ -356,7 +358,7 @@ class MatrixLayerTwo:
                                     query)
 
     def get_edges(self, matrix_layer_two):
-        query = Q_ONE_MATRIX_LAYER_TWO.format(
+        query = EDGES_QUERY.format(
             adjacency_matrix=matrix_layer_two)
         timestamp = datetime.datetime.now().strftime("%Y%m%d")
 
