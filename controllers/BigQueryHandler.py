@@ -10,6 +10,7 @@ from google.oauth2 import service_account
 from google.cloud import bigquery
 import json
 import datetime
+import google.api_core.exceptions
 import requests
 
 load_dotenv()
@@ -88,6 +89,29 @@ class BigQueryHandler:
     #         print("New rows have been added.")
     #     else:
     #         print("Encountered errors while inserting rows: {}".format(errors))
+
+
+    def create_view(self, dataset_id, view_id, view_query):
+        view_ref = self.bigquery_client.dataset(dataset_id).table(view_id)
+        view = bigquery.Table(view_ref)
+        view.view_query = view_query
+
+        try:
+            self.bigquery_client.get_table(view_ref)
+            print(f"View {dataset_id}.{view_id} already exists. Deleting it.")
+            self.bigquery_client.delete_table(view_ref)
+        except NotFound:
+            print(f"View {dataset_id}.{view_id} does not exist.")
+
+        try:
+            view = self.bigquery_client.create_table(view)
+            print(f"View {dataset_id}.{view_id} created.")
+        except google.api_core.exceptions.BadRequest as e:
+            print(f"Error creating the view: {str(e)}")
+            raise
+        except Exception as e:
+            print(f"Error creating the view: {str(e)}")
+            raise
 
     def create_dataset_if_not_exists(self):
         dataset_ref = self.bigquery_client.dataset(self.dataset_id)
