@@ -377,9 +377,10 @@ class MatrixLayerTwo:
 
     def get_edges(self):
         self.bq_handler = BigQueryHandler(self.graph_dataset_id)
+        table_ref = self.bq_handler.bigquery_client.dataset(self.graph_dataset_id).table(self.edges_tbl)
 
         query = EDGES_QUERY.format(
-            tbl_ref=self.edges_tbl, graph_id=self.graph_id)
+            tbl_ref=table_ref, graph_id=self.graph_id)
 
         # self.bq_handler.create_view(self.edges_views,
         #                             f'edges_{self.timestamp}',
