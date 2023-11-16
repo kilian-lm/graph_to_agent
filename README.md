@@ -42,3 +42,7 @@ europe-west3-docker.pkg.dev/...
 4. **Mini Description:**
     1. Gets tbl.: 
 
+# Class logics checkpointing
+
+1. pro class one timestamp for checkpointing and stats debugging
+
