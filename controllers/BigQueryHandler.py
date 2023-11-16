@@ -90,7 +90,6 @@ class BigQueryHandler:
     #     else:
     #         print("Encountered errors while inserting rows: {}".format(errors))
 
-
     def create_view(self, dataset_id, view_id, view_query):
         view_ref = self.bigquery_client.dataset(dataset_id).table(view_id)
         view = bigquery.Table(view_ref)
@@ -243,9 +242,11 @@ class BigQueryHandler:
             self.logger.debug(f"graph_data_as_dicts: {graph_data_as_dicts}")
 
             # Return both BigQuery errors and processed data
-            return {
-                "bigquery_errors": all_errors,
-            }
+            # return {
+            #     "bigquery_errors": all_errors,
+            # }
+
+            return ({"status": "success", "savedGraph": graph_data_as_dicts})
 
         except Exception as e:
             self.logger.exception("An unexpected error occurred during save_graph_data:")
