@@ -305,11 +305,11 @@ graph_data = json.loads(json_graph_data)
 
 
 class MatrixLayerTwo:
-    def __init__(self, graph_data, dataset_id, graph_id):
+    def __init__(self, graph_data, matrix_dataset_id, graph_dataset_id, graph_id):
         try:
-            timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-            print(timestamp)
-            self.log_file = f'{timestamp}_matrix_layer_two.log'
+            self.timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+            print(self.timestamp)
+            self.log_file = f'{self.timestamp}_matrix_layer_two.log'
             print(self.log_file)
             self.log_dir = './temp_log'
             print(self.log_dir)
@@ -323,15 +323,15 @@ class MatrixLayerTwo:
 
             self.graph_data = graph_data
 
-            self.dataset_id = dataset_id
-            self.bq_handler = BigQueryHandler(self.dataset_id)
-            bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
+            self.matrix_dataset_id = matrix_dataset_id
+            self.graph_dataset_id = graph_dataset_id
+            self.bq_handler = BigQueryHandler(self.graph_dataset_id)
 
-            bq_client_secrets_parsed = json.loads(bq_client_secrets)
-            self.bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
-            self.bigquery_client = bigquery.Client(credentials=self.bq_client_secrets,
-                                                   project=self.bq_client_secrets.project_id)
-            self.logger.info("BigQuery client successfully initialized.")
+            self.edges_tbl = "edges_table"
+            self.nodes_tbl = "nodes_table"
+            self.matrix_views = "matrix_views"
+            self.edges_views = "edges_views"
+            self.nodes_views = "nodes_views"
         except json.JSONDecodeError as e:
             self.logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
             raise
@@ -339,32 +339,57 @@ class MatrixLayerTwo:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    def get_adjacency_matrix(self, matrix_layer_two):
+    def get_adjacency_matrix(self, adjacency_matrix):
+        self.bq_handler = BigQueryHandler(self.matrix_dataset_id)
+        table_ref = self.bq_handler.bigquery_client.dataset(self.matrix_dataset_id).table(adjacency_matrix)
+        print(table_ref)
         query = ADJACENCY_MATRIX_QUERY.format(
-            adjacency_matrix=matrix_layer_two)
-        timestamp = datetime.datetime.now().strftime("%Y%m%d")
+            adjacency_matrix=table_ref)
 
-        self.bq_handler.create_view(self.dataset_id,
-                                    f'q_one_matrix_layer_two_{timestamp}',
+        self.bq_handler.create_view(self.matrix_views,
+                                    f'adjacency_matrix_{self.timestamp}',
                                     query)
 
-    def get_nodes(self, matrix_layer_two):
+        query_job = self.bq_handler.bigquery_client.query(query)
+
+        df = query_job.to_dataframe()
+
+        return df
+
+    def get_nodes(self):
+        self.bq_handler = BigQueryHandler(self.graph_dataset_id)
+        table_ref = self.bq_handler.bigquery_client.dataset(self.graph_dataset_id).table(self.nodes_tbl)
+        self.logger.info(table_ref)
         query = NODES_QUERY.format(
-            adjacency_matrix=matrix_layer_two)
-        timestamp = datetime.datetime.now().strftime("%Y%m%d")
+            tbl_ref=table_ref, graph_id=self.graph_id)
 
-        self.bq_handler.create_view(self.dataset_id,
-                                    f'q_one_matrix_layer_two_{timestamp}',
-                                    query)
+        self.logger.info(query)
 
-    def get_edges(self, matrix_layer_two):
+        # self.bq_handler.create_view(self.nodes_views,
+        #                             f'nodes_{self.timestamp}',
+        #                             query)
+
+        query_job = self.bq_handler.bigquery_client.query(query)
+
+        df = query_job.to_dataframe()
+
+        return df
+
+    def get_edges(self):
+        self.bq_handler = BigQueryHandler(self.graph_dataset_id)
+
         query = EDGES_QUERY.format(
-            adjacency_matrix=matrix_layer_two)
-        timestamp = datetime.datetime.now().strftime("%Y%m%d")
+            tbl_ref=self.edges_tbl, graph_id=self.graph_id)
 
-        self.bq_handler.create_view(self.dataset_id,
-                                    f'q_one_matrix_layer_two_{timestamp}',
-                                    query)
+        # self.bq_handler.create_view(self.edges_views,
+        #                             f'edges_{self.timestamp}',
+        #                             query)
+
+        query_job = self.bq_handler.bigquery_client.query(query)
+
+        df = query_job.to_dataframe()
+
+        return df
 
     def matrix_prepper(self):
         # df_2 = pd.DataFrame(results)
@@ -461,3 +486,10 @@ class MatrixLayerTwo:
         }
 
         return advanced_stats
+
+
+mat_l_t = MatrixLayerTwo("graph_data", "graph_to_agent_adjacency_matrices", "graph_to_agent", "20231114181549")
+
+mat_l_t.get_edges()
+mat_l_t.get_nodes()
+mat_l_t.get_adjacency_matrix('20231114115221_2')
