@@ -25,6 +25,7 @@ Want to jump the theory?
     - [Business-Model for Sub-Module Wire-Box](#business-model-for-sub-module-wire-box)
 - [Why all of that](#why-all-of-that)
 - [In Sum](#in-sum)
+- [Join](#join)
 - [References](#references)
 
 ## Abstract
@@ -119,6 +120,7 @@ we often have when trying to understand complex topics.
 Current Status: MVP Available [here](link to MVP).
 
 ![wire_it_treasure_planet.jpeg](assets%2Fwire_it_treasure_planet.jpeg)
+
 Wire-it Ben! ¹⁴
 
 #### Why the Wire-Box
@@ -220,7 +222,7 @@ reaction-patterns to agent/-pools, each personal library a chapter in a grander 
 With these pillars, we aspire to give an alternative to the short-lived, buzzword-heavy, scrollable, swipable
 knowledge-transfer, that we're indulging in at the moment.
 
-## Do NOT leave it to me/ to others to make it better
+## Join
 
 If you resonate with our vision, consider giving me constructive feedback or give me a "duplicated" (please refer the
 source in case there is already a solution as described above), forward this proposal, come up with an own approach,
