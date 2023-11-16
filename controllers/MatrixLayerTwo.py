@@ -488,9 +488,76 @@ class MatrixLayerTwo:
 
         return advanced_stats
 
+    def process_graph(self, graph, num_steps):
+        """Main method to process the graph."""
+        user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
+        for start_node in user_nodes:
+            for path in self.explore_paths(graph, start_node, steps=num_steps):
+                self.check_and_print_gpt_call(graph, path)
+
+    def explore_paths(self, graph, start_node, steps):
+        """Explore all paths up to a certain number of steps from a start node."""
+        paths = []
+        self.dfs(graph, start_node, [], steps, paths)
+        return paths
+
+    def dfs(self, graph, node, path, steps, paths):
+        """Depth-first search to explore paths."""
+        if steps == 0 or node in path:
+            return
+        path.append(node)
+        if len(path) == steps + 1:
+            paths.append(path.copy())
+        else:
+            for neighbor in graph.neighbors(node):
+                self.dfs(graph, neighbor, path, steps - 1, paths)
+        path.pop()
+
+    def check_and_print_gpt_call(self, graph, path):
+        """Check if the path matches the blueprint pattern and print the GPT call."""
+        labels = [graph.nodes[node]['label'] for node in path]
+        if self.is_valid_blueprint(labels):
+            gpt_call = {
+                "model": "gpt-4",
+                "messages": [
+                    {"role": "user", "content": labels[1]},
+                    {"role": "system", "content": labels[3]},
+                    {"role": "user", "content": labels[5]}
+                ]
+            }
+            print("GPT Call:", gpt_call)
+        else:
+            print("Blueprint pattern not found in this path.")
+
+    def is_valid_blueprint(self, labels):
+        """Check if labels sequence matches the blueprint pattern."""
+        return (len(labels) == 6 and labels[0] == 'user' and labels[2] == 'system' and labels[4] == 'user' and
+                all(label not in ['user', 'system'] for label in [labels[1], labels[3], labels[5]]))
+
+    def main(self):
+        df = self.get_adjacency_matrix(self.graph_id).set_index("node_id")
+        G = self.create_graph_from_adjacency(df)
+        self.check_graph_correctly_recveied_via_matrix(G)  # ToDo :: Translate tree to logs
+        self.check_degree_distribution(G)  # ToDo :: Translate Hist to logs or display it in analysis tab
+        self.check_diameter_and_centrality(G)
+        df_nodes = self.get_nodes()
+        label_dict = df_nodes.set_index('id')['label'].to_dict()
+        nx.set_node_attributes(G, label_dict, 'label')
+
 
 mat_l_t = MatrixLayerTwo("graph_data", "graph_to_agent_adjacency_matrices", "graph_to_agent", "20231114181549")
 
 mat_l_t.get_edges()
 mat_l_t.get_nodes()
 mat_l_t.get_adjacency_matrix('20231114115221_2')
+
+df = mat_l_t.get_adjacency_matrix('20231114115221_2').set_index("node_id")
+G = mat_l_t.create_graph_from_adjacency(df)
+G.number_of_edges()
+mat_l_t.check_diameter_and_centrality(G)
+mat_l_t.check_degree_distribution(G)
+mat_l_t.check_graph_correctly_recveied_via_matrix(G)
+df_nodes = mat_l_t.get_nodes()
+label_dict = df_nodes.set_index('id')['label'].to_dict()
+nx.set_node_attributes(G, label_dict, 'label')
+mat_l_t.process_graph(G, 10)
