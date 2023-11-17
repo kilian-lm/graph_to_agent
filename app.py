@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 class App():
     def __init__(self):
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         print(timestamp)
         self.log_file = f'{timestamp}_app.log'
         print(self.log_file)

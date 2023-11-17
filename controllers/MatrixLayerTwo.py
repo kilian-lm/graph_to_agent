@@ -202,7 +202,7 @@ graph_data = json.loads(json_graph_data)
 class MatrixLayerTwo:
     def __init__(self, graph_data, matrix_dataset_id, graph_dataset_id, graph_id):
         try:
-            self.timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+            self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
             print(self.timestamp)
             self.log_file = f'{self.timestamp}_matrix_layer_two.log'
             print(self.log_file)
