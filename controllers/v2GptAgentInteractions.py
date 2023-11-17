@@ -19,6 +19,8 @@ load_dotenv()
 
 # assumption: new methods allows chaining of agents but != recursive calls because @var isnt integrated yet
 
+# class v2GptAgentInteractions(MatrixLayerOne):
+
 class v2GptAgentInteractions():
 
     def __init__(self, dataset_id):
@@ -468,10 +470,10 @@ class v2GptAgentInteractions():
                 self.logger.info(f"Encountered errors while inserting edges: {errors_edges}")
 
             # Compile all errors
-            all_errors = {
-                "node_errors": errors_nodes,
-                "edge_errors": errors_edges
-            }
+            # all_errors = {
+            #     "node_errors": errors_nodes,
+            #     "edge_errors": errors_edges
+            # }
 
             if errors_nodes or errors_edges:
                 self.logger.error("Errors occurred during the saving of graph data.")
@@ -486,10 +488,11 @@ class v2GptAgentInteractions():
             self.logger.info(f"graph_data_as_dicts: {graph_data_as_dicts}")
 
             # Return both BigQuery errors and processed data
-            return {
-                "bigquery_errors": all_errors,
-            }
+            # return {
+            #     "bigquery_errors": all_errors,
+            # }
 
+            return ({"status": "success", "code": 200})
         except Exception as e:
             self.logger.error("An unexpected error occurred during save_graph_data:")
         raise

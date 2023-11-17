@@ -136,14 +136,14 @@ class App():
 
             graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
             self.logger.info(f"save_graph, graph_id: {graph_id}")
-            errors = self.gpt_agent_interactions.save_graph_data(graph_data, graph_id)
+            msg = self.gpt_agent_interactions.save_graph_data(graph_data, graph_id)
 
-            self.logger.error(f"save_graph, errors: {errors}")
+            # self.logger.error(f"save_graph, errors: {errors}")
+            #
+            # if errors:
+            #     return jsonify({"status": "error", "message": "Failed to save some data.", "errors": errors})
 
-            if errors:
-                return jsonify({"status": "error", "message": "Failed to save some data.", "errors": errors})
-
-            return jsonify({"status": "success", "message": "Graph saved successfully!"})
+            return jsonify({"status": "success", "message": 200})
         except Exception as e:
             self.logger.error(f"Error saving graph: {e}")
             return jsonify({"status": "error", "message": str(e)})
