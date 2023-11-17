@@ -11,8 +11,11 @@ from google.cloud import bigquery
 import json
 import datetime
 import requests
-from logger.CustomLogger import CustomLogger
 import inspect
+
+# custom classes
+from logger.CustomLogger import CustomLogger
+from controllers.MatrixLayerOne import MatrixLayerOne
 
 load_dotenv()
 
@@ -44,6 +47,9 @@ class v2GptAgentInteractions():
 
         # ToDo :: From mere class initialization in another class to inheritance
 
+        self.matrix_layer_one_dataset_id = None
+        self.graph_data = None
+        self.matrix_layer_one = MatrixLayerOne(self.timestamp, self.graph_data, self.matrix_layer_one_dataset_id)
 
         self.dataset_id = dataset_id
         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
@@ -190,7 +196,6 @@ class v2GptAgentInteractions():
                     messages.extend(self.tree_to_gpt_call(tree, response_node_id, not is_user))
 
         return messages
-
 
     def tree_based_design_general(self, root_nodes, tree):
         all_messages = []
@@ -441,6 +446,12 @@ class v2GptAgentInteractions():
             # Check and create dataset if it doesn't exist
             self.create_dataset_if_not_exists()
 
+            self.matrix_layer_one_dataset_id = "graph_to_agent_adjacency_matrices"
+            self.graph_data = graph_data
+            self.matrix_layer_one = MatrixLayerOne(self.timestamp, self.graph_data, self.matrix_layer_one_dataset_id)
+
+            self.matrix_layer_one.upload_to_bigquery()
+
             nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
             edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
 
@@ -501,7 +512,6 @@ class v2GptAgentInteractions():
             self.logger.error("An unexpected error occurred during save_graph_data:")
         raise
 
-
 # graph_data_json = """
 # {
 #   "nodes": [
@@ -561,7 +571,6 @@ class v2GptAgentInteractions():
 #   ]
 # }
 # """
-
 
 
 #
