@@ -21,7 +21,7 @@ class GptAgentInteractions():
 
     def __init__(self, dataset_id):
         # First logging
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         print(timestamp)
         self.log_file = f'{timestamp}_gpt_agent_interactions.log'
         print(self.log_file)

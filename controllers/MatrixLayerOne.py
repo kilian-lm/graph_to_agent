@@ -23,7 +23,7 @@ load_dotenv()
 class MatrixLayerOne:
     def __init__(self, timestamp, graph_data, dataset_id):
         try:
-            # timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+            # timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
             self.timestamp = timestamp
             print(self.timestamp)
             self.log_file = f'{self.timestamp}_matrix_layer_one.log'
