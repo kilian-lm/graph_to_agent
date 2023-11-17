@@ -25,9 +25,9 @@ class v2GptAgentInteractions():
 
     def __init__(self, dataset_id):
         # First logging
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        print(timestamp)
-        self.log_file = f'{timestamp}_gpt_agent_interactions.log'
+        self.timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        print(self.timestamp)
+        self.log_file = f'{self.timestamp}_gpt_agent_interactions.log'
         print(self.log_file)
         self.log_dir = './temp_log'
         print(self.log_dir)
@@ -41,6 +41,10 @@ class v2GptAgentInteractions():
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.openai_api_key}'
         }
+
+        # ToDo :: From mere class initialization in another class to inheritance
+
+
         self.dataset_id = dataset_id
         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
 
@@ -300,8 +304,8 @@ class v2GptAgentInteractions():
 
         # Serialize data to json
         json_data = json.dumps(translated_data, indent=4)
-        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        filename = f"temp_local/processed_graph_{timestamp}.json"
+        # timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = f"temp_local/processed_graph_{self.timestamp}.json"
 
         # Check if the temp_local directory exists
         if not os.path.exists('temp_local'):
