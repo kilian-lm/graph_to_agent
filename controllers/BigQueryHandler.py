@@ -21,7 +21,7 @@ from logger.CustomLogger import CustomLogger
 class BigQueryHandler:
 
     def __init__(self, dataset_id):
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         print(timestamp)
         self.log_file = f'{timestamp}_blueprint_designer.log'
         print(self.log_file)

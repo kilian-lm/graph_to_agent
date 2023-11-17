@@ -23,7 +23,7 @@ class EngineRoom():
 
     def __init__(self, dataset_id):
         # First logging
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         print(timestamp)
         self.log_file = f'{timestamp}_engine_room.log'
         print(self.log_file)

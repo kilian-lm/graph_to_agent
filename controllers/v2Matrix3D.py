@@ -300,7 +300,7 @@ class CubeMatrix:
     def __init__(self, graph_data: Dict[str, List[Dict[str, str]]]):
         self.graph_data = graph_data
         self.matrix = None
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         print(timestamp)
         self.log_file = f'{timestamp}_blueprint_designer.log'
         print(self.log_file)
