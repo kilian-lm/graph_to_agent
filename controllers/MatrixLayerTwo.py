@@ -226,6 +226,8 @@ class MatrixLayerTwo:
 
             # self.graph_data = graph_data
 
+            self.gpt_call_log = []
+
             self.matrix_dataset_id = matrix_dataset_id
             self.graph_dataset_id = graph_dataset_id
             self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
@@ -385,8 +387,6 @@ class MatrixLayerTwo:
 
         return advanced_stats
 
-
-
     def update_gpt_call_with_responses(self, gpt_call, var_responses):
         """Update the GPT call by replacing @var terms with responses from var_responses."""
         updated_messages = []
@@ -406,92 +406,173 @@ class MatrixLayerTwo:
         self.logger.info(gpt_call)
         return gpt_call
 
-    def process_matched_gpt_calls(self, matched_calls, sorted_components_by_suffix, var_responses, gpt_call_log):
-        for suffix, nodes in sorted_components_by_suffix:
-            for gpt_call in matched_calls:
-                updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
-                self.logger.info(updated_gpt_call)
+    # def process_matched_gpt_calls(self, matched_calls, sorted_components_by_suffix, var_responses, gpt_call_log):
+    #     for suffix, nodes in sorted_components_by_suffix:
+    #         for gpt_call in matched_calls:
+    #             updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
+    #             self.logger.info(updated_gpt_call)
+    #
+    #             response = self.get_gpt_response(updated_gpt_call)
+    #             self.logger.info(response)
+    #
+    #             var_key = f"variable_{suffix}"
+    #             var_responses[var_key] = response
+    #
+    #             self.logger.info(var_key)
+    #             self.logger.info(var_responses)
+    #
+    #             gpt_call_log.append({"request": updated_gpt_call, "response": response, "variable_key": var_key})
+    #             self.logger.info(gpt_call_log)
+    #
+    #     return var_responses
 
-                response = self.get_gpt_response(updated_gpt_call)
-                self.logger.info(response)
-
-                var_key = f"variable_{suffix}"
-                var_responses[var_key] = response
-
-                self.logger.info(var_key)
-                self.logger.info(var_responses)
-
-                gpt_call_log.append({"request": updated_gpt_call, "response": response, "variable_key": var_key})
-                self.logger.info(gpt_call_log)
-
-        return var_responses
+    # def process_graph_to_gpt_calls(self, graph, num_steps):
+    #     organized_components = self.organize_components_by_variable_suffix(graph)
+    #     self.logger.info(organized_components)
+    #
+    #     variable_suffix_nodes = [node for nodes in organized_components.values() for node in nodes]
+    #     self.logger.info(variable_suffix_nodes)
+    #
+    #     sorted_components_by_suffix = sorted(organized_components.items(), key=lambda x: self.suffix_order_key(x[0]))
+    #
+    #     matched_nodes_gpt_calls = []
+    #     unmatched_nodes_gpt_calls = []
+    #
+    #     user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
+    #     self.logger.info(user_nodes)
+    #
+    #     gpt_call_log = []  # List to store GPT calls and responses
+    #
+    #     for start_node in user_nodes:
+    #         for path in self.explore_paths(graph, start_node, steps=num_steps):
+    #             gpt_call = self.check_and_print_gpt_call(graph, path)
+    #             self.logger.info(gpt_call)
+    #
+    #             if gpt_call is not None:
+    #                 if any(node in variable_suffix_nodes for node in path):
+    #                     matched_nodes_gpt_calls.append(gpt_call)
+    #                 else:
+    #                     unmatched_nodes_gpt_calls.append(gpt_call)
+    #
+    #     var_responses = {}
+    #     for suffix, nodes in sorted_components_by_suffix:
+    #         for gpt_call in matched_nodes_gpt_calls:
+    #             updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
+    #             self.logger.info(updated_gpt_call)
+    #
+    #             response = self.get_gpt_response(updated_gpt_call)
+    #             self.logger.info(response)
+    #
+    #             # Adjust the var_key to match the pattern in the GPT calls
+    #             var_key = f"variable_{suffix}"
+    #             var_responses[var_key] = response
+    #
+    #             self.logger.info(var_key)
+    #             self.logger.info(var_responses)
+    #
+    #             gpt_call_log.append({"request": updated_gpt_call, "response": response, "variable_key": var_key})
+    #             self.logger.info(gpt_call_log)
+    #
+    #             # var_responses[var_key] = response
+    #             # self.logger.info(var_responses)
+    #
+    #     for gpt_call in unmatched_nodes_gpt_calls:
+    #         updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
+    #         self.logger.info(updated_gpt_call)
+    #
+    #         response = self.get_gpt_response(updated_gpt_call)
+    #         self.logger.info(response)
+    #
+    #         gpt_call_log.append({"request": updated_gpt_call, "response": response})
+    #         self.logger.info(gpt_call_log)
+    #         try:
+    #             with open(f'gpt_calls_{self.timestamp}.json', 'w') as file:
+    #                 json.dump(gpt_call_log, file, indent=4)
+    #         except Exception as e:
+    #             self.logger.error(f"Error saving JSON file: {e}")
+    #
+    #     return var_responses
 
     def process_graph_to_gpt_calls(self, graph, num_steps):
         organized_components = self.organize_components_by_variable_suffix(graph)
-        self.logger.info(organized_components)
+        self.log_info(organized_components)
 
-        variable_suffix_nodes = [node for nodes in organized_components.values() for node in nodes]
-        self.logger.info(variable_suffix_nodes)
+        variable_suffix_nodes = self.get_variable_suffix_nodes(organized_components)
+        self.log_info(variable_suffix_nodes)
 
-        sorted_components_by_suffix = sorted(organized_components.items(), key=lambda x: self.suffix_order_key(x[0]))
+        sorted_components_by_suffix = self.sort_components_by_suffix(organized_components)
+        user_nodes = self.get_user_nodes(graph)
+        self.log_info(user_nodes)
 
-        matched_nodes_gpt_calls = []
-        unmatched_nodes_gpt_calls = []
+        matched, unmatched = self.classify_gpt_calls(graph, user_nodes, variable_suffix_nodes, num_steps)
 
-        user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
-        self.logger.info(user_nodes)
+        var_responses = self.process_matched_gpt_calls(matched, sorted_components_by_suffix)
+        self.process_unmatched_gpt_calls(unmatched, var_responses)
 
-        gpt_call_log = []  # List to store GPT calls and responses
+        self.save_gpt_calls_to_file()
+        return var_responses
 
+    def get_variable_suffix_nodes(self, organized_components):
+        return [node for nodes in organized_components.values() for node in nodes]
+
+    def sort_components_by_suffix(self, organized_components):
+        return sorted(organized_components.items(), key=lambda x: self.suffix_order_key(x[0]))
+
+    def get_user_nodes(self, graph):
+        return [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
+
+    def classify_gpt_calls(self, graph, user_nodes, variable_suffix_nodes, num_steps):
+        matched = []
+        unmatched = []
         for start_node in user_nodes:
             for path in self.explore_paths(graph, start_node, steps=num_steps):
                 gpt_call = self.check_and_print_gpt_call(graph, path)
-                self.logger.info(gpt_call)
-
-                if gpt_call is not None:
+                self.log_info(gpt_call)
+                if gpt_call:
                     if any(node in variable_suffix_nodes for node in path):
-                        matched_nodes_gpt_calls.append(gpt_call)
+                        matched.append(gpt_call)
                     else:
-                        unmatched_nodes_gpt_calls.append(gpt_call)
+                        unmatched.append(gpt_call)
+        return matched, unmatched
 
+    def process_matched_gpt_calls(self, matched_calls, sorted_components):
         var_responses = {}
-        for suffix, nodes in sorted_components_by_suffix:
-            for gpt_call in matched_nodes_gpt_calls:
-                updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
-                self.logger.info(updated_gpt_call)
-
-                response = self.get_gpt_response(updated_gpt_call)
-                self.logger.info(response)
-
-                # Adjust the var_key to match the pattern in the GPT calls
+        for suffix, nodes in sorted_components:
+            for gpt_call in matched_calls:
+                updated_call, response = self.process_single_gpt_call(gpt_call, var_responses)
                 var_key = f"variable_{suffix}"
                 var_responses[var_key] = response
-
-                self.logger.info(var_key)
-                self.logger.info(var_responses)
-
-                gpt_call_log.append({"request": updated_gpt_call, "response": response, "variable_key": var_key})
-                self.logger.info(gpt_call_log)
-
-                # var_responses[var_key] = response
-                # self.logger.info(var_responses)
-
-        for gpt_call in unmatched_nodes_gpt_calls:
-            updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
-            self.logger.info(updated_gpt_call)
-
-            response = self.get_gpt_response(updated_gpt_call)
-            self.logger.info(response)
-
-            gpt_call_log.append({"request": updated_gpt_call, "response": response})
-            self.logger.info(gpt_call_log)
-            try:
-                with open(f'gpt_calls_{self.timestamp}.json', 'w') as file:
-                    json.dump(gpt_call_log, file, indent=4)
-            except Exception as e:
-                self.logger.error(f"Error saving JSON file: {e}")
-
+                self.log_gpt_call(updated_call, response, var_key)
         return var_responses
+
+    def process_unmatched_gpt_calls(self, unmatched_calls, var_responses):
+        for gpt_call in unmatched_calls:
+            updated_call, response = self.process_single_gpt_call(gpt_call, var_responses)
+            self.log_gpt_call(updated_call, response)
+
+    def process_single_gpt_call(self, gpt_call, var_responses):
+        updated_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
+        self.log_info(updated_call)
+        response = self.get_gpt_response(updated_call)
+        self.log_info(response)
+        return updated_call, response
+
+    def save_gpt_calls_to_file(self):
+        try:
+            with open(f'gpt_calls_{self.timestamp}.json', 'w') as file:
+                json.dump(self.gpt_call_log, file, indent=4)
+        except Exception as e:
+            self.logger.error(f"Error saving JSON file: {e}")
+
+    def log_info(self, message):
+        self.logger.info(message)
+
+    def log_gpt_call(self, request, response, var_key=None):
+        log_entry = {"request": request, "response": response}
+        if var_key:
+            log_entry["variable_key"] = var_key
+        self.gpt_call_log.append(log_entry)
+        self.log_info(log_entry)
 
     def suffix_order_key(self, suffix):
         """Key function for sorting suffixes in the order like 1_1, 1_2, 2_1, etc."""
