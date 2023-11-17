@@ -200,9 +200,11 @@ graph_data = json.loads(json_graph_data)
 
 
 class MatrixLayerTwo:
-    def __init__(self, graph_data, matrix_dataset_id, graph_dataset_id, graph_id):
+    def __init__(self, timestamp, matrix_dataset_id, graph_dataset_id):
         try:
-            self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+            # self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+
+            self.timestamp = timestamp
             print(self.timestamp)
             self.log_file = f'{self.timestamp}_matrix_layer_two.log'
             print(self.log_file)
@@ -219,14 +221,14 @@ class MatrixLayerTwo:
                 'Authorization': f'Bearer {self.openai_api_key}'
             }
             # todo: hand form app.py graph_id , think about coherent logic to ident nodes with matrix
-            self.graph_id = graph_id
-            self.table_name = self.graph_id
+            # self.graph_id = graph_id
+            # self.table_name = self.graph_id
 
-            self.graph_data = graph_data
+            # self.graph_data = graph_data
 
             self.matrix_dataset_id = matrix_dataset_id
             self.graph_dataset_id = graph_dataset_id
-            self.bq_handler = BigQueryHandler(self.graph_dataset_id)
+            self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
 
             self.edges_tbl = "edges_table"
             self.nodes_tbl = "nodes_table"
@@ -240,9 +242,9 @@ class MatrixLayerTwo:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    def get_adjacency_matrix(self, adjacency_matrix):
-        self.bq_handler = BigQueryHandler(self.matrix_dataset_id)
-        table_ref = self.bq_handler.bigquery_client.dataset(self.matrix_dataset_id).table(adjacency_matrix)
+    def get_adjacency_matrix(self):
+        self.bq_handler = BigQueryHandler(self.timestamp, self.matrix_dataset_id)
+        table_ref = self.bq_handler.bigquery_client.dataset(self.matrix_dataset_id).table(self.timestamp)
         print(table_ref)
         query = ADJACENCY_MATRIX_QUERY.format(
             adjacency_matrix=table_ref)
@@ -258,11 +260,11 @@ class MatrixLayerTwo:
         return df
 
     def get_nodes(self):
-        self.bq_handler = BigQueryHandler(self.graph_dataset_id)
+        self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
         table_ref = self.bq_handler.bigquery_client.dataset(self.graph_dataset_id).table(self.nodes_tbl)
         self.logger.info(table_ref)
         query = NODES_QUERY.format(
-            tbl_ref=table_ref, graph_id=self.graph_id)
+            tbl_ref=table_ref, graph_id=self.timestamp)
 
         self.logger.info(query)
 
@@ -277,11 +279,11 @@ class MatrixLayerTwo:
         return df
 
     def get_edges(self):
-        self.bq_handler = BigQueryHandler(self.graph_dataset_id)
+        self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
         table_ref = self.bq_handler.bigquery_client.dataset(self.graph_dataset_id).table(self.edges_tbl)
 
         query = EDGES_QUERY.format(
-            tbl_ref=table_ref, graph_id=self.graph_id)
+            tbl_ref=table_ref, graph_id=self.timestamp)
 
         # self.bq_handler.create_view(self.edges_views,
         #                             f'edges_{self.timestamp}',
@@ -517,13 +519,13 @@ class MatrixLayerTwo:
     def find_variable_nodes(self):
         """Find all @variable nodes."""
 
-        self.bq_handler = BigQueryHandler(self.graph_dataset_id)
+        self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
         table_ref = self.bq_handler.bigquery_client.dataset(self.graph_dataset_id).table(self.nodes_tbl)
         self.logger.info(table_ref)
 
         variable_nodes = set()
 
-        query = LAYER_FIND_VARIABLE.format(tbl_ref=table_ref, graph_id=self.graph_id)
+        query = LAYER_FIND_VARIABLE.format(tbl_ref=table_ref, graph_id=self.timestamp)
 
         # query = """
         # SELECT * FROM `enter-universes.graph_to_agent.nodes_table`
@@ -601,13 +603,13 @@ class MatrixLayerTwo:
         nx.set_node_attributes(G, label_dict, 'label')
 
 
-mat_l_t = MatrixLayerTwo("graph_data", "graph_to_agent_adjacency_matrices", "graph_to_agent", "20231114181549")
+mat_l_t = MatrixLayerTwo("20231117163236","graph_to_agent_adjacency_matrices", "graph_to_agent")
 
 mat_l_t.get_edges()
 mat_l_t.get_nodes()
-mat_l_t.get_adjacency_matrix('20231114115221_2')
+mat_l_t.get_adjacency_matrix()
 
-df = mat_l_t.get_adjacency_matrix('20231114115221_2').set_index("node_id")
+df = mat_l_t.get_adjacency_matrix().set_index("node_id")
 G = mat_l_t.create_graph_from_adjacency(df)
 G.number_of_edges()
 
@@ -625,11 +627,5 @@ var_matched_gpt_calls, var_unmatched_gpt_calls = mat_l_t.process_graph_to_gpt_ca
 var_matched_gpt_calls
 var_unmatched_gpt_calls
 
-
-json.dumps(gpt_calls[0])
-gpt_calls[0]
-
-json.dumps(gpt_calls)
-
-mat_l_t.organize_components_by_variable_suffix(G)
-mat_l_t.process_graph_for_variables_layer(G)
+# mat_l_t.organize_components_by_variable_suffix(G)
+# mat_l_t.process_graph_for_variables_layer(G)
