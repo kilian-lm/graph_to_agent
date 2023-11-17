@@ -497,16 +497,41 @@ class MatrixLayerTwo:
     #         for path in self.explore_paths(graph, start_node, steps=num_steps):
     #             self.check_and_print_gpt_call(graph, path)
 
+    # def process_graph_to_gpt_calls(self, graph, num_steps):
+    #     """Main method to process the graph and accumulate GPT calls."""
+    #     user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
+    #     gpt_calls = []
+    #     for start_node in user_nodes:
+    #         for path in self.explore_paths(graph, start_node, steps=num_steps):
+    #             gpt_call = self.check_and_print_gpt_call(graph, path)
+    #             if gpt_call is not None:
+    #                 gpt_calls.append(gpt_call)
+    #     return gpt_calls
+
     def process_graph_to_gpt_calls(self, graph, num_steps):
         """Main method to process the graph and accumulate GPT calls."""
+        # First, organize components by variable suffix.
+        organized_components = self.organize_components_by_variable_suffix(graph)
+
+        # Flatten the organized components to get a list of nodes involved.
+        variable_suffix_nodes = [node for nodes in organized_components.values() for node in nodes]
+
+        # Initialize the lists for the two types of nodes.
+        matched_nodes_gpt_calls = []
+        unmatched_nodes_gpt_calls = []
+
         user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
-        gpt_calls = []
         for start_node in user_nodes:
             for path in self.explore_paths(graph, start_node, steps=num_steps):
                 gpt_call = self.check_and_print_gpt_call(graph, path)
                 if gpt_call is not None:
-                    gpt_calls.append(gpt_call)
-        return gpt_calls
+                    # Check if any node in the path is in the variable_suffix_nodes
+                    if any(node in variable_suffix_nodes for node in path):
+                        matched_nodes_gpt_calls.append(gpt_call)
+                    else:
+                        unmatched_nodes_gpt_calls.append(gpt_call)
+
+        return matched_nodes_gpt_calls, unmatched_nodes_gpt_calls
 
     def explore_paths(self, graph, start_node, steps):
         """Explore all paths up to a certain number of steps from a start node."""
@@ -646,6 +671,8 @@ class MatrixLayerTwo:
         for suffix, nodes in ordered_components_dict.items():
             print(f"Connected Component for @variable_{suffix}:", nodes)
 
+        return ordered_components_dict
+
     def extract_variable_suffix(self, label):
         """Extract the variable suffix from the label."""
         match = re.search(r"@(\w+_\d+_\d+)", label)
@@ -698,7 +725,9 @@ df_nodes = mat_l_t.get_nodes()
 
 label_dict = df_nodes.set_index('id')['label'].to_dict()
 nx.set_node_attributes(G, label_dict, 'label')
+
 gpt_calls = mat_l_t.process_graph_to_gpt_calls(G, 10)
 gpt_calls
+
 mat_l_t.organize_components_by_variable_suffix(G)
 mat_l_t.process_graph_for_variables_layer(G)
