@@ -18,9 +18,9 @@ app = Flask(__name__)
 
 class App():
     def __init__(self):
-        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        print(timestamp)
-        self.log_file = f'{timestamp}_app.log'
+        self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        print(self.timestamp)
+        self.log_file = f'{self.timestamp}_app.log'
         print(self.log_file)
         self.log_dir = './temp_log'
         print(self.log_dir)
@@ -28,11 +28,11 @@ class App():
         print(self.log_level)
         self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
-        self.engine_room = EngineRoom('graph_to_agent')
+        self.engine_room = EngineRoom(self.timestamp, 'graph_to_agent')
 
         self.app = Flask(__name__)
         # self.gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
-        self.gpt_agent_interactions = v2GptAgentInteractions('graph_to_agent')
+        self.gpt_agent_interactions = v2GptAgentInteractions(self.timestamp, 'graph_to_agent')
         self.setup_routes()
 
     def index_call(self):
@@ -64,7 +64,7 @@ class App():
         print(updated_graph)
         # breakpoint()
         # timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        # filename = f"temp_local/debugging_var_method_{timestamp}.json"
+        # filename = f"temp_local/debugging_var_method_{self.timestamp}.json"
         #
         # # Check if the temp_local directory exists
         # if not os.path.exists('temp_local'):
@@ -134,10 +134,10 @@ class App():
             graph_data = request.json
             self.logger.info(f"save_graph, graph_data: {graph_data}")
 
-            graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            self.logger.info(f"save_graph, graph_id: {graph_id}")
-            msg = self.gpt_agent_interactions.save_graph_data(graph_data, graph_id)
-
+            # graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            self.logger.info(f"save_graph, graph_id: {self.timestamp}")
+            msg = self.gpt_agent_interactions.save_graph_data(graph_data, self.timestamp)
+            self.logger.info(msg)
             # self.logger.error(f"save_graph, errors: {errors}")
             #
             # if errors:

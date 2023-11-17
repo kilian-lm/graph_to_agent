@@ -26,9 +26,10 @@ load_dotenv()
 
 class v2GptAgentInteractions():
 
-    def __init__(self, dataset_id):
+    def __init__(self, timestamp, dataset_id):
         # First logging
-        self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        # self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        self.timestamp = timestamp
         print(self.timestamp)
         self.log_file = f'{self.timestamp}_gpt_agent_interactions.log'
         print(self.log_file)

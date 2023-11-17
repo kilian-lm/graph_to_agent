@@ -41,7 +41,7 @@ class MatrixLayerOne:
             self.graph_data = graph_data
 
             self.dataset_id = dataset_id
-            self.bq_handler = BigQueryHandler(self.dataset_id)
+            self.bq_handler = BigQueryHandler(self.timestamp, self.dataset_id)
 
             # ToDo :: Dublicated import of bq !!
             #  From mere class initialization in another class to inheritance
