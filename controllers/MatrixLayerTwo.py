@@ -24,6 +24,7 @@ from controllers.BigQueryHandler import BigQueryHandler
 from sql_queries.adjacency_matrix_query import ADJACENCY_MATRIX_QUERY
 from sql_queries.edges_query import EDGES_QUERY
 from sql_queries.nodes_query import NODES_QUERY
+from sql_queries.layer_find_variable import LAYER_FIND_VARIABLE
 
 load_dotenv()
 
@@ -347,9 +348,9 @@ class MatrixLayerTwo:
         query = ADJACENCY_MATRIX_QUERY.format(
             adjacency_matrix=table_ref)
 
-        self.bq_handler.create_view(self.matrix_views,
-                                    f'adjacency_matrix_{self.timestamp}',
-                                    query)
+        # self.bq_handler.create_view(self.matrix_views,
+        #                             f'adjacency_matrix_{self.timestamp}',
+        #                             query)
 
         query_job = self.bq_handler.bigquery_client.query(query)
 
@@ -489,7 +490,7 @@ class MatrixLayerTwo:
 
         return advanced_stats
 
-    def process_graph(self, graph, num_steps):
+    def process_graph_to_gpt_calls(self, graph, num_steps):
         """Main method to process the graph."""
         user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
         for start_node in user_nodes:
@@ -535,20 +536,28 @@ class MatrixLayerTwo:
         return (len(labels) == 6 and labels[0] == 'user' and labels[2] == 'system' and labels[4] == 'user' and
                 all(label not in ['user', 'system'] for label in [labels[1], labels[3], labels[5]]))
 
-    def process_graph(self):
+    def process_graph_for_variables_layer(self, graph):
         """Process the graph to find connected components with @variable nodes."""
         variable_nodes = self.find_variable_nodes()
-        connected_components_with_variables = self.find_connected_components_with_variables(variable_nodes)
+        connected_components_with_variables = self.find_connected_components_with_variables(graph, variable_nodes)
         for component in connected_components_with_variables:
             print("Connected Component containing @variable node:", list(component))
 
     def find_variable_nodes(self):
         """Find all @variable nodes."""
+
+        self.bq_handler = BigQueryHandler(self.graph_dataset_id)
+        table_ref = self.bq_handler.bigquery_client.dataset(self.graph_dataset_id).table(self.nodes_tbl)
+        self.logger.info(table_ref)
+
         variable_nodes = set()
-        query = """
-        SELECT * FROM `enter-universes.graph_to_agent.nodes_table`
-        WHERE graph_id = "20231114181549" AND STARTS_WITH(label, "@")
-        """
+
+        query = LAYER_FIND_VARIABLE.format(tbl_ref=table_ref, graph_id=self.graph_id)
+
+        # query = """
+        # SELECT * FROM `enter-universes.graph_to_agent.nodes_table`
+        # WHERE graph_id = "20231114181549" AND STARTS_WITH(label, "@")
+        # """
         query_job = self.bq_handler.bigquery_client.query(query)
         results = query_job.result()
         for row in results:
@@ -567,7 +576,7 @@ class MatrixLayerTwo:
     def organize_components_by_variable_suffix(self, graph):
         """Organize connected components based on @variable suffixes."""
         variable_nodes = self.find_variable_nodes()
-        connected_components = self.find_connected_components_with_variables(variable_nodes)
+        connected_components = self.find_connected_components_with_variables(graph, variable_nodes)
         components_dict = defaultdict(list)
 
         for component in connected_components:
@@ -615,4 +624,5 @@ mat_l_t.check_graph_correctly_recveied_via_matrix(G)
 df_nodes = mat_l_t.get_nodes()
 label_dict = df_nodes.set_index('id')['label'].to_dict()
 nx.set_node_attributes(G, label_dict, 'label')
-mat_l_t.process_graph(G, 10)
+mat_l_t.process_graph_to_gpt_calls(G, 10)
+mat_l_t.process_graph_for_variables_layer(G)
