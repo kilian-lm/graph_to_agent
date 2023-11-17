@@ -319,6 +319,12 @@ class MatrixLayerTwo:
             print(self.log_level)
             self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
+            self.openai_api_key = os.getenv('OPENAI_API_KEY')
+            self.openai_base_url = "https://api.openai.com/v1/chat/completions"
+            self.headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {self.openai_api_key}'
+            }
             # todo: hand form app.py graph_id , think about coherent logic to ident nodes with matrix
             self.graph_id = graph_id
             self.table_name = self.graph_id
@@ -393,12 +399,6 @@ class MatrixLayerTwo:
         df = query_job.to_dataframe()
 
         return df
-
-    def matrix_prepper(self):
-        # df_2 = pd.DataFrame(results)
-        # df_3 = df_2.set_index("node_id")
-        # print(df_3.head())
-        pass
 
     def create_graph_from_adjacency(self, df):
         """
@@ -490,12 +490,23 @@ class MatrixLayerTwo:
 
         return advanced_stats
 
+    # def process_graph_to_gpt_calls(self, graph, num_steps):
+    #     """Main method to process the graph."""
+    #     user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
+    #     for start_node in user_nodes:
+    #         for path in self.explore_paths(graph, start_node, steps=num_steps):
+    #             self.check_and_print_gpt_call(graph, path)
+
     def process_graph_to_gpt_calls(self, graph, num_steps):
-        """Main method to process the graph."""
+        """Main method to process the graph and accumulate GPT calls."""
         user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
+        gpt_calls = []
         for start_node in user_nodes:
             for path in self.explore_paths(graph, start_node, steps=num_steps):
-                self.check_and_print_gpt_call(graph, path)
+                gpt_call = self.check_and_print_gpt_call(graph, path)
+                if gpt_call is not None:
+                    gpt_calls.append(gpt_call)
+        return gpt_calls
 
     def explore_paths(self, graph, start_node, steps):
         """Explore all paths up to a certain number of steps from a start node."""
@@ -515,8 +526,50 @@ class MatrixLayerTwo:
                 self.dfs(graph, neighbor, path, steps - 1, paths)
         path.pop()
 
+    # def check_and_print_gpt_call(self, graph, paths):
+    #     """Check if the paths match the blueprint pattern and return a list of GPT calls."""
+    #     gpt_calls = []
+    #     for path in paths:
+    #         self.logger.info(path)
+    #         labels = [graph.nodes[node]['label'] for node in path]
+    #         self.logger.info(labels)
+    #
+    #         if self.is_valid_blueprint(labels):
+    #             gpt_call = {
+    #                 "model": "gpt-4",
+    #                 "messages": [
+    #                     {"role": "user", "content": labels[1]},
+    #                     {"role": "system", "content": labels[3]},
+    #                     {"role": "user", "content": labels[5]}
+    #                 ]
+    #             }
+    #             gpt_calls.append(gpt_call)
+    #             self.logger.info(gpt_calls)
+    #
+    #         else:
+    #             print("Blueprint pattern not found in path:", path)
+    #
+    #     return gpt_calls
+
+    # def check_and_print_gpt_call(self, graph, path):
+    #     """Check if the path matches the blueprint pattern and print the GPT call."""
+    #     labels = [graph.nodes[node]['label'] for node in path]
+    #     if self.is_valid_blueprint(labels):
+    #         gpt_call = {
+    #             "model": "gpt-4",
+    #             "messages": [
+    #                 {"role": "user", "content": labels[1]},
+    #                 {"role": "system", "content": labels[3]},
+    #                 {"role": "user", "content": labels[5]}
+    #             ]
+    #         }
+    #         print("GPT Call:", gpt_call)
+    #         return gpt_call
+    #     else:
+    #         print("Blueprint pattern not found in this path.")
+
     def check_and_print_gpt_call(self, graph, path):
-        """Check if the path matches the blueprint pattern and print the GPT call."""
+        """Check if the path matches the blueprint pattern and return the GPT call."""
         labels = [graph.nodes[node]['label'] for node in path]
         if self.is_valid_blueprint(labels):
             gpt_call = {
@@ -527,9 +580,9 @@ class MatrixLayerTwo:
                     {"role": "user", "content": labels[5]}
                 ]
             }
-            print("GPT Call:", gpt_call)
+            return gpt_call
         else:
-            print("Blueprint pattern not found in this path.")
+            return None
 
     def is_valid_blueprint(self, labels):
         """Check if labels sequence matches the blueprint pattern."""
@@ -598,6 +651,25 @@ class MatrixLayerTwo:
         match = re.search(r"@(\w+_\d+_\d+)", label)
         return match.group(1) if match else None
 
+    def get_gpt_response(self, processed_data):
+        self.logger.debug(processed_data)
+        response = requests.post(self.openai_base_url, headers=self.headers, json=processed_data)
+        if response.status_code == 200:
+            return response.json()["choices"][0]["message"]["content"]
+        else:
+            raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
+
+    def orchestrator_process_graph(self):
+        """Extend the processing to include request orchestration."""
+
+        # ToDo :
+        # 1. Just get gpt calls queued running without @variable
+        # 2.
+
+        super().process_graph()
+        self.enqueue_requests()
+        self.process_requests()
+
     def main(self):
         df = self.get_adjacency_matrix(self.graph_id).set_index("node_id")
         G = self.create_graph_from_adjacency(df)
@@ -618,11 +690,15 @@ mat_l_t.get_adjacency_matrix('20231114115221_2')
 df = mat_l_t.get_adjacency_matrix('20231114115221_2').set_index("node_id")
 G = mat_l_t.create_graph_from_adjacency(df)
 G.number_of_edges()
+
 mat_l_t.check_diameter_and_centrality(G)
 mat_l_t.check_degree_distribution(G)
 mat_l_t.check_graph_correctly_recveied_via_matrix(G)
 df_nodes = mat_l_t.get_nodes()
+
 label_dict = df_nodes.set_index('id')['label'].to_dict()
 nx.set_node_attributes(G, label_dict, 'label')
-mat_l_t.process_graph_to_gpt_calls(G, 10)
+gpt_calls = mat_l_t.process_graph_to_gpt_calls(G, 10)
+gpt_calls
+mat_l_t.organize_components_by_variable_suffix(G)
 mat_l_t.process_graph_for_variables_layer(G)
