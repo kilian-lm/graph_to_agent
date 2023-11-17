@@ -403,27 +403,62 @@ class MatrixLayerTwo:
     #                 gpt_calls.append(gpt_call)
     #     return gpt_calls
 
+    # def process_graph_to_gpt_calls(self, graph, num_steps):
+    #     """Main method to process the graph and accumulate GPT calls."""
+    #     # First, organize components by variable suffix.
+    #     organized_components = self.organize_components_by_variable_suffix(graph)
+    #     self.logger.info(organized_components)
+    #     # Flatten the organized components to get a list of nodes involved.
+    #     variable_suffix_nodes = [node for nodes in organized_components.values() for node in nodes]
+    #     self.logger.info(variable_suffix_nodes)
+    #     # Initialize the lists for the two types of nodes.
+    #     matched_nodes_gpt_calls = []
+    #     unmatched_nodes_gpt_calls = []
+    #
+    #     user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
+    #     self.logger.info(user_nodes)
+    #     for start_node in user_nodes:
+    #         for path in self.explore_paths(graph, start_node, steps=num_steps):
+    #             gpt_call = self.check_and_print_gpt_call(graph, path)
+    #             self.logger.info(gpt_call)
+    #             if gpt_call is not None:
+    #                 # Check if any node in the path is in the variable_suffix_nodes
+    #                 if any(node in variable_suffix_nodes for node in path):
+    #                     matched_nodes_gpt_calls.append(gpt_call)
+    #                     self.logger.info(matched_nodes_gpt_calls)
+    #                 else:
+    #                     unmatched_nodes_gpt_calls.append(gpt_call)
+    #                     self.logger.info(unmatched_nodes_gpt_calls)
+    #
+    #     return matched_nodes_gpt_calls, unmatched_nodes_gpt_calls
+
     def process_graph_to_gpt_calls(self, graph, num_steps):
-        """Main method to process the graph and accumulate GPT calls."""
-        # First, organize components by variable suffix.
         organized_components = self.organize_components_by_variable_suffix(graph)
         self.logger.info(organized_components)
-        # Flatten the organized components to get a list of nodes involved.
+
         variable_suffix_nodes = [node for nodes in organized_components.values() for node in nodes]
         self.logger.info(variable_suffix_nodes)
-        # Initialize the lists for the two types of nodes.
+
         matched_nodes_gpt_calls = []
         unmatched_nodes_gpt_calls = []
 
         user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
         self.logger.info(user_nodes)
+
         for start_node in user_nodes:
             for path in self.explore_paths(graph, start_node, steps=num_steps):
+                # Construct the subgraph/tree for this path
+                subgraph_nodes = set()
+                for node in path:
+                    subgraph_nodes.update(graph.neighbors(node))
+                    subgraph_nodes.add(node)
+
                 gpt_call = self.check_and_print_gpt_call(graph, path)
                 self.logger.info(gpt_call)
+
                 if gpt_call is not None:
-                    # Check if any node in the path is in the variable_suffix_nodes
-                    if any(node in variable_suffix_nodes for node in path):
+                    # Check if the subgraph/tree contains the variable nodes
+                    if any(node in variable_suffix_nodes for node in subgraph_nodes):
                         matched_nodes_gpt_calls.append(gpt_call)
                         self.logger.info(matched_nodes_gpt_calls)
                     else:
@@ -607,7 +642,7 @@ class MatrixLayerTwo:
         nx.set_node_attributes(G, label_dict, 'label')
 
 
-mat_l_t = MatrixLayerTwo("20231117163236","graph_to_agent_adjacency_matrices", "graph_to_agent")
+mat_l_t = MatrixLayerTwo("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent")
 
 mat_l_t.get_edges()
 mat_l_t.get_nodes()
@@ -625,7 +660,7 @@ df_nodes = mat_l_t.get_nodes()
 label_dict = df_nodes.set_index('id')['label'].to_dict()
 nx.set_node_attributes(G, label_dict, 'label')
 
-gpt_calls = mat_l_t.process_graph_to_gpt_calls(G, 15)
+mat_l_t.process_graph_to_gpt_calls(G, 10)
 
 var_matched_gpt_calls, var_unmatched_gpt_calls = mat_l_t.process_graph_to_gpt_calls(G, 10)
 var_matched_gpt_calls
