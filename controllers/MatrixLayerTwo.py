@@ -406,6 +406,25 @@ class MatrixLayerTwo:
         self.logger.info(gpt_call)
         return gpt_call
 
+    def process_matched_gpt_calls(self, matched_calls, sorted_components_by_suffix, var_responses, gpt_call_log):
+        for suffix, nodes in sorted_components_by_suffix:
+            for gpt_call in matched_calls:
+                updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
+                self.logger.info(updated_gpt_call)
+
+                response = self.get_gpt_response(updated_gpt_call)
+                self.logger.info(response)
+
+                var_key = f"variable_{suffix}"
+                var_responses[var_key] = response
+
+                self.logger.info(var_key)
+                self.logger.info(var_responses)
+
+                gpt_call_log.append({"request": updated_gpt_call, "response": response, "variable_key": var_key})
+                self.logger.info(gpt_call_log)
+
+        return var_responses
 
     def process_graph_to_gpt_calls(self, graph, num_steps):
         organized_components = self.organize_components_by_variable_suffix(graph)
