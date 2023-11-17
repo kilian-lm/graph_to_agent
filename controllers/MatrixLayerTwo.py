@@ -385,15 +385,25 @@ class MatrixLayerTwo:
 
         return advanced_stats
 
+
+
     def update_gpt_call_with_responses(self, gpt_call, var_responses):
         """Update the GPT call by replacing @var terms with responses from var_responses."""
         updated_messages = []
         for message in gpt_call['messages']:
             content = message['content']
+            self.logger.info(content)
             for var, response in var_responses.items():
-                content = content.replace(f'@{var}', response)
+                # Make sure the placeholder in the content matches the format of the keys in var_responses
+                placeholder = f'@{var}'
+                self.logger.info(placeholder)
+                if placeholder in content:
+                    content = content.replace(placeholder, response)
+                    self.logger.info(content)
             updated_messages.append({'role': message['role'], 'content': content})
+            self.logger.info(updated_messages)
         gpt_call['messages'] = updated_messages
+        self.logger.info(gpt_call)
         return gpt_call
 
     # def process_graph_to_gpt_calls(self, graph, num_steps):
@@ -403,42 +413,6 @@ class MatrixLayerTwo:
     #     variable_suffix_nodes = [node for nodes in organized_components.values() for node in nodes]
     #     self.logger.info(variable_suffix_nodes)
     #
-    #     matched_nodes_gpt_calls = []
-    #     unmatched_nodes_gpt_calls = []
-    #
-    #     user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
-    #     self.logger.info(user_nodes)
-    #
-    #     for start_node in user_nodes:
-    #         for path in self.explore_paths(graph, start_node, steps=num_steps):
-    #             # Construct the subgraph/tree for this path
-    #             subgraph_nodes = set()
-    #             for node in path:
-    #                 subgraph_nodes.update(graph.neighbors(node))
-    #                 subgraph_nodes.add(node)
-    #
-    #             gpt_call = self.check_and_print_gpt_call(graph, path)
-    #             self.logger.info(gpt_call)
-    #
-    #             if gpt_call is not None:
-    #                 # Check if the subgraph/tree contains the variable nodes
-    #                 if any(node in variable_suffix_nodes for node in subgraph_nodes):
-    #                     matched_nodes_gpt_calls.append(gpt_call)
-    #                     self.logger.info(matched_nodes_gpt_calls)
-    #                 else:
-    #                     unmatched_nodes_gpt_calls.append(gpt_call)
-    #                     self.logger.info(unmatched_nodes_gpt_calls)
-    #
-    #     return matched_nodes_gpt_calls, unmatched_nodes_gpt_calls
-
-    # def process_graph_to_gpt_calls(self, graph, num_steps):
-    #     organized_components = self.organize_components_by_variable_suffix(graph)
-    #     self.logger.info(organized_components)
-    #
-    #     variable_suffix_nodes = [node for nodes in organized_components.values() for node in nodes]
-    #     self.logger.info(variable_suffix_nodes)
-    #
-    #     # Sort organized components by suffixes
     #     sorted_components_by_suffix = sorted(organized_components.items(), key=lambda x: self.suffix_order_key(x[0]))
     #
     #     matched_nodes_gpt_calls = []
@@ -446,6 +420,8 @@ class MatrixLayerTwo:
     #
     #     user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
     #     self.logger.info(user_nodes)
+    #
+    #     gpt_call_log = []  # List to store GPT calls and responses
     #
     #     for start_node in user_nodes:
     #         for path in self.explore_paths(graph, start_node, steps=num_steps):
@@ -455,13 +431,9 @@ class MatrixLayerTwo:
     #             if gpt_call is not None:
     #                 if any(node in variable_suffix_nodes for node in path):
     #                     matched_nodes_gpt_calls.append(gpt_call)
-    #                     self.logger.info(matched_nodes_gpt_calls)
-    #
     #                 else:
     #                     unmatched_nodes_gpt_calls.append(gpt_call)
-    #                     self.logger.info(unmatched_nodes_gpt_calls)
     #
-    #     # Recursive processing of GPT calls
     #     var_responses = {}
     #     for suffix, nodes in sorted_components_by_suffix:
     #         for gpt_call in matched_nodes_gpt_calls:
@@ -472,21 +444,21 @@ class MatrixLayerTwo:
     #             self.logger.info(response)
     #             var_key = f"variable_{suffix}"
     #
-    #             self.logger.info(var_key)
+    #             gpt_call_log.append({"request": updated_gpt_call, "response": response, "variable_key": var_key})
     #
     #             var_responses[var_key] = response
-    #             self.logger.info(var_responses)
     #
-    #     # Process unmatched GPT calls
     #     for gpt_call in unmatched_nodes_gpt_calls:
     #         updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
-    #         self.logger.info(updated_gpt_call)
+    #         response = self.get_gpt_response(updated_gpt_call)
     #
-    #         self.get_gpt_response(updated_gpt_call)
-    #         self.logger.info(updated_gpt_call)
+    #         gpt_call_log.append({"request": updated_gpt_call, "response": response})
+    #
+    #     # Save to JSON file
+    #     with open(f'gpt_calls_{self.timestamp}.json', 'w') as file:
+    #         json.dump(gpt_call_log, file, indent=4)
     #
     #     return var_responses
-    #
 
     def process_graph_to_gpt_calls(self, graph, num_steps):
         organized_components = self.organize_components_by_variable_suffix(graph)
@@ -524,23 +496,37 @@ class MatrixLayerTwo:
 
                 response = self.get_gpt_response(updated_gpt_call)
                 self.logger.info(response)
+
+                # Adjust the var_key to match the pattern in the GPT calls
                 var_key = f"variable_{suffix}"
+                var_responses[var_key] = response
+
+                self.logger.info(var_key)
+                self.logger.info(var_responses)
 
                 gpt_call_log.append({"request": updated_gpt_call, "response": response, "variable_key": var_key})
+                self.logger.info(gpt_call_log)
 
-                var_responses[var_key] = response
+                # var_responses[var_key] = response
+                # self.logger.info(var_responses)
 
         for gpt_call in unmatched_nodes_gpt_calls:
             updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
+            self.logger.info(updated_gpt_call)
+
             response = self.get_gpt_response(updated_gpt_call)
+            self.logger.info(response)
 
             gpt_call_log.append({"request": updated_gpt_call, "response": response})
-
-        # Save to JSON file
-        with open(f'gpt_calls_{self.timestamp}.json', 'w') as file:
-            json.dump(gpt_call_log, file, indent=4)
+            self.logger.info(gpt_call_log)
+            try:
+                with open(f'gpt_calls_{self.timestamp}.json', 'w') as file:
+                    json.dump(gpt_call_log, file, indent=4)
+            except Exception as e:
+                self.logger.error(f"Error saving JSON file: {e}")
 
         return var_responses
+
     def suffix_order_key(self, suffix):
         """Key function for sorting suffixes in the order like 1_1, 1_2, 2_1, etc."""
         # Extract the numeric parts of the suffix
@@ -730,22 +716,20 @@ mat_l_t.get_edges()
 mat_l_t.get_nodes()
 mat_l_t.get_adjacency_matrix()
 
-
 df = mat_l_t.get_adjacency_matrix().set_index("node_id")
 G = mat_l_t.create_graph_from_adjacency(df)
 G.number_of_edges()
 
-
 mat_l_t.check_diameter_and_centrality(G)
 mat_l_t.check_degree_distribution(G)
 mat_l_t.check_graph_correctly_recveied_via_matrix(G)
-
 
 df_nodes = mat_l_t.get_nodes()
 label_dict = df_nodes.set_index('id')['label'].to_dict()
 nx.set_node_attributes(G, label_dict, 'label')
 
 answers = mat_l_t.process_graph_to_gpt_calls(G, 10)
+answers
 
 var_matched_gpt_calls, var_unmatched_gpt_calls = mat_l_t.process_graph_to_gpt_calls(G, 10)
 var_matched_gpt_calls
