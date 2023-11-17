@@ -1,5 +1,7 @@
 # graph_to_agent
 
+For Vision-Statement see: [Vision.md](READ_ME%2FVision.md)
+
 # Related Repos:
 
 1.
@@ -35,7 +37,7 @@ europe-west3-docker.pkg.dev/...
     1. **Involved Platforms:**
         1. GCP
             1. **Stack:**
-                1. Cloud Run -> https://smart-suggester-d4o77lzj2a-ey.a.run.app
+                1. Cloud Run
                 2. BQ
 3. **Language:**
     1. Python (.py)
