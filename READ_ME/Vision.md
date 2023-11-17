@@ -236,37 +236,37 @@ Netflix.
 ¹ Veritasium. Derek Muller (2023, Nov 01). The Problem With Science Communication [Video].
 YouTube. https://www.youtube.com/watch?v=czjisEGe5Cw&ab_channel=Veritasium
 
-² Ben Shneiderman Shneiderman, B. (1996). The eyes have it: A task by data type taxonomy for information visualizations.
+² Shneiderman, B. (1996). The eyes have it: A task by data type taxonomy for information visualizations.
 Proceedings IEEE Symposium on Visual Languages.
 
-³ danah boyd Boyd, D. M., & Nicole Ellison Ellison, N. B. (2007). Social network sites: Definition, history, and
+³ Boyd, D. M., & Nicole Ellison Ellison, N. B. (2007). Social network sites: Definition, history, and
 scholarship. Journal of Computer‐Mediated Communication, 13(1), 210-230.
 
-⁴ Paul Milgram Milgram, P., & Fumio Kishino Kishino, F. (1994). A taxonomy of mixed reality visual displays. IEICE
+⁴ Milgram, P., & Fumio Kishino Kishino, F. (1994). A taxonomy of mixed reality visual displays. IEICE
 TRANSACTIONS on Information and Systems, 77(12), 1321-1329.
 
-⁵ Hideo Kojima Kojima, H. (2019). Death Stranding. Sony Interactive Entertainment.
+⁵ Kojima, H. (2019). Death Stranding. Sony Interactive Entertainment.
 
-⁶Dürrenmatt, F. (1956). A Dangerous Game (also known as "The Pledge"). Alfred A. Knopf.
+⁶ Dürrenmatt, F. (1956). A Dangerous Game (also known as "The Pledge"). Alfred A. Knopf.
 
-⁷Villeneuve, D. (Director). (2016). Arrival [Film]. Note: Based on the story "Story of Your Life" by Ted Chiang.
+⁷ Villeneuve, D. (Director). (2016). Arrival [Film]. Note: Based on the story "Story of Your Life" by Ted Chiang.
 
-⁸ Edson Tandoc Tandoc Jr, E. C., Zheng Wei Lim Lim, Z. W., & Richard Ling Ling, R. (2018). Defining “fake news.” Digital
+⁸ Tandoc Jr, E. C., Zheng Wei Lim Lim, Z. W., & Richard Ling Ling, R. (2018). Defining “fake news.” Digital
 Journalism, 6(2), 137-153.
 
-⁹ Laura Dabbish Dabbish, L., Colleen Stuart Stuart, C., Jason Tsay Tsay, J., & Jim Herbsleb Herbsleb, J. (2012). Social
+⁹ Dabbish, L., Colleen Stuart Stuart, C., Jason Tsay Tsay, J., & Jim Herbsleb Herbsleb, J. (2012). Social
 coding in GitHub: transparency and collaboration in an open software repository. Proceedings of the ACM 2012 conference
 on Computer Supported Cooperative Work.
 
 ¹⁰ Sporns, O. (2011). Networks of the brain. MIT press.
 
-¹¹ Stuart Russell Russell, S. J., & Norvig, P. (2010). Artificial intelligence: A modern approach. Malaysia; Pearson
+¹¹ Russell, S. J., & Norvig, P. (2010). Artificial intelligence: A modern approach. Malaysia; Pearson
 Education Limited.
 
 ¹² Camus, Albert (1957). The Nobel Prize in Literature 1957. [Online; accessed 1.Apr.2020]
 .URL:https://www.nobelprize.org/prizes/literature/1957/camus/25232-albert-camus-banquet-speech-1957.
 
-¹³ Marcia Bates Bates, M. J. (2005). Information and knowledge: An evolutionary framework for information science.
+¹³ Bates, M. J. (2005). Information and knowledge: An evolutionary framework for information science.
 Information Research, 10(4).
 
 ¹⁴ The Walt Disney Company. (2002). Treasure Planet [Film]. Walt Disney Feature Animation.
