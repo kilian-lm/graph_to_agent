@@ -549,22 +549,22 @@ class MatrixLayerTwo:
         SELECT * FROM `enter-universes.graph_to_agent.nodes_table`
         WHERE graph_id = "20231114181549" AND STARTS_WITH(label, "@")
         """
-        query_job = self.bq_client.query(query)
+        query_job = self.bq_handler.bigquery_client.query(query)
         results = query_job.result()
         for row in results:
             node_id = row['id']
             variable_nodes.add(node_id)
         return variable_nodes
 
-    def find_connected_components_with_variables(self, variable_nodes):
+    def find_connected_components_with_variables(self, graph, variable_nodes):
         """Find connected components that contain @variable nodes."""
         components_with_variables = []
-        for component in nx.connected_components(self.graph):
+        for component in nx.connected_components(graph):
             if any(node in variable_nodes for node in component):
                 components_with_variables.append(component)
         return components_with_variables
 
-    def organize_components_by_variable_suffix(self):
+    def organize_components_by_variable_suffix(self, graph):
         """Organize connected components based on @variable suffixes."""
         variable_nodes = self.find_variable_nodes()
         connected_components = self.find_connected_components_with_variables(variable_nodes)
@@ -573,7 +573,7 @@ class MatrixLayerTwo:
         for component in connected_components:
             for node in component:
                 if node in variable_nodes:
-                    label = self.graph.nodes[node]['label']
+                    label = graph.nodes[node]['label']
                     variable_suffix = self.extract_variable_suffix(label)
                     if variable_suffix:
                         components_dict[variable_suffix].append(node)
