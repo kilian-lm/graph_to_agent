@@ -506,6 +506,8 @@ class MatrixLayerTwo:
 
         matched, unmatched = self.classify_gpt_calls(graph, user_nodes, variable_suffix_nodes, num_steps)
 
+        self.logger.info(matched)
+        # breakpoint()
         var_responses = self.process_matched_gpt_calls(matched, sorted_components_by_suffix)
         self.process_unmatched_gpt_calls(unmatched, var_responses)
 
@@ -535,15 +537,40 @@ class MatrixLayerTwo:
                         unmatched.append(gpt_call)
         return matched, unmatched
 
+
     def process_matched_gpt_calls(self, matched_calls, sorted_components):
         var_responses = {}
         for suffix, nodes in sorted_components:
             for gpt_call in matched_calls:
-                updated_call, response = self.process_single_gpt_call(gpt_call, var_responses)
-                var_key = f"variable_{suffix}"
-                var_responses[var_key] = response
-                self.log_gpt_call(updated_call, response, var_key)
+                if self.is_call_ready_for_sending(gpt_call, var_responses):
+                    updated_call, response = self.process_single_gpt_call(gpt_call, var_responses)
+                    var_key = f"variable_{suffix}"
+                    var_responses[var_key] = response
+                    self.log_gpt_call(updated_call, response, var_key)
+                else:
+                    self.logger.info(f"Skipping call as it contains unprocessed variables: {gpt_call}")
         return var_responses
+
+    def is_call_ready_for_sending(self, gpt_call, var_responses):
+        """
+        Check if the GPT call is ready to be sent by ensuring all @variable terms are replaced.
+        """
+        for message in gpt_call['messages']:
+            content = message['content']
+            if any(f"@variable_{suffix}" in content for suffix in var_responses):
+                return False
+        return True
+
+
+    # def process_matched_gpt_calls(self, matched_calls, sorted_components):
+    #     var_responses = {}
+    #     for suffix, nodes in sorted_components:
+    #         for gpt_call in matched_calls:
+    #             updated_call, response = self.process_single_gpt_call(gpt_call, var_responses)
+    #             var_key = f"variable_{suffix}"
+    #             var_responses[var_key] = response
+    #             self.log_gpt_call(updated_call, response, var_key)
+    #     return var_responses
 
     def process_unmatched_gpt_calls(self, unmatched_calls, var_responses):
         for gpt_call in unmatched_calls:
@@ -559,7 +586,9 @@ class MatrixLayerTwo:
 
     def save_gpt_calls_to_file(self):
         try:
-            with open(f'gpt_calls_{self.timestamp}.json', 'w') as file:
+            debug_timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+            # with open(f'gpt_calls_{self.timestamp}.json', 'w') as file:
+            with open(f'gpt_calls_{debug_timestamp}.json', 'w') as file:
                 json.dump(self.gpt_call_log, file, indent=4)
         except Exception as e:
             self.logger.error(f"Error saving JSON file: {e}")
