@@ -390,108 +390,67 @@ class MatrixLayerTwo:
     def update_gpt_call_with_responses(self, gpt_call, var_responses):
         """Update the GPT call by replacing @var terms with responses from var_responses."""
         updated_messages = []
+
+        # Find the highest variable suffix
+        highest_suffix = 0
+        for var in var_responses.keys():
+            parts = var.split('_')
+            suffix = int(parts[-1])
+            highest_suffix = max(highest_suffix, suffix)
+
+        # Update the GPT call with responses and replace @variable_x_y with the next higher one
         for message in gpt_call['messages']:
             content = message['content']
-            self.logger.info(content)
             for var, response in var_responses.items():
-                # Make sure the placeholder in the content matches the format of the keys in var_responses
                 placeholder = f'@{var}'
-                self.logger.info(placeholder)
                 if placeholder in content:
                     content = content.replace(placeholder, response)
-                    self.logger.info(content)
+                    self.logger.debug(f"Replaced {placeholder} with {response} in GPT call.")
+
+                    # Replace @variable_x_y-1 with the next higher one
+                    parts = var.split('_')
+                    prefix = '_'.join(parts[:-1])
+                    suffix = int(parts[-1])
+                    if suffix == highest_suffix and suffix > 1:
+                        prev_var = f'{prefix}_{suffix - 1}'
+                        prev_placeholder = f'@{prev_var}'
+                        if prev_placeholder in content:
+                            content = content.replace(prev_placeholder, response)
+                            self.logger.debug(f"Replaced {prev_placeholder} with {response} in GPT call.")
+
             updated_messages.append({'role': message['role'], 'content': content})
-            self.logger.info(updated_messages)
+
         gpt_call['messages'] = updated_messages
-        self.logger.info(gpt_call)
+        self.logger.debug(f"Updated GPT call: {gpt_call}")
+
         return gpt_call
 
-    # def process_matched_gpt_calls(self, matched_calls, sorted_components_by_suffix, var_responses, gpt_call_log):
-    #     for suffix, nodes in sorted_components_by_suffix:
-    #         for gpt_call in matched_calls:
-    #             updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
-    #             self.logger.info(updated_gpt_call)
-    #
-    #             response = self.get_gpt_response(updated_gpt_call)
-    #             self.logger.info(response)
-    #
-    #             var_key = f"variable_{suffix}"
-    #             var_responses[var_key] = response
-    #
-    #             self.logger.info(var_key)
-    #             self.logger.info(var_responses)
-    #
-    #             gpt_call_log.append({"request": updated_gpt_call, "response": response, "variable_key": var_key})
-    #             self.logger.info(gpt_call_log)
-    #
-    #     return var_responses
+    # def update_gpt_call_with_responses(self, gpt_call, var_responses):
+    #     """Update the GPT call by replacing @var terms with responses from var_responses."""
+    #     updated_messages = []
+    #     for message in gpt_call['messages']:
+    #         content = message['content']
+    #         for var, response in var_responses.items():
+    #             placeholder = f'@{var}'
+    #             if placeholder in content:
+    #                 content = content.replace(placeholder, response)
+    #                 self.logger.debug(f"Replaced {placeholder} with {response} in GPT call.")
+    #         updated_messages.append({'role': message['role'], 'content': content})
+    #     gpt_call['messages'] = updated_messages
+    #     self.logger.debug(f"Updated GPT call: {gpt_call}")
+    #     return gpt_call
 
-    # def process_graph_to_gpt_calls(self, graph, num_steps):
-    #     organized_components = self.organize_components_by_variable_suffix(graph)
-    #     self.logger.info(organized_components)
-    #
-    #     variable_suffix_nodes = [node for nodes in organized_components.values() for node in nodes]
-    #     self.logger.info(variable_suffix_nodes)
-    #
-    #     sorted_components_by_suffix = sorted(organized_components.items(), key=lambda x: self.suffix_order_key(x[0]))
-    #
-    #     matched_nodes_gpt_calls = []
-    #     unmatched_nodes_gpt_calls = []
-    #
-    #     user_nodes = [node for node, attrs in graph.nodes(data=True) if attrs['label'] == 'user']
-    #     self.logger.info(user_nodes)
-    #
-    #     gpt_call_log = []  # List to store GPT calls and responses
-    #
-    #     for start_node in user_nodes:
-    #         for path in self.explore_paths(graph, start_node, steps=num_steps):
-    #             gpt_call = self.check_and_print_gpt_call(graph, path)
-    #             self.logger.info(gpt_call)
-    #
-    #             if gpt_call is not None:
-    #                 if any(node in variable_suffix_nodes for node in path):
-    #                     matched_nodes_gpt_calls.append(gpt_call)
-    #                 else:
-    #                     unmatched_nodes_gpt_calls.append(gpt_call)
-    #
-    #     var_responses = {}
-    #     for suffix, nodes in sorted_components_by_suffix:
-    #         for gpt_call in matched_nodes_gpt_calls:
-    #             updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
-    #             self.logger.info(updated_gpt_call)
-    #
-    #             response = self.get_gpt_response(updated_gpt_call)
-    #             self.logger.info(response)
-    #
-    #             # Adjust the var_key to match the pattern in the GPT calls
-    #             var_key = f"variable_{suffix}"
-    #             var_responses[var_key] = response
-    #
-    #             self.logger.info(var_key)
-    #             self.logger.info(var_responses)
-    #
-    #             gpt_call_log.append({"request": updated_gpt_call, "response": response, "variable_key": var_key})
-    #             self.logger.info(gpt_call_log)
-    #
-    #             # var_responses[var_key] = response
-    #             # self.logger.info(var_responses)
-    #
-    #     for gpt_call in unmatched_nodes_gpt_calls:
-    #         updated_gpt_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
-    #         self.logger.info(updated_gpt_call)
-    #
-    #         response = self.get_gpt_response(updated_gpt_call)
-    #         self.logger.info(response)
-    #
-    #         gpt_call_log.append({"request": updated_gpt_call, "response": response})
-    #         self.logger.info(gpt_call_log)
-    #         try:
-    #             with open(f'gpt_calls_{self.timestamp}.json', 'w') as file:
-    #                 json.dump(gpt_call_log, file, indent=4)
-    #         except Exception as e:
-    #             self.logger.error(f"Error saving JSON file: {e}")
-    #
-    #     return var_responses
+    def get_next_variable(self, current_var):
+        """Get the next higher @variable based on current variable suffix."""
+        parts = current_var.split('_')
+        self.logger.info(parts)
+        if len(parts) == 3:
+            try:
+                suffix = int(parts[-1]) + 1
+                return f"{parts[0]}_{parts[1]}_{suffix}"
+            except ValueError:
+                pass
+        return None
 
     def process_graph_to_gpt_calls(self, graph, num_steps):
         organized_components = self.organize_components_by_variable_suffix(graph)
@@ -537,23 +496,25 @@ class MatrixLayerTwo:
                         unmatched.append(gpt_call)
         return matched, unmatched
 
-
     def process_matched_gpt_calls(self, matched_calls, sorted_components):
         var_responses = {}
         for suffix, nodes in sorted_components:
             for gpt_call in matched_calls:
-                if self.is_call_ready_for_sending(gpt_call, var_responses):
+                # Check and process each GPT call only if all @variable terms are resolved
+                if self.are_all_variables_resolved(gpt_call, var_responses):
                     updated_call, response = self.process_single_gpt_call(gpt_call, var_responses)
                     var_key = f"variable_{suffix}"
                     var_responses[var_key] = response
                     self.log_gpt_call(updated_call, response, var_key)
                 else:
-                    self.logger.info(f"Skipping call as it contains unprocessed variables: {gpt_call}")
+                    self.logger.error(f"Circuit break: Unresolved variables in GPT call: {gpt_call}")
+                    raise Exception("Attempted to process a GPT call with unresolved @variable placeholders")
+
         return var_responses
 
-    def is_call_ready_for_sending(self, gpt_call, var_responses):
+    def are_all_variables_resolved(self, gpt_call, var_responses):
         """
-        Check if the GPT call is ready to be sent by ensuring all @variable terms are replaced.
+        Check if all @variable placeholders in the GPT call are resolved.
         """
         for message in gpt_call['messages']:
             content = message['content']
@@ -561,16 +522,14 @@ class MatrixLayerTwo:
                 return False
         return True
 
-
-    # def process_matched_gpt_calls(self, matched_calls, sorted_components):
-    #     var_responses = {}
-    #     for suffix, nodes in sorted_components:
-    #         for gpt_call in matched_calls:
-    #             updated_call, response = self.process_single_gpt_call(gpt_call, var_responses)
-    #             var_key = f"variable_{suffix}"
-    #             var_responses[var_key] = response
-    #             self.log_gpt_call(updated_call, response, var_key)
-    #     return var_responses
+    def is_call_ready_for_sending(self, gpt_call, var_responses):
+        """Check if all @variable terms are replaced in the GPT call."""
+        for message in gpt_call['messages']:
+            content = message['content']
+            if any(placeholder in content for placeholder in var_responses.keys()):
+                self.logger.debug(f"GPT call not ready, contains unresolved variables: {content}")
+                return False
+        return True
 
     def process_unmatched_gpt_calls(self, unmatched_calls, var_responses):
         for gpt_call in unmatched_calls:
@@ -578,10 +537,16 @@ class MatrixLayerTwo:
             self.log_gpt_call(updated_call, response)
 
     def process_single_gpt_call(self, gpt_call, var_responses):
+        # Circuit break if the call contains unresolved variables
+        if not self.are_all_variables_resolved(gpt_call, var_responses):
+            self.logger.error(f"Circuit break: Attempted to process a GPT call with unresolved variables: {gpt_call}")
+            raise Exception("Circuit break: Attempted to process a GPT call with unresolved @variable placeholders")
+
+        # If all variables are resolved, proceed with processing
         updated_call = self.update_gpt_call_with_responses(gpt_call, var_responses)
-        self.log_info(updated_call)
+        self.logger.info(f"Processing GPT call: {updated_call}")
         response = self.get_gpt_response(updated_call)
-        self.log_info(response)
+        self.logger.info(f"GPT response received: {response}")
         return updated_call, response
 
     def save_gpt_calls_to_file(self):
@@ -626,48 +591,6 @@ class MatrixLayerTwo:
             for neighbor in graph.neighbors(node):
                 self.dfs(graph, neighbor, path, steps - 1, paths)
         path.pop()
-
-    # def check_and_print_gpt_call(self, graph, paths):
-    #     """Check if the paths match the blueprint pattern and return a list of GPT calls."""
-    #     gpt_calls = []
-    #     for path in paths:
-    #         self.logger.info(path)
-    #         labels = [graph.nodes[node]['label'] for node in path]
-    #         self.logger.info(labels)
-    #
-    #         if self.is_valid_blueprint(labels):
-    #             gpt_call = {
-    #                 "model": "gpt-4",
-    #                 "messages": [
-    #                     {"role": "user", "content": labels[1]},
-    #                     {"role": "system", "content": labels[3]},
-    #                     {"role": "user", "content": labels[5]}
-    #                 ]
-    #             }
-    #             gpt_calls.append(gpt_call)
-    #             self.logger.info(gpt_calls)
-    #
-    #         else:
-    #             print("Blueprint pattern not found in path:", path)
-    #
-    #     return gpt_calls
-
-    # def check_and_print_gpt_call(self, graph, path):
-    #     """Check if the path matches the blueprint pattern and print the GPT call."""
-    #     labels = [graph.nodes[node]['label'] for node in path]
-    #     if self.is_valid_blueprint(labels):
-    #         gpt_call = {
-    #             "model": "gpt-4",
-    #             "messages": [
-    #                 {"role": "user", "content": labels[1]},
-    #                 {"role": "system", "content": labels[3]},
-    #                 {"role": "user", "content": labels[5]}
-    #             ]
-    #         }
-    #         print("GPT Call:", gpt_call)
-    #         return gpt_call
-    #     else:
-    #         print("Blueprint pattern not found in this path.")
 
     def check_and_print_gpt_call(self, graph, path):
         """Check if the path matches the blueprint pattern and return the GPT call."""
