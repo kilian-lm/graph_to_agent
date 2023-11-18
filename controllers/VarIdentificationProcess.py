@@ -1,4 +1,4 @@
-class Identification:
+class VarIdentificationProcess:
     def __init__(self, graph, num_steps):
         self.graph = graph
         self.num_steps = num_steps
@@ -53,12 +53,10 @@ class Identification:
             return None
 
     def is_valid_blueprint(self, labels):
-        # Implementation depends on the specific pattern of GPT calls
-        pass
+        """Check if labels sequence matches the blueprint pattern."""
+        return (len(labels) == 6 and labels[0] == 'user' and labels[2] == 'system' and labels[4] == 'user' and
+                all(label not in ['user', 'system'] for label in [labels[1], labels[3], labels[5]]))
 
-    def create_gpt_call(self, labels):
-        # Create and return the GPT call structure
-        pass
 
     def distribute_calls(self, matched_calls_handler, unmatched_calls_handler):
         matched, unmatched = self.classify_gpt_calls()
