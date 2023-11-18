@@ -202,16 +202,10 @@ graph_data = json.loads(json_graph_data)
 class UnmatchedGPTCallsHandler:
     def __init__(self, timestamp, matrix_dataset_id, graph_dataset_id):
         try:
-            # self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-
             self.timestamp = timestamp
-            print(self.timestamp)
             self.log_file = f'{self.timestamp}_matrix_layer_two.log'
-            print(self.log_file)
             self.log_dir = './temp_log'
-            print(self.log_dir)
             self.log_level = logging.DEBUG
-            print(self.log_level)
             self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
             self.openai_api_key = os.getenv('OPENAI_API_KEY')
@@ -239,7 +233,7 @@ class UnmatchedGPTCallsHandler:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    def process_unmatched_gpt_calls(self, unmatched_calls):
+    def process_calls(self, unmatched_calls):
         for gpt_call in unmatched_calls:
             try:
                 response = self.get_gpt_response(gpt_call)
@@ -252,61 +246,8 @@ class UnmatchedGPTCallsHandler:
         self.gpt_call_log.append(log_entry)
         self.log_info(log_entry)
 
-    def classify_gpt_calls(self, graph, user_nodes, variable_suffix_nodes, num_steps):
-        matched = []
-        unmatched = []
-        for start_node in user_nodes:
-            for path in self.explore_paths(graph, start_node, steps=num_steps):
-                gpt_call = self.check_and_print_gpt_call(graph, path)
-                self.log_info(gpt_call)
-                if gpt_call:
-                    if any(node in variable_suffix_nodes for node in path):
-                        matched.append(gpt_call)
-                    else:
-                        unmatched.append(gpt_call)
-        return matched, unmatched
-
-    def check_and_print_gpt_call(self, graph, path):
-        """Check if the path matches the blueprint pattern and return the GPT call."""
-        labels = [graph.nodes[node]['label'] for node in path]
-        if self.is_valid_blueprint(labels):
-            gpt_call = {
-                "model": os.getenv("MODEL"),
-                "messages": [
-                    {"role": "user", "content": labels[1]},
-                    {"role": "system", "content": labels[3]},
-                    {"role": "user", "content": labels[5]}
-                ]
-            }
-            return gpt_call
-        else:
-            return None
-
-    def is_valid_blueprint(self, labels):
-        """Check if labels sequence matches the blueprint pattern."""
-        return (len(labels) == 6 and labels[0] == 'user' and labels[2] == 'system' and labels[4] == 'user' and
-                all(label not in ['user', 'system'] for label in [labels[1], labels[3], labels[5]]))
-
     def log_info(self, message):
         self.logger.info(message)
-
-    def explore_paths(self, graph, start_node, steps):
-        """Explore all paths up to a certain number of steps from a start node."""
-        paths = []
-        self.dfs(graph, start_node, [], steps, paths)
-        return paths
-
-    def dfs(self, graph, node, path, steps, paths):
-        """Depth-first search to explore paths."""
-        if steps == 0 or node in path:
-            return
-        path.append(node)
-        if len(path) == steps + 1:
-            paths.append(path.copy())
-        else:
-            for neighbor in graph.neighbors(node):
-                self.dfs(graph, neighbor, path, steps - 1, paths)
-        path.pop()
 
     def get_gpt_response(self, processed_data):
         self.logger.debug(processed_data)
