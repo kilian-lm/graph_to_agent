@@ -687,16 +687,6 @@ class MatrixLayerTwo:
         else:
             raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
 
-    def orchestrator_process_graph(self):
-        """Extend the processing to include request orchestration."""
-
-        # ToDo :
-        # 1. Just get gpt calls queued running without @variable
-        # 2.
-
-        super().process_graph()
-        self.enqueue_requests()
-        self.process_requests()
 
     def main(self):
         df = self.get_adjacency_matrix(self.graph_id).set_index("node_id")
