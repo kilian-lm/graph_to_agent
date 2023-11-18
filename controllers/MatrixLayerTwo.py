@@ -425,20 +425,6 @@ class MatrixLayerTwo:
 
         return gpt_call
 
-    # def update_gpt_call_with_responses(self, gpt_call, var_responses):
-    #     """Update the GPT call by replacing @var terms with responses from var_responses."""
-    #     updated_messages = []
-    #     for message in gpt_call['messages']:
-    #         content = message['content']
-    #         for var, response in var_responses.items():
-    #             placeholder = f'@{var}'
-    #             if placeholder in content:
-    #                 content = content.replace(placeholder, response)
-    #                 self.logger.debug(f"Replaced {placeholder} with {response} in GPT call.")
-    #         updated_messages.append({'role': message['role'], 'content': content})
-    #     gpt_call['messages'] = updated_messages
-    #     self.logger.debug(f"Updated GPT call: {gpt_call}")
-    #     return gpt_call
 
     def get_next_variable(self, current_var):
         """Get the next higher @variable based on current variable suffix."""
@@ -468,6 +454,7 @@ class MatrixLayerTwo:
         self.logger.info(matched)
         # breakpoint()
         var_responses = self.process_matched_gpt_calls(matched, sorted_components_by_suffix)
+
         self.process_unmatched_gpt_calls(unmatched, var_responses)
 
         self.save_gpt_calls_to_file()
@@ -701,21 +688,33 @@ class MatrixLayerTwo:
 
 mat_l_t = MatrixLayerTwo("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent")
 
-mat_l_t.get_edges()
-mat_l_t.get_nodes()
-mat_l_t.get_adjacency_matrix()
+# mat_l_t.get_edges()
+# mat_l_t.get_nodes()
+# mat_l_t.get_adjacency_matrix()
 
 df = mat_l_t.get_adjacency_matrix().set_index("node_id")
 G = mat_l_t.create_graph_from_adjacency(df)
 G.number_of_edges()
 
-mat_l_t.check_diameter_and_centrality(G)
-mat_l_t.check_degree_distribution(G)
-mat_l_t.check_graph_correctly_recveied_via_matrix(G)
+# mat_l_t.check_diameter_and_centrality(G)
+# mat_l_t.check_degree_distribution(G)
+# mat_l_t.check_graph_correctly_recveied_via_matrix(G)
 
 df_nodes = mat_l_t.get_nodes()
 label_dict = df_nodes.set_index('id')['label'].to_dict()
 nx.set_node_attributes(G, label_dict, 'label')
+
+organized_components = mat_l_t.organize_components_by_variable_suffix(G)
+mat_l_t.log_info(organized_components)
+
+variable_suffix_nodes = mat_l_t.get_variable_suffix_nodes(organized_components)
+mat_l_t.log_info(variable_suffix_nodes)
+
+sorted_components_by_suffix = mat_l_t.sort_components_by_suffix(organized_components)
+user_nodes = mat_l_t.get_user_nodes(G)
+mat_l_t.log_info(user_nodes)
+
+matched, unmatched = mat_l_t.classify_gpt_calls(G, user_nodes, variable_suffix_nodes, 10)
 
 answers = mat_l_t.process_graph_to_gpt_calls(G, 10)
 answers
