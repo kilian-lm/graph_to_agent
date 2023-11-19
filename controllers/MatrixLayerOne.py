@@ -60,19 +60,6 @@ class MatrixLayerOne:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    # def create_bq_table_schema(self):
-    #     """
-    #     Create a BigQuery table schema for the adjacency matrix.
-    #     """
-    #     schema = [
-    #         bigquery.SchemaField("node_id", "STRING", mode="NULLABLE"),
-    #     ]
-    #     for node in self.graph_data["nodes"]:
-    #         schema.append(bigquery.SchemaField(str(node["id"]), "INTEGER"))
-    #
-    #     self.logger.info(schema)
-    #     return schema
-
     def upload_jsonl_to_bigquery(self, filename):
         """
         Uploads a .jsonl file to a BigQuery table.
@@ -128,35 +115,6 @@ class MatrixLayerOne:
 
         return None
 
-    #     """
-    #     Create an advanced adjacency matrix with binary indicators and labels for both row and column nodes.
-    #     """
-    #     nodes = self.graph_data["nodes"]
-    #     edges = self.graph_data["edges"]
-    #     advanced_matrix = {}
-    #
-    #     for row_node in nodes:
-    #         row_node_id = row_node["id"]
-    #         row_node_label = row_node["label"]
-    #         advanced_matrix[row_node_id] = {}
-    #
-    #         for col_node in nodes:
-    #             col_node_id = col_node["id"]
-    #             col_node_label = col_node["label"]
-    #             edge_exists = any(edge["to"] == col_node_id and edge["from"] == row_node_id for edge in edges)
-    #             advanced_matrix[row_node_id][col_node_id] = {
-    #                 "connected": 1 if edge_exists else 0,
-    #                 "row_label": row_node_label,
-    #                 "col_label": col_node_label
-    #             }
-    #
-    #     with open('advanced_adjacency_matrix.jsonl', 'w') as jsonl_file:
-    #         for row_node_id, connections in advanced_matrix.items():
-    #             record = {"node_id": row_node_id, "connections": connections}
-    #             jsonl_file.write(json.dumps(record) + "\n")
-    #
-    #     return advanced_matrix
-
     def create_bq_schema_for_advanced_matrix(self):
         """
         Create a BigQuery schema for the advanced adjacency matrix using strings instead of integers.
@@ -168,24 +126,6 @@ class MatrixLayerOne:
             field_name = str(node["id"])
             schema.append(bigquery.SchemaField(field_name, "STRING", mode="NULLABLE"))
         return schema
-
-    def create_advanced_matrix_table(self):
-        """
-        Create the BigQuery table for the advanced adjacency matrix.
-        """
-        schema = self.create_bq_schema_for_advanced_matrix()
-        dataset_ref = self.bigquery_client.dataset(self.dataset_id)
-        table_ref = dataset_ref.table(self.table_name + "_multi_layered")
-
-        self.bq_handler.create_dataset_if_not_exists()
-
-        try:
-            self.bigquery_client.get_table(table_ref)
-            self.logger.info(f"Table {table_ref.table_id} already exists.")
-        except google.api_core.exceptions.NotFound:
-            table = bigquery.Table(table_ref, schema=schema)
-            self.bigquery_client.create_table(table)
-            self.logger.info(f"Created table {table_ref.table_id}")
 
     def upload_advanced_matrix_to_bigquery(self):
         """
@@ -245,37 +185,6 @@ class MatrixLayerOne:
 
         return schema
 
-    # def find_connected_subtrees(self):
-    #     # Find connected subtrees in the 3D matrix
-    #     binary_layer = self.create_binary_layer()
-    #     self.logger.info(binary_layer)
-    #     nodes = self.graph_data["nodes"]
-    #     self.logger.info(nodes)
-    #
-    #     visited = set()
-    #     subtrees = []
-    #
-    #     def dfs(node_id, subtree):
-    #         visited.add(node_id)
-    #
-    #         self.logger.info(node_id)
-    #
-    #         subtree.append(node_id)
-    #         self.logger.info(subtree)
-    #
-    #         for neighbor_id, is_connected in binary_layer[node_id].items():
-    #             if is_connected == 1 and neighbor_id not in visited:
-    #                 dfs(neighbor_id, subtree)
-    #                 self.logger.info(dfs)
-    #
-    #     for node in nodes:
-    #         if node["id"] not in visited:
-    #             subtree = []
-    #             dfs(node["id"], subtree)
-    #             subtrees.append(subtree)
-    #
-    #     return subtrees
-
     def upload_to_bigquery(self):
         # Initialize a BigQuery client
 
@@ -305,26 +214,6 @@ class MatrixLayerOne:
             print("Errors occurred while inserting rows: {}".format(errors))
         else:
             print("Data uploaded successfully.")
-
-    # def count_connected_subtrees(self):
-    #     # Count the number of connected subtrees in the 3D matrix
-    #     binary_layer = self.create_binary_layer()
-    #     connected_subtrees = self.find_connected_subtrees()
-    #     num_connected_trees = 0
-    #
-    #     for subtree in connected_subtrees:
-    #         # Check if the subtree has only one connecting node
-    #         connecting_nodes = 0
-    #         for node_id in subtree:
-    #             neighbors = binary_layer[node_id]
-    #             num_neighbors = sum(neighbors.values())
-    #             if num_neighbors == 1:
-    #                 connecting_nodes += 1
-    #
-    #         if connecting_nodes == 1:
-    #             num_connected_trees += 1
-    #
-    #     return num_connected_trees
 
     def count_trees_in_matrix(self, df):
         """

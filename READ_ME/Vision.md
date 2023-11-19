@@ -115,6 +115,8 @@ times. Users can trace the evolution of narratives, spot inconsistencies, or rec
 targeting patterns like mentioned in the intro). Want a deeper dive? Fork a branch, revisit a statement’s version, and
 layer it with your insights or perspectives into your PKL or cluster it into an agent-pool (see below).
 
+You see just how fluid time and how interesting problem isolating and solving can become, if only done in a versioned
+manner? No more daunting information overflow, just another path in a graph/ just another branch in a repo.
 Current Status: MVP in Development.
 
 ### The Wire-Box or Augmented Argumentation via Agent Interactions
