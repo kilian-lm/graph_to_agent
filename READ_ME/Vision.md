@@ -134,21 +134,23 @@ Wire-it Ben! ¹⁴
 
 #### Why the Wire-Box
 
+We could say we designed the Wire-Box because we had a dream that non-technical people could use the power of
+graph-based agent behavior too and also bridge the way to message protocol simulation based on
+human-agents-interactions. But that would be just a part of it. We created it because we want to mine expert knowledge.
+For example experts of in psychology, in creativity, in physics, in chemistry, in medicine, in any kind of expertise
+field. But the point is, if those experts don't know how to use custom instruction or how to layer agents and if they
+don't have any idea how to use graphs at all in the connection with agents, then we are missing an opportunity. The
+opportunity to uncover the traces that those expert fields left in the language corpus that GPT uses. Now if the experts
+manage to unlock this knowledge in a meaningful way, we're at this goal of the Wire-Box. So we would suggest that all
+these experts put themselves in the position of seeing themselves as keys. They are for me, for us, for the society, the
+keys to unlock the right kind of wiring between the agents, the right kind of layering of the agents in order to get a
+robust, reliable, reproducible outcome. So this is our true reason for the Wire-Box.
+
 Heads-Up: We wrote this part of the proposal 02.11.2023 and only just realised that this is partly the Vision of
 OpenAI (or what is known up to now 00:31:40 https://www.youtube.com/watch?v=U9mJuUkhUzk). However, what OpenAI is
-missing is the Graph-Approach to Agent  (David Shapiro we will use some of your repos to integrate Assistants besides
-Chat-Completion-Agents currently integrated) communication thus the users can't layer the agents, as of now.
-
-We could say we designed the Wire-Box because we had a dream that non-technical people could use the power of
-graph-based agent behavior too. But that would be just a part of it. We created it because we want to use expert
-knowledge. For example experts of empathy, in psychology, in creativity, in physics, in chemistry, in medicine, in any
-kind of expertise field. But the point is, if they don't know how to use custom instruction or how to layer agents and
-if they don't have any idea how to use graphs at all in the connection with agents, then we are missing an opportunity.
-Because we're sure that those expert fields left their traces in the language corpus that GPT uses. Now if the experts
-manage to unlock this knowledge in a meaningful way, we're at this sub-moduls goal. So we would suggest that all these
-experts put themselves in the position of seeing themselves as keys. They are for me, for us, for the society, the keys
-to unlock the right kind of wiring between the agents, the right kind of layering of the agents in order to get a
-robust, reliable, reproducible outcome. So this is our true reason for the Wire-Box.
+missing is the Graph-Approach to Agent communication thus the users can't layer the agents in an intuitive way like with
+the vis.js lib what we propose (David Shapiro we will use some of your repos to integrate Assistants besides
+Chat-Completion-Agents currently integrated).
 
 #### Business-Model for Sub-Module Wire-Box
 
