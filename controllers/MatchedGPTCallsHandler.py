@@ -199,35 +199,38 @@ json_graph_data = """
 graph_data = json.loads(json_graph_data)
 
 
+def read_parameters_from_files(self):
+    try:
+        with open('matched_calls.json', 'r') as matched_calls_file:
+            matched_calls = json.load(matched_calls_file)
+
+        with open('sorted_components.json', 'r') as sorted_components_file:
+            sorted_components = json.load(sorted_components_file)
+
+        return matched_calls, sorted_components
+    except FileNotFoundError:
+        raise Exception("JSON files not found. Please generate the JSON files first.")
+
+
+
 class MatchedGPTCallsHandler:
-    def __init__(self, timestamp, matrix_dataset_id, graph_dataset_id):
-        try:
-            self.timestamp = timestamp
-            self.log_file = f'{self.timestamp}_matrix_layer_two.log'
-            self.log_dir = './temp_log'
-            self.log_level = logging.DEBUG
-            self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
+    def __init__(self):
+        # self.timestamp = timestamp
+        self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
-            self.openai_api_key = os.getenv('OPENAI_API_KEY')
-            self.openai_base_url = "https://api.openai.com/v1/chat/completions"
-            self.headers = {
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {self.openai_api_key}'
-            }
+        self.log_file = f'{self.timestamp}_matrix_layer_two.log'
+        self.log_dir = './temp_log'
+        self.log_level = logging.DEBUG
+        self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
-            self.gpt_call_log = []
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        self.openai_base_url = "https://api.openai.com/v1/chat/completions"
+        self.headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.openai_api_key}'
+        }
 
-            self.matrix_dataset_id = matrix_dataset_id
-            self.graph_dataset_id = graph_dataset_id
-            self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
-
-            # Additional attributes specific to matched GPT calls can be initialized here
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
-            raise
-        except Exception as e:
-            self.logger.error(f"An error occurred while initializing: {e}")
-            raise
+        self.gpt_call_log = []
 
     def process_matched_gpt_calls(self, matched_calls, sorted_components):
         var_responses = {}
