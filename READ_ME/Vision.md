@@ -69,10 +69,16 @@ rather strolling in a considered manner the graph-edges.
 
 ## Immediate Goals
 
-One immediate goal is to design a platform of a knowledge graph generation (Simple maintainable pipeline for content (
-blobs) to graph with integrated modules 'Time-Stamped Content Evolution Graphs ' & 'Augmented Argumentation via Agent
-Interactions' see below) with the possibility to segregate between private repo and public repo, enabling users to
-control what they share.
+One immediate goal is to design a platform for knowledge graph generation based on the API layer of the above-mentioned
+existing 'social-networks' platforms. This platform will consist of modules for 'Time-Stamped Content Evolution Graphs'
+and 'Augmented Argumentation via Agent Interactions' (as described below). Additionally, we need to obtain a decisive
+legal decision from the national authorities stating that users own the content they create and publish on the '
+social-networks.' Users must have the ability to export and integrate their content across platforms, following the REST standards.
+
+The next step involves displaying to the user the content/knowledge they have accumulated so far in the consolidated
+Personal Knowledge Library (PKL), based on graph analysis (DFS, degrees, etc., providing basic statistics).
+Subsequently, users will have the opportunity to collaborate with the community, bridging what was previously segregated
+across platforms and addressing the shortcomings of the existing reward system.
 
 ## Future Vision
 

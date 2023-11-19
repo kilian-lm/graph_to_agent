@@ -93,6 +93,20 @@ class MatrixLayerOne:
 
         self.bigquery_client.insert_rows(self.table_name, rows_to_insert)
 
+    # todo :: try bq via jsonl dup
+
+    # def save_matrix_to_jsonl(self, file_path):
+    #     binary_layer = self.create_binary_layer()
+    #     with open(file_path, 'w') as file:
+    #         for node_id, connections in binary_layer.items():
+    #             row = {"node_id": str(node_id)}
+    #             self.logger.info(row)
+    #             for other_node_id, connection in connections.items():
+    #                 row[str(other_node_id)] = connection
+    #             json.dump(row, file)
+    #             file.write('\n')  # New line for next JSON object
+    #
+    #     return file_path
 
     def generate_bigquery_schema_from_graph(self):
         # Initialize schema with 'node_id' field
@@ -104,6 +118,18 @@ class MatrixLayerOne:
             schema.append(bigquery.SchemaField(node_id, 'INTEGER', 'NULLABLE'))
 
         return schema
+
+    # def upload_jsonl_to_bq(self, table_name, file_path):
+    #     table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.table_name)
+    #
+    #     # self.logger.info(schema)
+    #     self.bq_handler.create_dataset_if_not_exists()
+    #
+    #     schema = self.generate_bigquery_schema_from_graph()
+    #
+    #     self.bq_handler.create_table_if_not_exists(table_ref, schema)
+    #
+    #     # self.bq_handler.load_jsonl_to_bq(self.dataset_id, table_name, file_path)
 
     def find_connected_subtrees(self):
         # Find connected subtrees in the 3D matrix
