@@ -98,7 +98,7 @@ class MatrixLayerOne:
     def create_advanced_adjacency_matrix(self):
         """
         Create an advanced adjacency matrix with binary indicators and labels for both row and column nodes,
-        and save it as a .jsonl file.
+        and save it as a .jsonl file in a query-friendly format.
         """
         nodes = self.graph_data["nodes"]
         edges = self.graph_data["edges"]
@@ -108,23 +108,25 @@ class MatrixLayerOne:
             for row_node in nodes:
                 row_node_id = row_node["id"]
                 row_node_label = row_node["label"]
-                connections = {}
+                connections = []
 
                 for col_node in nodes:
                     col_node_id = col_node["id"]
                     col_node_label = col_node["label"]
                     edge_exists = any(edge["to"] == col_node_id and edge["from"] == row_node_id for edge in edges)
-                    connections[col_node_id] = {
+
+                    connection_record = {
+                        "connected_node_id": col_node_id,
                         "connected": 1 if edge_exists else 0,
                         "row_label": row_node_label,
                         "col_label": col_node_label
                     }
+                    connections.append(connection_record)
 
-                # Write each node's connections as a separate JSON object
+                # Write each node's connections as an array of records
                 jsonl_file.write(json.dumps({"node_id": row_node_id, "connections": connections}) + "\n")
 
         return None
-        # def create_advanced_adjacency_matrix(self):
 
     #     """
     #     Create an advanced adjacency matrix with binary indicators and labels for both row and column nodes.

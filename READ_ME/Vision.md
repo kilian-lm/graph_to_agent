@@ -73,8 +73,10 @@ One immediate goal is to design a platform for knowledge graph generation based 
 existing 'social-networks' platforms. This platform will consist of modules for 'Time-Stamped Content Evolution Graphs'
 and 'Augmented Argumentation via Agent Interactions' (as described below). Additionally, we need to obtain a decisive
 overarching legal decision from the national authorities stating that users own the content they create and publish on
-the 'social-networks'. Furthermore that Users must have the ability to export their content from the respective
+the 'social-networks'. Furthermore Users must have the ability to export their content from the respective
 platform, following the REST standards.
+
+The parallel step would be to pull up the entire architecture and infrastructure for the knowledge libraries.
 
 The next step involves displaying to the user the content/knowledge they have accumulated so far in the consolidated
 Personal Knowledge Library (PKL), based on graph analysis (DFS, degrees, etc., providing basic statistics).
