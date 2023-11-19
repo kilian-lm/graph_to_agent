@@ -13,6 +13,8 @@ import datetime
 import requests
 import inspect
 import re
+from google.api_core.exceptions import NotFound
+
 
 import pandas as pd
 import networkx as nx

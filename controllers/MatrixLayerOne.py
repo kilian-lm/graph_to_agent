@@ -60,43 +60,100 @@ class MatrixLayerOne:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    def create_bq_table_schema(self):
-        """
-        Create a BigQuery table schema for the adjacency matrix.
-        """
-        schema = [
-            bigquery.SchemaField("node_id", "STRING", mode="NULLABLE"),
-        ]
-        for node in self.graph_data["nodes"]:
-            schema.append(bigquery.SchemaField(str(node["id"]), "INTEGER"))
+    # def create_bq_table_schema(self):
+    #     """
+    #     Create a BigQuery table schema for the adjacency matrix.
+    #     """
+    #     schema = [
+    #         bigquery.SchemaField("node_id", "STRING", mode="NULLABLE"),
+    #     ]
+    #     for node in self.graph_data["nodes"]:
+    #         schema.append(bigquery.SchemaField(str(node["id"]), "INTEGER"))
+    #
+    #     self.logger.info(schema)
+    #     return schema
 
-        self.logger.info(schema)
-        return schema
+    def upload_jsonl_to_bigquery(self, filename):
+        """
+        Uploads a .jsonl file to a BigQuery table.
+        """
+        # Set the destination table and dataset.
+        table_id = f"{self.bigquery_client.project}.{self.dataset_id}.{self.table_name}_multi_layered"
+
+        # Configure the load job
+        job_config = bigquery.LoadJobConfig(
+            source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+            autodetect=True,  # Auto-detect schema.
+        )
+
+        with open(filename, "rb") as source_file:
+            job = self.bigquery_client.load_table_from_file(source_file, table_id, job_config=job_config)
+
+        # Wait for the load job to complete
+        job.result()
+
+        table = self.bigquery_client.get_table(table_id)  # Make an API request to get table info
+        self.logger.info(f"Loaded {table.num_rows} rows and {len(table.schema)} columns to {table_id}")
 
     def create_advanced_adjacency_matrix(self):
         """
-        Create an advanced adjacency matrix with binary indicators and labels for both row and column nodes.
+        Create an advanced adjacency matrix with binary indicators and labels for both row and column nodes,
+        and save it as a .jsonl file.
         """
         nodes = self.graph_data["nodes"]
         edges = self.graph_data["edges"]
-        advanced_matrix = {}
 
-        for row_node in nodes:
-            row_node_id = row_node["id"]
-            row_node_label = row_node["label"]
-            advanced_matrix[row_node_id] = {}
+        # Open the .jsonl file for writing
+        with open(f'{self.timestamp}_advanced_adjacency_matrix.jsonl', 'w') as jsonl_file:
+            for row_node in nodes:
+                row_node_id = row_node["id"]
+                row_node_label = row_node["label"]
+                connections = {}
 
-            for col_node in nodes:
-                col_node_id = col_node["id"]
-                col_node_label = col_node["label"]
-                edge_exists = any(edge["to"] == col_node_id and edge["from"] == row_node_id for edge in edges)
-                advanced_matrix[row_node_id][col_node_id] = {
-                    "connected": 1 if edge_exists else 0,
-                    "row_label": row_node_label,
-                    "col_label": col_node_label
-                }
+                for col_node in nodes:
+                    col_node_id = col_node["id"]
+                    col_node_label = col_node["label"]
+                    edge_exists = any(edge["to"] == col_node_id and edge["from"] == row_node_id for edge in edges)
+                    connections[col_node_id] = {
+                        "connected": 1 if edge_exists else 0,
+                        "row_label": row_node_label,
+                        "col_label": col_node_label
+                    }
 
-        return advanced_matrix
+                # Write each node's connections as a separate JSON object
+                jsonl_file.write(json.dumps({"node_id": row_node_id, "connections": connections}) + "\n")
+
+        return None
+        # def create_advanced_adjacency_matrix(self):
+
+    #     """
+    #     Create an advanced adjacency matrix with binary indicators and labels for both row and column nodes.
+    #     """
+    #     nodes = self.graph_data["nodes"]
+    #     edges = self.graph_data["edges"]
+    #     advanced_matrix = {}
+    #
+    #     for row_node in nodes:
+    #         row_node_id = row_node["id"]
+    #         row_node_label = row_node["label"]
+    #         advanced_matrix[row_node_id] = {}
+    #
+    #         for col_node in nodes:
+    #             col_node_id = col_node["id"]
+    #             col_node_label = col_node["label"]
+    #             edge_exists = any(edge["to"] == col_node_id and edge["from"] == row_node_id for edge in edges)
+    #             advanced_matrix[row_node_id][col_node_id] = {
+    #                 "connected": 1 if edge_exists else 0,
+    #                 "row_label": row_node_label,
+    #                 "col_label": col_node_label
+    #             }
+    #
+    #     with open('advanced_adjacency_matrix.jsonl', 'w') as jsonl_file:
+    #         for row_node_id, connections in advanced_matrix.items():
+    #             record = {"node_id": row_node_id, "connections": connections}
+    #             jsonl_file.write(json.dumps(record) + "\n")
+    #
+    #     return advanced_matrix
 
     def create_bq_schema_for_advanced_matrix(self):
         """
@@ -413,7 +470,10 @@ with open(json_file_path, 'r') as json_file:
     graph_data = json.load(json_file)
 
 matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
+
 matrix_layer_one.create_advanced_adjacency_matrix()
+matrix_layer_one.upload_jsonl_to_bigquery('20231117163236_advanced_adjacency_matrix.jsonl')
+
 matrix_layer_one.create_bq_schema_for_advanced_matrix()
 
 matrix_layer_one.upload_advanced_matrix_to_bigquery()
