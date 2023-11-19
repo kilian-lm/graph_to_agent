@@ -1,4 +1,4 @@
-# Proposal for Re-Use & Re-Design Flawed Reward System
+# Proposal: Re-Use & Re-Design of a flawed reward system, introducing a Beacon of Git
 
 ![the_git.png](assets%2Fthe_git.png)
 Git-Approach to bring light into our scrollable, short-lived world
@@ -115,8 +115,9 @@ times. Users can trace the evolution of narratives, spot inconsistencies, or rec
 targeting patterns like mentioned in the intro). Want a deeper dive? Fork a branch, revisit a statement’s version, and
 layer it with your insights or perspectives into your PKL or cluster it into an agent-pool (see below).
 
-You see just how fluid time and how interesting problem isolating and solving can become, if only done in a versioned
-manner? No more daunting information overflow, just another path in a graph/ just another branch in a repo.
+You see just how fluid time and how interesting problem isolating and solving can become, if only done in a versioned,
+structured and methodic manner? No more daunting information overflow, just another path in a graph/ just another branch
+in a repo. Hence the name: It's not only a beacon of hope, but it's a Beacon of Git.
 Current Status: MVP in Development.
 
 ### The Wire-Box or Augmented Argumentation via Agent Interactions
