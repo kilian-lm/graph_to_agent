@@ -425,7 +425,6 @@ class MatrixLayerTwo:
 
         return gpt_call
 
-
     def get_next_variable(self, current_var):
         """Get the next higher @variable based on current variable suffix."""
         parts = current_var.split('_')
@@ -484,6 +483,16 @@ class MatrixLayerTwo:
         return matched, unmatched
 
     def process_matched_gpt_calls(self, matched_calls, sorted_components):
+
+        # Write the parameters to JSON files
+        with open('matched_calls.json', 'w') as matched_calls_file:
+            json.dump(matched_calls, matched_calls_file, indent=4)
+
+        with open('sorted_components.json', 'w') as sorted_components_file:
+            json.dump(sorted_components, sorted_components_file, indent=4)
+
+        breakpoint()
+
         var_responses = {}
         for suffix, nodes in sorted_components:
             for gpt_call in matched_calls:
@@ -673,7 +682,6 @@ class MatrixLayerTwo:
             return response.json()["choices"][0]["message"]["content"]
         else:
             raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
-
 
     def main(self):
         df = self.get_adjacency_matrix(self.graph_id).set_index("node_id")
