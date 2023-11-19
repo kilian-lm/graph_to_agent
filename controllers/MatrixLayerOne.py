@@ -73,6 +73,88 @@ class MatrixLayerOne:
         self.logger.info(schema)
         return schema
 
+    def create_advanced_adjacency_matrix(self):
+        """
+        Create an advanced adjacency matrix with binary indicators and labels for both row and column nodes.
+        """
+        nodes = self.graph_data["nodes"]
+        edges = self.graph_data["edges"]
+        advanced_matrix = {}
+
+        for row_node in nodes:
+            row_node_id = row_node["id"]
+            row_node_label = row_node["label"]
+            advanced_matrix[row_node_id] = {}
+
+            for col_node in nodes:
+                col_node_id = col_node["id"]
+                col_node_label = col_node["label"]
+                edge_exists = any(edge["to"] == col_node_id and edge["from"] == row_node_id for edge in edges)
+                advanced_matrix[row_node_id][col_node_id] = {
+                    "connected": 1 if edge_exists else 0,
+                    "row_label": row_node_label,
+                    "col_label": col_node_label
+                }
+
+        return advanced_matrix
+
+    def create_bq_schema_for_advanced_matrix(self):
+        """
+        Create a BigQuery schema for the advanced adjacency matrix using strings instead of integers.
+        """
+        schema = [
+            bigquery.SchemaField("node_id", "STRING", mode="REQUIRED"),
+        ]
+        for node in self.graph_data["nodes"]:
+            field_name = str(node["id"])
+            schema.append(bigquery.SchemaField(field_name, "STRING", mode="NULLABLE"))
+        return schema
+
+    def create_advanced_matrix_table(self):
+        """
+        Create the BigQuery table for the advanced adjacency matrix.
+        """
+        schema = self.create_bq_schema_for_advanced_matrix()
+        dataset_ref = self.bigquery_client.dataset(self.dataset_id)
+        table_ref = dataset_ref.table(self.table_name + "_multi_layered")
+
+        self.bq_handler.create_dataset_if_not_exists()
+
+        try:
+            self.bigquery_client.get_table(table_ref)
+            self.logger.info(f"Table {table_ref.table_id} already exists.")
+        except google.api_core.exceptions.NotFound:
+            table = bigquery.Table(table_ref, schema=schema)
+            self.bigquery_client.create_table(table)
+            self.logger.info(f"Created table {table_ref.table_id}")
+
+    def upload_advanced_matrix_to_bigquery(self):
+        """
+        Upload the advanced adjacency matrix to BigQuery.
+        """
+        advanced_matrix = self.create_advanced_adjacency_matrix()
+        schema = self.create_bq_schema_for_advanced_matrix()
+
+        table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.table_name + "_multi_layered")
+        self.bq_handler.create_dataset_if_not_exists()
+        self.bq_handler.create_table_if_not_exists(table_ref, schema)
+
+        rows_to_insert = []
+
+        for node_id, connections in advanced_matrix.items():
+            row = {"node_id": str(node_id)}
+            for other_node_id, connection in connections.items():
+                # Convert the connection data to a string representation
+                connection_str = f"{connection['connected']};{connection['row_label']};{connection['col_label']}"
+                row[other_node_id] = connection_str
+            rows_to_insert.append(row)
+
+        errors = self.bigquery_client.insert_rows_json(table_ref, rows_to_insert)
+        if errors:
+            self.logger.error(f"Errors occurred while inserting rows: {errors}")
+        else:
+            self.logger.info("Advanced adjacency matrix data uploaded successfully.")
+
     def save_matrix_to_bq(self):
         self.logger.info(self.table_name)
         table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.table_name)
@@ -93,7 +175,6 @@ class MatrixLayerOne:
 
         self.bigquery_client.insert_rows(self.table_name, rows_to_insert)
 
-
     def generate_bigquery_schema_from_graph(self):
         # Initialize schema with 'node_id' field
         schema = [bigquery.SchemaField('node_id', 'STRING', 'NULLABLE')]
@@ -105,36 +186,36 @@ class MatrixLayerOne:
 
         return schema
 
-    def find_connected_subtrees(self):
-        # Find connected subtrees in the 3D matrix
-        binary_layer = self.create_binary_layer()
-        self.logger.info(binary_layer)
-        nodes = self.graph_data["nodes"]
-        self.logger.info(nodes)
-
-        visited = set()
-        subtrees = []
-
-        def dfs(node_id, subtree):
-            visited.add(node_id)
-
-            self.logger.info(node_id)
-
-            subtree.append(node_id)
-            self.logger.info(subtree)
-
-            for neighbor_id, is_connected in binary_layer[node_id].items():
-                if is_connected == 1 and neighbor_id not in visited:
-                    dfs(neighbor_id, subtree)
-                    self.logger.info(dfs)
-
-        for node in nodes:
-            if node["id"] not in visited:
-                subtree = []
-                dfs(node["id"], subtree)
-                subtrees.append(subtree)
-
-        return subtrees
+    # def find_connected_subtrees(self):
+    #     # Find connected subtrees in the 3D matrix
+    #     binary_layer = self.create_binary_layer()
+    #     self.logger.info(binary_layer)
+    #     nodes = self.graph_data["nodes"]
+    #     self.logger.info(nodes)
+    #
+    #     visited = set()
+    #     subtrees = []
+    #
+    #     def dfs(node_id, subtree):
+    #         visited.add(node_id)
+    #
+    #         self.logger.info(node_id)
+    #
+    #         subtree.append(node_id)
+    #         self.logger.info(subtree)
+    #
+    #         for neighbor_id, is_connected in binary_layer[node_id].items():
+    #             if is_connected == 1 and neighbor_id not in visited:
+    #                 dfs(neighbor_id, subtree)
+    #                 self.logger.info(dfs)
+    #
+    #     for node in nodes:
+    #         if node["id"] not in visited:
+    #             subtree = []
+    #             dfs(node["id"], subtree)
+    #             subtrees.append(subtree)
+    #
+    #     return subtrees
 
     def upload_to_bigquery(self):
         # Initialize a BigQuery client
@@ -166,25 +247,25 @@ class MatrixLayerOne:
         else:
             print("Data uploaded successfully.")
 
-    def count_connected_subtrees(self):
-        # Count the number of connected subtrees in the 3D matrix
-        binary_layer = self.create_binary_layer()
-        connected_subtrees = self.find_connected_subtrees()
-        num_connected_trees = 0
-
-        for subtree in connected_subtrees:
-            # Check if the subtree has only one connecting node
-            connecting_nodes = 0
-            for node_id in subtree:
-                neighbors = binary_layer[node_id]
-                num_neighbors = sum(neighbors.values())
-                if num_neighbors == 1:
-                    connecting_nodes += 1
-
-            if connecting_nodes == 1:
-                num_connected_trees += 1
-
-        return num_connected_trees
+    # def count_connected_subtrees(self):
+    #     # Count the number of connected subtrees in the 3D matrix
+    #     binary_layer = self.create_binary_layer()
+    #     connected_subtrees = self.find_connected_subtrees()
+    #     num_connected_trees = 0
+    #
+    #     for subtree in connected_subtrees:
+    #         # Check if the subtree has only one connecting node
+    #         connecting_nodes = 0
+    #         for node_id in subtree:
+    #             neighbors = binary_layer[node_id]
+    #             num_neighbors = sum(neighbors.values())
+    #             if num_neighbors == 1:
+    #                 connecting_nodes += 1
+    #
+    #         if connecting_nodes == 1:
+    #             num_connected_trees += 1
+    #
+    #     return num_connected_trees
 
     def count_trees_in_matrix(self, df):
         """
@@ -325,179 +406,17 @@ class MatrixLayerOne:
         self.graph_id = self.timestamp
         # mat_3d = Matrix3D(graph_data, "graph_to_agent_adjacency_matrices", f"{graph_id}_2")
 
-# import datetime
-#
-#
-# json_graph_data = """
-# {
-#   "nodes": [
-#     {
-#       "id": "07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "label": "Understood! As I'm an expert in the .puml syntax i will correct it"
-#     },
-#     {
-#       "id": "1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "label": "The following is a .puml content generated by an agent. Please critically review it and correct any mistakes, especially ensuring it strictly adheres to .puml syntax and does not contain any elements from other diagramming languages like Mermaid"
-#     },
-#     {
-#       "id": "2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "label": "system"
-#     },
-#     {
-#       "id": "757e7439-08f8-4cea-afac-c25b01167d32",
-#       "label": "user"
-#     },
-#     {
-#       "id": "c7d1c0a4-6365-44d6-be0c-bd3fc5436b85",
-#       "label": "user"
-#     },
-#     {
-#       "id": "eac6de73-9726-43b7-9441-f8e319a972e6",
-#       "label": "@variable_1_2"
-#     },
-#     {
-#       "id": "copied-1699797991293-eac6de73-9726-43b7-9441-f8e319a972e6",
-#       "label": "sequenceDiagramAlice->>John: Hello John, how are you?John-->>Alice: Great!Alice-)John: See you later!"
-#     },
-#     {
-#       "id": "copied-1699889663524-copied-1699797991293-c7d1c0a4-6365-44d6-be0c-bd3fc5436b85",
-#       "label": "user"
-#     },
-#     {
-#       "id": "copied-1699889663524-copied-1699797991293-07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "label": "Understood! , I'm agent-'Deductive Reasoning', solving problems like you just described. Please provide the problem-space for me to navigate it best as possible..."
-#     },
-#     {
-#       "id": "copied-1699889663524-copied-1699797991293-1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "label": "You're agent-'Deductive Reasoning'. You're one agent out of 7 who try to model problem-spaces and suggest solutions based on logical reasoning, similar to the detectives of The Poisoned Chocolates Case. Your strength lies in deriving specific conclusions from general hypotheses. Utilize schemas like Modus Ponens, Modus Tollens, Hypothetical Syllogism, and Disjunctive Syllogism., in order to solve problems, you use one of the following schemas ['Modus Ponens', 'Modus Tollens', 'Hypothetical Syllogism', 'Disjunctive Syllogism']"
-#     },
-#     {
-#       "id": "copied-1699889663524-copied-1699797991293-2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "label": "system"
-#     },
-#     {
-#       "id": "copied-1699889663524-copied-1699797991293-757e7439-08f8-4cea-afac-c25b01167d32",
-#       "label": "user"
-#     },
-#     {
-#       "id": "copied-1699890186553-copied-1699889663524-copied-1699797991293-eac6de73-9726-43b7-9441-f8e319a972e6",
-#       "label": "How would you model following problem-space?: There was a attack of the Palestinien sided group Hamas on Israel. Now Israel is bombing Gaza with heavy civiliens casualties. There is a total 'cleaning' of the Hamas in Gaza planned by Isralien-Army. There is a high danger that the whole region will fall into war.."
-#     },
-#     {
-#       "id": "copied-1699890186553-copied-1699797991293-07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "label": "Understood! I will review following .mmd"
-#     },
-#     {
-#       "id": "copied-1699890186553-copied-1699797991293-1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "label": "You're an expert in mermeid .mmd and you nedd to review following .mmd"
-#     },
-#     {
-#       "id": "copied-1699890186553-copied-1699797991293-2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "label": "system"
-#     },
-#     {
-#       "id": "copied-1699890186553-copied-1699797991293-757e7439-08f8-4cea-afac-c25b01167d32",
-#       "label": "user"
-#     },
-#     {
-#       "id": "copied-1699890186553-copied-1699797991293-c7d1c0a4-6365-44d6-be0c-bd3fc5436b85",
-#       "label": "user"
-#     },
-#     {
-#       "id": "234ec0c2-3d02-4ef5-9fb1-7adaeb58a1b6",
-#       "x": 1626.674810293892,
-#       "y": -632.9703327332509,
-#       "label": "@varibale_1_1"
-#     }
-#   ],
-#   "edges": [
-#     {
-#       "from": "07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "id": "67194bdc-f1f3-417f-9778-4d163c8b82d1",
-#       "to": "757e7439-08f8-4cea-afac-c25b01167d32"
-#     },
-#     {
-#       "from": "1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "id": "1329a8be-e4e2-42fd-bdb6-2057f9c320d3",
-#       "to": "2e419e7e-a540-4c9a-af4e-5110e54fad96"
-#     },
-#     {
-#       "from": "2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "id": "33312b2e-b683-4489-b471-e2d1ca03d21a",
-#       "to": "07537a68-1c7e-4edb-a72f-2d82015c490f"
-#     },
-#     {
-#       "from": "757e7439-08f8-4cea-afac-c25b01167d32",
-#       "id": "f5b47e5e-4121-44a3-8b29-97bfe2069148",
-#       "to": "eac6de73-9726-43b7-9441-f8e319a972e6"
-#     },
-#     {
-#       "from": "c7d1c0a4-6365-44d6-be0c-bd3fc5436b85",
-#       "id": "f4e2015e-e7f1-4e03-b3c6-ee82986533ca",
-#       "to": "1cc45118-72ee-4efe-95d8-06e8c02fb4c0"
-#     },
-#     {
-#       "from": "copied-1699889663524-copied-1699797991293-c7d1c0a4-6365-44d6-be0c-bd3fc5436b85",
-#       "id": "copied-1699889663524-copied-1699797991293-f4e2015e-e7f1-4e03-b3c6-ee82986533ca",
-#       "to": "copied-1699889663524-copied-1699797991293-1cc45118-72ee-4efe-95d8-06e8c02fb4c0"
-#     },
-#     {
-#       "from": "copied-1699889663524-copied-1699797991293-07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "id": "copied-1699889663524-copied-1699797991293-67194bdc-f1f3-417f-9778-4d163c8b82d1",
-#       "to": "copied-1699889663524-copied-1699797991293-757e7439-08f8-4cea-afac-c25b01167d32"
-#     },
-#     {
-#       "from": "copied-1699889663524-copied-1699797991293-2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "id": "copied-1699889663524-copied-1699797991293-33312b2e-b683-4489-b471-e2d1ca03d21a",
-#       "to": "copied-1699889663524-copied-1699797991293-07537a68-1c7e-4edb-a72f-2d82015c490f"
-#     },
-#     {
-#       "from": "copied-1699889663524-copied-1699797991293-1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "id": "copied-1699889663524-copied-1699797991293-1329a8be-e4e2-42fd-bdb6-2057f9c320d3",
-#       "to": "copied-1699889663524-copied-1699797991293-2e419e7e-a540-4c9a-af4e-5110e54fad96"
-#     },
-#     {
-#       "from": "copied-1699889663524-copied-1699797991293-757e7439-08f8-4cea-afac-c25b01167d32",
-#       "id": "copied-1699890186553-copied-1699889663524-copied-1699797991293-f5b47e5e-4121-44a3-8b29-97bfe2069148",
-#       "to": "copied-1699890186553-copied-1699889663524-copied-1699797991293-eac6de73-9726-43b7-9441-f8e319a972e6"
-#     },
-#     {
-#       "from": "copied-1699890186553-copied-1699797991293-07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "id": "copied-1699890186553-copied-1699797991293-67194bdc-f1f3-417f-9778-4d163c8b82d1",
-#       "to": "copied-1699890186553-copied-1699797991293-757e7439-08f8-4cea-afac-c25b01167d32"
-#     },
-#     {
-#       "from": "copied-1699890186553-copied-1699797991293-2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "id": "copied-1699890186553-copied-1699797991293-33312b2e-b683-4489-b471-e2d1ca03d21a",
-#       "to": "copied-1699890186553-copied-1699797991293-07537a68-1c7e-4edb-a72f-2d82015c490f"
-#     },
-#     {
-#       "from": "copied-1699890186553-copied-1699797991293-1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "id": "copied-1699890186553-copied-1699797991293-1329a8be-e4e2-42fd-bdb6-2057f9c320d3",
-#       "to": "copied-1699890186553-copied-1699797991293-2e419e7e-a540-4c9a-af4e-5110e54fad96"
-#     },
-#     {
-#       "from": "copied-1699890186553-copied-1699797991293-c7d1c0a4-6365-44d6-be0c-bd3fc5436b85",
-#       "id": "copied-1699890186553-copied-1699797991293-f4e2015e-e7f1-4e03-b3c6-ee82986533ca",
-#       "to": "copied-1699890186553-copied-1699797991293-1cc45118-72ee-4efe-95d8-06e8c02fb4c0"
-#     },
-#     {
-#       "from": "copied-1699890186553-copied-1699797991293-757e7439-08f8-4cea-afac-c25b01167d32",
-#       "id": "copied-1699890186553-copied-1699797991293-f5b47e5e-4121-44a3-8b29-97bfe2069148",
-#       "to": "copied-1699797991293-eac6de73-9726-43b7-9441-f8e319a972e6"
-#     },
-#     {
-#       "from": "234ec0c2-3d02-4ef5-9fb1-7adaeb58a1b6",
-#       "to": "copied-1699890186553-copied-1699889663524-copied-1699797991293-eac6de73-9726-43b7-9441-f8e319a972e6",
-#       "id": "218594c0-41f7-4e0b-bea6-de7aa2349017"
-#     }
-#   ]
-# }
-#
-# """
-#
-# graph_data = json.loads(json_graph_data)
-#
+
+json_file_path = "./logics/simple_va_inheritance_20231117.json"
+
+with open(json_file_path, 'r') as json_file:
+    graph_data = json.load(json_file)
+
+matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
+matrix_layer_one.create_advanced_adjacency_matrix()
+matrix_layer_one.create_bq_schema_for_advanced_matrix()
+
+matrix_layer_one.upload_advanced_matrix_to_bigquery()
 #
 # timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 #
