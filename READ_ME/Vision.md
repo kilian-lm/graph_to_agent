@@ -102,9 +102,12 @@ Example: Both A Dangerous Game⁶ and Arrival⁷ challenge conventional understa
 progression. Whereas Dürrenmatt explores the re-evaluation of past events as a means of interrogating the present,
 Arrival presents a narrative in which the future can be perceived and interacted with in the present moment. These works
 collectively suggest a more fluid, interconnected conception of time, which in turn invites a re-evaluation of our own
-understandings and experiences of temporality. Similarly, consider how politicians’ promises and speeches often shift
-with context and audience, or how 'Fake News' muddies our information streams. The challenges of discerning fact from
-fiction and tracing the evolution of statements becomes daunting⁸.
+understandings and experiences of temporality. So let's imagine Dürrenmatt would have known git-versioning, consider how
+the group of elderly men in his novel could just have used git bisect to find where the events of the past have gone
+wrong and have led us where we are now. And now lets take our reality and think of politicians’ promises and speeches
+and how they shift with context and audience, or how 'Fake News' muddies our information streams. The challenges of
+discerning fact from fiction and tracing the evolution of statements becomes daunting⁸ and the reason for the second
+pillar of this proposal.
 
 Enter our git-versioned (thanks Linus Torvalds who would never use LinkedIn I guess :D) content graph universe. Instead
 of scrutinizing right from wrong, this system records 'commits'—versions of content from specific sources at specified
