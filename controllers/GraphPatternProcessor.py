@@ -19,6 +19,7 @@ import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
 from collections import defaultdict
+import uuid
 
 from logger.CustomLogger import CustomLogger
 from controllers.BigQueryHandler import BigQueryHandler
@@ -60,8 +61,10 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 
         self.gpt_call_log = []
 
-        # self.matrix_dataset_id = matrix_dataset_id
-        # self.graph_dataset_id = graph_dataset_id
+        self.edges_tbl = "edges_table"
+        self.nodes_tbl = "nodes_table"
+        self.matrix_dataset_id = matrix_dataset_id
+        self.graph_dataset_id = graph_dataset_id
         self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
 
     # def process_graph(self):
@@ -114,7 +117,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
             gpt_call_json = {
                 "path": path,
                 "gpt_call": {
-                    "model": "gpt-4",
+                    "model": os.getenv("MODEL"),
                     "messages": [
                         {"role": "user", "content": labels[1]},
                         {"role": "system", "content": labels[3]},
@@ -148,8 +151,8 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 
     def dump_to_bigquery(self, file_path, dataset_name, table_name):
         """Upload the JSONL data to BigQuery."""
-        client = bigquery.Client()
-        table_id = f"{client.project}.{dataset_name}.{table_name}"
+        # client = bigquery.Client()
+        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{table_name}"
 
         # Configure the load job
         job_config = bigquery.LoadJobConfig(
@@ -159,9 +162,20 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 
         # Load the JSONL file to BigQuery
         with open(file_path, "rb") as source_file:
-            job = client.load_table_from_file(source_file, table_id, job_config=job_config)
+            job = self.bq_handler.bigquery_client.load_table_from_file(source_file, table_id, job_config=job_config)
 
         # Wait for the load job to complete
         job.result()
 
         print(f"Uploaded {file_path} to {table_id}")
+
+
+
+# graph_pattern_processor = GraphPatternProcessor("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent", G, 10)
+#
+# graph_pattern_processor.graph
+#
+# user_nodes = [node for node, attrs in G.nodes(data=True) if attrs['label'] == 'user']
+#
+# graph_pattern_processor.get_answer_label()
+# graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231120.jsonl', '20231117163236')
