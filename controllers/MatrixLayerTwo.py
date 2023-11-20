@@ -27,6 +27,7 @@ from sql_queries.edges_query import EDGES_QUERY
 from sql_queries.nodes_query import NODES_QUERY
 from sql_queries.layer_find_variable import LAYER_FIND_VARIABLE
 
+from controllers.GraphPatternProcessor import GraphPatternProcessor
 load_dotenv()
 
 
@@ -565,6 +566,7 @@ mat_l_t = MatrixLayerTwo("20231117163236", "graph_to_agent_adjacency_matrices", 
 df = mat_l_t.get_adjacency_matrix().set_index("node_id")
 G = mat_l_t.create_graph_from_adjacency(df)
 G.number_of_edges()
+G
 
 # mat_l_t.check_diameter_and_centrality(G)
 # mat_l_t.check_degree_distribution(G)
@@ -573,6 +575,12 @@ G.number_of_edges()
 df_nodes = mat_l_t.get_nodes()
 label_dict = df_nodes.set_index('id')['label'].to_dict()
 nx.set_node_attributes(G, label_dict, 'label')
+
+graph_pattern_processor = GraphPatternProcessor("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent", G, 10)
+
+graph_pattern_processor
+graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231120.jsonl', '20231117163236')
+
 
 organized_components = mat_l_t.organize_components_by_variable_suffix(G)
 mat_l_t.log_info(organized_components)
