@@ -5,7 +5,7 @@ from collections import defaultdict
 
 
 class VariableConnectedComponentsProcessor:
-    def __init__(self, graph):
+    def __init__(self, timestamp, matrix_dataset_id, graph_dataset_id, graph):
         self.graph = graph
         self.bq_client = bigquery.Client()
 
@@ -16,14 +16,36 @@ class VariableConnectedComponentsProcessor:
         for component in connected_components_with_variables:
             print("Connected Component containing @variable node:", list(component))
 
+    # def find_variable_nodes(self):
+    #     """Find all @variable nodes."""
+    #     variable_nodes = set()
+    #     query = """
+    #     SELECT * FROM `enter-universes.graph_to_agent.nodes_table`
+    #     WHERE graph_id = "20231114181549" AND STARTS_WITH(label, "@")
+    #     """
+    #     query_job = self.bq_client.query(query)
+    #     results = query_job.result()
+    #     for row in results:
+    #         node_id = row['id']
+    #         variable_nodes.add(node_id)
+    #     return variable_nodes
+
     def find_variable_nodes(self):
         """Find all @variable nodes."""
+
+        self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
+        table_ref = self.bq_handler.bigquery_client.dataset(self.graph_dataset_id).table(self.nodes_tbl)
+        self.logger.info(table_ref)
+
         variable_nodes = set()
-        query = """
-        SELECT * FROM `enter-universes.graph_to_agent.nodes_table`
-        WHERE graph_id = "20231114181549" AND STARTS_WITH(label, "@")
-        """
-        query_job = self.bq_client.query(query)
+
+        query = LAYER_FIND_VARIABLE.format(tbl_ref=table_ref, graph_id=self.timestamp)
+
+        # query = """
+        # SELECT * FROM `enter-universes.graph_to_agent.nodes_table`
+        # WHERE graph_id = "20231114181549" AND STARTS_WITH(label, "@")
+        # """
+        query_job = self.bq_handler.bigquery_client.query(query)
         results = query_job.result()
         for row in results:
             node_id = row['id']
