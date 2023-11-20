@@ -35,6 +35,7 @@ load_dotenv()
 
 class GraphPatternProcessor(VariableConnectedComponentsProcessor):
     def __init__(self, timestamp, matrix_dataset_id, graph_dataset_id, graph, num_steps):
+        super().__init__(timestamp, matrix_dataset_id, graph_dataset_id, graph)
         self.graph = graph
         self.num_steps = num_steps
         self.timestamp = timestamp
@@ -151,8 +152,13 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 
     def dump_to_bigquery(self, file_path, dataset_name, table_name):
         """Upload the JSONL data to BigQuery."""
+
+        # graph_to_agent_chat_completions
+
         # client = bigquery.Client()
         table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{table_name}"
+
+        table = self.bq_handler.bigquery_client.create_table(table_id, exists_ok=True)
 
         # Configure the load job
         job_config = bigquery.LoadJobConfig(
