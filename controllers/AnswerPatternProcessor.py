@@ -58,6 +58,9 @@ class AnswerPatternProcessor:
 
         # self.graph_data = graph_data
 
+        self.bq_response_json = None
+        self.variable_uuid_dict = None
+        self.data = None
         self.gpt_blueprint = None
         self.gpt_calls_dataset_id = gpt_calls_dataset_id
         self.bq_handler = BigQueryHandler(self.timestamp, self.gpt_calls_dataset_id)
@@ -79,22 +82,86 @@ class AnswerPatternProcessor:
 
         return df
 
-    def process_gpt_request_for_uuid(self, uuid):
+    def get_sorted_variable_rows(self, df):
+        # Filter rows with strings in the 'answer_label' column that start with '@var'
+        filtered_df = df[df['answer_label'].str.startswith('@var')]
+
+        # Extract the suffixes and sort
+        filtered_df['suffix_1'] = filtered_df['answer_label'].str.extract(r'@var(?:iable|ibale)_([0-9]+)')[0].astype(
+            int)
+        filtered_df['suffix_2'] = filtered_df['answer_label'].str.extract(r'@var(?:iable|ibale)_[0-9]+_([0-9]+)')[
+            0].astype(int)
+        sorted_df = filtered_df.sort_values(by=['suffix_1', 'suffix_2'])
+
+        # Return the ordered suffixes and uuids as a dict
+        result_dict = dict(zip(sorted_df['uuid'], sorted_df['answer_label']))
+        return result_dict
+
+    def process_gpt_request_for_uuid(self, data, uuid):
         """Process GPT request for a specific UUID and update the DataFrame."""
-        group = self.data[self.data['uuid'] == uuid]
+        group = data[data['uuid'] == uuid]
         messages = [{"role": r["role"], "content": r["content"]} for _, r in group.iterrows()]
         model = group.iloc[0]['model']
 
-        # Placeholder for actual GPT request
-        # Simulating a response for demonstration
-        response_content = f"response_for_uuid_{uuid}"
+        request_data = {
+            "model": model,
+            "messages": messages
+        }
+        response = requests.post(self.openai_base_url, headers=self.headers, json=request_data)
+        response_json = response.json()
+
+        self.append_to_jsonl(response_json, uuid)
+
+        response_content = response_json.get("choices", [{}])[0].get("message", {}).get("content", "")
 
         # Update the DataFrame with the response
         last_index = group.index[-1]
-        self.data.at[last_index, 'answer_label'] = response_content
+        data.at[last_index, 'answer_label'] = response_content
+
+        self.bq_response_json = {"response": response_content, "uuid": uuid}
+
         return response_content
 
+    def append_to_jsonl(self, response_content, uuid):
+
+        jsonl_filename = f'gpt_answer_{uuid}_{self.timestamp}.jsonl'
+
+        with open(jsonl_filename, 'a') as file:
+            graph_id = self.data[self.data['uuid'] == uuid].iloc[0]['graph_id']
+            answer_node_id = self.data[self.data['uuid'] == uuid].iloc[0]['answer_node_id']
+
+            enriched_response = {
+                "graph_id": graph_id,
+                "uuid": uuid,
+                "answer_node_id": answer_node_id,
+                "response": response_content
+            }
+
+            json.dump(enriched_response, file)
+            file.write('\n')
+        return jsonl_filename
+
+    def dump_gpt_jsonl_to_bigquery(self, file_path, dataset_name, table_name):
+        """Upload the JSONL data to BigQuery."""
+        # client = bigquery.Client()
+        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{table_name}"
+        job_config = bigquery.LoadJobConfig(
+            source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+            autodetect=True,
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        )
+        with open(file_path, "rb") as source_file:
+            job = self.bq_handler.bigquery_client.load_table_from_file(
+                source_file, table_id, job_config=job_config
+            )
+        job.result()
+
     def run(self):
+        # Get the GPT calls blueprint
+        self.data = self.get_gpt_calls_blueprint()
+        self.logger.info(self.data)
+        # Get the sorted variables
+        self.variable_uuid_dict = self.get_sorted_variable_rows(self.data)
         # Sort the dictionary by variable suffixes in ascending order
         sorted_variables = sorted(self.variable_uuid_dict.items(),
                                   key=lambda x: [int(num) for num in x[1].split('_')[1:]])
