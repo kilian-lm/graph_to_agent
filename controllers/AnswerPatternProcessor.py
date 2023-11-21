@@ -67,7 +67,6 @@ class AnswerPatternProcessor:
 
         table_ref = "enter-universes.graph_to_agent_chat_completions.test_2"
 
-
         self.logger.info(table_ref)
         query = GPT_CALL_BLUEPRINT.format(
             tbl_ref=table_ref, graph_id=self.timestamp)
@@ -80,56 +79,51 @@ class AnswerPatternProcessor:
 
         return df
 
-    def extract_variables(self, content):
-        """Extract @variable tags from the content."""
-        return re.findall(r"@variable_\d+_\d+", content)
-
     def process_gpt_request_for_uuid(self, uuid):
-        """Process GPT request for a specific UUID and update the gpt_blueprintFrame."""
-        group = self.gpt_blueprint[self.gpt_blueprint['uuid'] == uuid]
+        """Process GPT request for a specific UUID and update the DataFrame."""
+        group = self.data[self.data['uuid'] == uuid]
         messages = [{"role": r["role"], "content": r["content"]} for _, r in group.iterrows()]
         model = group.iloc[0]['model']
 
-        # Send GPT request
-        request_data = {
-            "model": model,
-            "messages": messages
-        }
-        response = requests.post(self.open_ai_url, headers=self.headers, json=request_data)
-        response_json = response.json()
-        response_content = response_json.get("choices", [{}])[0].get("message", {}).get("content", "")
+        # Placeholder for actual GPT request
+        # Simulating a response for demonstration
+        response_content = f"response_for_uuid_{uuid}"
 
         # Update the DataFrame with the response
         last_index = group.index[-1]
-        self.gpt_blueprint.at[last_index, 'answer_label'] = response_content
+        self.data.at[last_index, 'answer_label'] = response_content
         return response_content
 
-    def process_variable_responses(self):
-        """Process responses for each @variable in sorted order."""
-        variable_tags = defaultdict(list)
-        for index, row in self.gpt_blueprint.iterrows():
-            variables = self.extract_variables(row['content'])
-            for var in variables:
-                variable_tags[var].append((row['uuid'], index))
+    def run(self):
+        # Sort the dictionary by variable suffixes in ascending order
+        sorted_variables = sorted(self.variable_uuid_dict.items(),
+                                  key=lambda x: [int(num) for num in x[1].split('_')[1:]])
 
-        sorted_variables = sorted(variable_tags.keys(), key=lambda x: (int(x.split('_')[1]), int(x.split('_')[2])))
+        # Process each variable
+        for i in range(len(sorted_variables) - 1):
+            lower_var_uuid, lower_var_label = sorted_variables[i]
+            higher_var_uuid, higher_var_label = sorted_variables[i + 1]
 
-        variable_responses = {}
-        for var in sorted_variables:
-            uuids = set([uuid for uuid, _ in variable_tags[var]])
-            for uuid in uuids:
-                response = self.process_gpt_request_for_uuid(uuid)
-                variable_responses[var] = response
+            # Process the lower variable
+            lower_response = self.process_gpt_request_for_uuid(lower_var_uuid)
+            self.data['answer_label'] = self.data['answer_label'].apply(
+                lambda x: x.replace(lower_var_label, lower_response))
+            self.data['content'] = self.data['content'].apply(lambda x: x.replace(lower_var_label, lower_response))
 
-            # Update the DataFrame with the response for this and higher suffix variables
-            for higher_var in sorted_variables[sorted_variables.index(var) + 1:]:
-                for higher_uuid, _ in variable_tags[higher_var]:
-                    self.gpt_blueprint.loc[self.gpt_blueprint['uuid'] == higher_uuid, 'content'] = \
-                    self.gpt_blueprint[self.gpt_blueprint['uuid'] == higher_uuid]['content'].apply(
-                        lambda x: x.replace(var, variable_responses[var])
-                    )
+            # Update the higher variable in 'content' with the lower response
+            self.data['content'] = self.data['content'].apply(lambda x: x.replace(higher_var_label, lower_response))
 
+        # Process the highest variable
+        highest_var_uuid, highest_var_label = sorted_variables[-1]
+        highest_response = self.process_gpt_request_for_uuid(highest_var_uuid)
+        self.data['answer_label'] = self.data['answer_label'].apply(
+            lambda x: x.replace(highest_var_label, highest_response))
+        self.data['content'] = self.data['content'].apply(lambda x: x.replace(highest_var_label, highest_response))
 
-answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
+        # Process rows with 'None' in 'answer_label'
+        none_rows = self.data[self.data['answer_label'] == 'None']
+        for idx, row in none_rows.iterrows():
+            response = self.process_gpt_request_for_uuid(row['uuid'])
+            self.data.at[idx, 'answer_label'] = response
 
-answer_pat_pro.get_gpt_calls_blueprint()
+        return self.data
