@@ -250,9 +250,6 @@ class AnswerPatternProcessor:
         print(f"Loaded {job.output_rows} rows into {table_id}")
 
 
-
-
-
 # answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
 #
 # answer_pat_pro.bq_handler.create_dataset_if_not_exists()
@@ -262,3 +259,25 @@ class AnswerPatternProcessor:
 #                                           "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236")
 #
 # answer_pat_pro.run()
+
+
+matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
+
+matrix_layer_one.create_advanced_adjacency_matrix()
+matrix_layer_one.upload_jsonl_to_bigquery('20231117163236_advanced_adjacency_matrix.jsonl')
+
+graph_pattern_processor = GraphPatternProcessor("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent",
+                                                G, 10)
+
+graph_pattern_processor.dump_to_bigquery('4_test_20231120.jsonl', 'graph_to_agent_chat_completions', 'test_2')
+graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231120.jsonl', '20231117163236')
+
+answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
+
+answer_pat_pro.bq_handler.create_dataset_if_not_exists()
+
+answer_pat_pro.dump_gpt_jsonl_to_bigquery("gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl",
+                                          "graph_to_agent_chat_completions",
+                                          "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236")
+
+answer_pat_pro.run()

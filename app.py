@@ -20,8 +20,9 @@ class App():
         # Basics
         self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         self.general_uuid = str(uuid.uuid4())
+        self.key = f"{self.timestamp}_{self.general_uuid}"
         print(self.timestamp)
-        self.log_file = f'{self.general_uuid}_{self.timestamp}_app.log'
+        self.log_file = f'{self.timestamp}_{self.general_uuid}_app.log'
         print(self.log_file)
         self.log_dir = './temp_log'
         print(self.log_dir)
@@ -30,9 +31,9 @@ class App():
 
         # All custom classes
         self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
-        self.engine_room = EngineRoom(self.general_uuid, 'graph_to_agent')
-        self.gpt_agent_interactions = v2GptAgentInteractions(self.general_uuid, 'graph_to_agent')
-        self.bq_handler = BigQueryHandler(self.general_uuid,
+        self.engine_room = EngineRoom(self.key, 'graph_to_agent')
+        self.gpt_agent_interactions = v2GptAgentInteractions(self.key, 'graph_to_agent')
+        self.bq_handler = BigQueryHandler(self.key,
                                           'graph_to_agent')  # Todo :: need to adapt dataset logic not for instantiating
 
         # All Checkpoints and Externalities
@@ -150,7 +151,7 @@ class App():
 
             # graph_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
             self.logger.info(f"save_graph, graph_id: {self.timestamp}")
-            msg = self.gpt_agent_interactions.save_graph_data(graph_data, self.timestamp)
+            msg = self.gpt_agent_interactions.save_graph_data(graph_data, self.key)
             self.logger.info(msg)
             # self.logger.error(f"save_graph, errors: {errors}")
             #

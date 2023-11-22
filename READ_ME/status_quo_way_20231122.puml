@@ -1,0 +1,14 @@
+@startuml
+:app;
+:save_graph_data;
+:v2GptAgentInteractions;
+:MatrixLayerOne;
+:upload_to_bigquery;
+:20231117163236_advanced_adjacency_matrix;
+:MatrixLayerTwo;
+:G;
+:GraphPatternProcessor;
+:graph_to_agent_chat_completions;
+:AnswerPatternProcessor;
+:dump_gpt_jsonl_to_bigquery;
+@enduml

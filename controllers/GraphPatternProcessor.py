@@ -1,34 +1,15 @@
 import os
-import json
-from google.cloud import bigquery
-from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
-from google.api_core.exceptions import NotFound
 import logging
-from google.oauth2.service_account import Credentials
-from google.oauth2 import service_account
 from google.cloud import bigquery
 import json
-import datetime
-import requests
-import inspect
-import re
-from google.api_core.exceptions import NotFound
 
-import pandas as pd
-import networkx as nx
-import matplotlib.pyplot as plt
-from collections import defaultdict
 import uuid
 
 from logger.CustomLogger import CustomLogger
 from controllers.BigQueryHandler import BigQueryHandler
 from controllers.VariableConnectedComponentsProcessor import VariableConnectedComponentsProcessor
-
-from sql_queries.adjacency_matrix_query import ADJACENCY_MATRIX_QUERY
-from sql_queries.edges_query import EDGES_QUERY
-from sql_queries.nodes_query import NODES_QUERY
-from sql_queries.layer_find_variable import LAYER_FIND_VARIABLE
+from controllers.MatrixLayerOne import MatrixLayerOne
 
 load_dotenv()
 
@@ -104,7 +85,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
             user_nodes = [node for node, attrs in self.graph.nodes(data=True) if attrs['label'] == 'user']
             for start_node in user_nodes:
                 # Generate a UUID for each component path
-                path_uuid = str(uuid.uuid4()) # ToDo :: Backroll PK logic until here
+                path_uuid = str(uuid.uuid4())  # ToDo :: Backroll PK logic until here
                 for path in self.explore_paths(start_node, steps=self.num_steps):
                     gpt_call, is_valid = self.generate_gpt_call_json(path, path_uuid, graph_id)
                     if is_valid:
@@ -174,6 +155,28 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         job.result()
 
         print(f"Uploaded {file_path} to {table_id}")
+
+
+matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
+
+matrix_layer_one.create_advanced_adjacency_matrix()
+matrix_layer_one.upload_jsonl_to_bigquery('20231117163236_advanced_adjacency_matrix.jsonl')
+
+graph_pattern_processor = GraphPatternProcessor("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent",
+                                                G, 10)
+
+graph_pattern_processor.dump_to_bigquery('4_test_20231120.jsonl', 'graph_to_agent_chat_completions', 'test_2')
+graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231120.jsonl', '20231117163236')
+
+answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
+
+answer_pat_pro.bq_handler.create_dataset_if_not_exists()
+
+answer_pat_pro.dump_gpt_jsonl_to_bigquery("gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl",
+                                          "graph_to_agent_chat_completions",
+                                          "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236")
+
+answer_pat_pro.run()
 
 
 

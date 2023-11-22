@@ -460,10 +460,10 @@ class v2GptAgentInteractions():
             edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.edges_table)
 
             # Check and create nodes table if it doesn't exist
-            self.create_table_if_not_exists("nodes_table", self.get_node_schema())
+            self.create_table_if_not_exists(self.nodes_table, self.get_node_schema())
 
             # Check and create edges table if it doesn't exist
-            self.create_table_if_not_exists("edges_table", self.get_edge_schema())
+            self.create_table_if_not_exists(self.edges_table, self.get_edge_schema())
 
             # Retrieve the tables and their schemas
             nodes_table = self.bigquery_client.get_table(nodes_table_ref)

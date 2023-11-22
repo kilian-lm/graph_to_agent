@@ -21,12 +21,12 @@ load_dotenv()
 
 
 class MatrixLayerOne:
-    def __init__(self, timestamp, graph_data, dataset_id):
+    def __init__(self, key, graph_data, dataset_id):
         try:
             # timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-            self.timestamp = timestamp
-            print(self.timestamp)
-            self.log_file = f'{self.timestamp}_matrix_layer_one.log'
+            self.key = key
+            print(self.key)
+            self.log_file = f'{self.key}_matrix_layer_one.log'
             print(self.log_file)
             self.log_dir = './temp_log'
             print(self.log_dir)
@@ -35,13 +35,13 @@ class MatrixLayerOne:
             self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
             # todo: hand form app.py graph_id , think about coherent logic to ident nodes with matrix
-            self.graph_id = self.timestamp
+            self.graph_id = self.key
             self.table_name = self.graph_id
 
             self.graph_data = graph_data
 
             self.dataset_id = dataset_id
-            self.bq_handler = BigQueryHandler(self.timestamp, self.dataset_id)
+            self.bq_handler = BigQueryHandler(self.key, self.dataset_id)
 
             # ToDo :: Dublicated import of bq !!
             #  From mere class initialization in another class to inheritance
@@ -195,7 +195,7 @@ class MatrixLayerOne:
         schema = self.generate_bigquery_schema_from_graph()
 
         # Define the table reference
-        table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.timestamp)
+        table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table(self.key)
 
         # Create or overwrite the table
         table = bigquery.Table(table_ref, schema=schema)
@@ -355,19 +355,19 @@ class MatrixLayerOne:
         # mat_3d = Matrix3D(graph_data, "graph_to_agent_adjacency_matrices", f"{graph_id}_2")
 
 
-json_file_path = "./logics/simple_va_inheritance_20231117.json"
+# json_file_path = "./logics/simple_va_inheritance_20231117.json"
+#
+# with open(json_file_path, 'r') as json_file:
+#     graph_data = json.load(json_file)
 
-with open(json_file_path, 'r') as json_file:
-    graph_data = json.load(json_file)
+# matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
+#
+# matrix_layer_one.create_advanced_adjacency_matrix()
+# matrix_layer_one.upload_jsonl_to_bigquery('20231117163236_advanced_adjacency_matrix.jsonl')
 
-matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
+# matrix_layer_one.create_bq_schema_for_advanced_matrix()
 
-matrix_layer_one.create_advanced_adjacency_matrix()
-matrix_layer_one.upload_jsonl_to_bigquery('20231117163236_advanced_adjacency_matrix.jsonl')
-
-matrix_layer_one.create_bq_schema_for_advanced_matrix()
-
-matrix_layer_one.upload_advanced_matrix_to_bigquery()
+# matrix_layer_one.upload_advanced_matrix_to_bigquery()
 #
 # timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 #
