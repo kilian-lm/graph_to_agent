@@ -251,12 +251,14 @@ class AnswerPatternProcessor:
 
 
 
-answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
 
-answer_pat_pro.bq_handler.create_dataset_if_not_exists()
 
-answer_pat_pro.dump_gpt_jsonl_to_bigquery("gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl",
-                                          "graph_to_agent_chat_completions",
-                                          "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236")
-
-answer_pat_pro.run()
+# answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
+#
+# answer_pat_pro.bq_handler.create_dataset_if_not_exists()
+#
+# answer_pat_pro.dump_gpt_jsonl_to_bigquery("gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl",
+#                                           "graph_to_agent_chat_completions",
+#                                           "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236")
+#
+# answer_pat_pro.run()

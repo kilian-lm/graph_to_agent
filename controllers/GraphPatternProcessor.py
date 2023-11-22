@@ -104,7 +104,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
             user_nodes = [node for node, attrs in self.graph.nodes(data=True) if attrs['label'] == 'user']
             for start_node in user_nodes:
                 # Generate a UUID for each component path
-                path_uuid = str(uuid.uuid4())
+                path_uuid = str(uuid.uuid4()) # ToDo :: Backroll PK logic until here
                 for path in self.explore_paths(start_node, steps=self.num_steps):
                     gpt_call, is_valid = self.generate_gpt_call_json(path, path_uuid, graph_id)
                     if is_valid:

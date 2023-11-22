@@ -2,37 +2,52 @@ import os
 import datetime
 from flask import Flask, render_template, jsonify, request
 import json
-# from controllers.GptAgentInteractions import GptAgentInteractions
-from controllers.v2GptAgentInteractions import v2GptAgentInteractions
-
-from logger.CustomLogger import CustomLogger
+import uuid
 import logging
 
+# All custom classes
+from logger.CustomLogger import CustomLogger
 from controllers.EngineRoom import EngineRoom
+from controllers.v2GptAgentInteractions import v2GptAgentInteractions
+from controllers.BigQueryHandler import BigQueryHandler
+from controllers.GraphPatternProcessor import GraphPatternProcessor
 
 app = Flask(__name__)
 
 
-# gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
-
-
 class App():
     def __init__(self):
+        # Basics
         self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        self.general_uuid = str(uuid.uuid4())
         print(self.timestamp)
-        self.log_file = f'{self.timestamp}_app.log'
+        self.log_file = f'{self.general_uuid}_{self.timestamp}_app.log'
         print(self.log_file)
         self.log_dir = './temp_log'
         print(self.log_dir)
         self.log_level = logging.DEBUG
         print(self.log_level)
-        self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
-        self.engine_room = EngineRoom(self.timestamp, 'graph_to_agent')
+        # All custom classes
+        self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
+        self.engine_room = EngineRoom(self.general_uuid, 'graph_to_agent')
+        self.gpt_agent_interactions = v2GptAgentInteractions(self.general_uuid, 'graph_to_agent')
+        self.bq_handler = BigQueryHandler(self.general_uuid,
+                                          'graph_to_agent')  # Todo :: need to adapt dataset logic not for instantiating
+
+        # All Checkpoints and Externalities
+        self.logs_bucket = os.getenv('LOGS_BUCKET') # ToDo :: If bucket doesnt exist, create
+        self.matrix_dataset_id = os.getenv('MATRIX_DATASET_ID')
+        self.graph_dataset_id = os.getenv('GRAPH_DATASET_ID')
+        self.graph = None
+        self.num_steps = os.getenv('NUM_STEPS') # Todo :: implement UI element to set num_steps
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        self.openai_base_url = "https://api.openai.com/v1/chat/completions"
+
+
+
 
         self.app = Flask(__name__)
-        # self.gpt_agent_interactions = GptAgentInteractions('graph_to_agent')
-        self.gpt_agent_interactions = v2GptAgentInteractions(self.timestamp, 'graph_to_agent')
         self.setup_routes()
 
     def index_call(self):
