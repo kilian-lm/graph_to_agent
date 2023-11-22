@@ -28,6 +28,7 @@ from sql_queries.nodes_query import NODES_QUERY
 from sql_queries.layer_find_variable import LAYER_FIND_VARIABLE
 
 from controllers.GraphPatternProcessor import GraphPatternProcessor
+
 load_dotenv()
 
 
@@ -350,7 +351,6 @@ class MatrixLayerTwo:
     #             return False
     #     return True
 
-
     # def process_unmatched_gpt_calls(self, unmatched_calls, var_responses):
     #     for gpt_call in unmatched_calls:
     #         updated_call, response = self.process_single_gpt_call(gpt_call, var_responses)
@@ -556,25 +556,24 @@ class MatrixLayerTwo:
         label_dict = df_nodes.set_index('id')['label'].to_dict()
         nx.set_node_attributes(G, label_dict, 'label')
 
-
-mat_l_t = MatrixLayerTwo("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent")
+# mat_l_t = MatrixLayerTwo("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent")
 
 # mat_l_t.get_edges()
 # mat_l_t.get_nodes()
 # mat_l_t.get_adjacency_matrix()
 
-df = mat_l_t.get_adjacency_matrix().set_index("node_id")
-G = mat_l_t.create_graph_from_adjacency(df)
-G.number_of_edges()
-G
+# df = mat_l_t.get_adjacency_matrix().set_index("node_id")
+# G = mat_l_t.create_graph_from_adjacency(df)
+# G.number_of_edges()
+# G
 
 # mat_l_t.check_diameter_and_centrality(G)
 # mat_l_t.check_degree_distribution(G)
 # mat_l_t.check_graph_correctly_recveied_via_matrix(G)
 
-df_nodes = mat_l_t.get_nodes()
-label_dict = df_nodes.set_index('id')['label'].to_dict()
-nx.set_node_attributes(G, label_dict, 'label')
+# df_nodes = mat_l_t.get_nodes()
+# label_dict = df_nodes.set_index('id')['label'].to_dict()
+# nx.set_node_attributes(G, label_dict, 'label')
 
 # graph_pattern_processor = GraphPatternProcessor("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent", G, 10)
 #
@@ -582,24 +581,24 @@ nx.set_node_attributes(G, label_dict, 'label')
 # graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231120.jsonl', '20231117163236')
 
 
-organized_components = mat_l_t.organize_components_by_variable_suffix(G)
-mat_l_t.log_info(organized_components)
-
-variable_suffix_nodes = mat_l_t.get_variable_suffix_nodes(organized_components)
-mat_l_t.log_info(variable_suffix_nodes)
-
-sorted_components_by_suffix = mat_l_t.sort_components_by_suffix(organized_components)
-user_nodes = mat_l_t.get_user_nodes(G)
-mat_l_t.log_info(user_nodes)
-
-matched, unmatched = mat_l_t.classify_gpt_calls(G, user_nodes, variable_suffix_nodes, 10)
-
-answers = mat_l_t.process_graph_to_gpt_calls(G, 10)
-answers
-
-var_matched_gpt_calls, var_unmatched_gpt_calls = mat_l_t.process_graph_to_gpt_calls(G, 10)
-var_matched_gpt_calls
-var_unmatched_gpt_calls
+# organized_components = mat_l_t.organize_components_by_variable_suffix(G)
+# mat_l_t.log_info(organized_components)
+#
+# variable_suffix_nodes = mat_l_t.get_variable_suffix_nodes(organized_components)
+# mat_l_t.log_info(variable_suffix_nodes)
+#
+# sorted_components_by_suffix = mat_l_t.sort_components_by_suffix(organized_components)
+# user_nodes = mat_l_t.get_user_nodes(G)
+# mat_l_t.log_info(user_nodes)
+#
+# matched, unmatched = mat_l_t.classify_gpt_calls(G, user_nodes, variable_suffix_nodes, 10)
+#
+# answers = mat_l_t.process_graph_to_gpt_calls(G, 10)
+# answers
+#
+# var_matched_gpt_calls, var_unmatched_gpt_calls = mat_l_t.process_graph_to_gpt_calls(G, 10)
+# var_matched_gpt_calls
+# var_unmatched_gpt_calls
 
 # mat_l_t.organize_components_by_variable_suffix(G)
 # mat_l_t.process_graph_for_variables_layer(G)

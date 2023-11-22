@@ -260,6 +260,19 @@ class AnswerPatternProcessor:
 #
 # answer_pat_pro.run()
 
+import uuid
+from controllers.MatrixLayerOne import MatrixLayerOne
+from controllers.GraphPatternProcessor import GraphPatternProcessor
+
+
+timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+general_uuid = str(uuid.uuid4())
+key = f"{timestamp}_{general_uuid}"
+
+json_file_path = "./logics/simple_va_inheritance_20231117.json"
+
+with open(json_file_path, 'r') as json_file:
+    graph_data = json.load(json_file)
 
 matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
 

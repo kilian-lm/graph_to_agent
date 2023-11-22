@@ -1,4 +1,5 @@
 @startuml
+partition One {
 :app;
 :save_graph_data;
 :v2GptAgentInteractions;
@@ -11,4 +12,12 @@
 :graph_to_agent_chat_completions;
 :AnswerPatternProcessor;
 :dump_gpt_jsonl_to_bigquery;
+}
+partition Two {
+:app;
+:return_gpt_agent_answer_to_graph;
+:EngineRoom;
+:main_tree_based_design_general;
+
+}
 @enduml
