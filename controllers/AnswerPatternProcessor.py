@@ -14,6 +14,7 @@ import requests
 import inspect
 import re
 from google.api_core.exceptions import NotFound
+import numpy as np
 
 import pandas as pd
 import networkx as nx
@@ -85,32 +86,41 @@ class AnswerPatternProcessor:
     def get_sorted_variable_rows(self, df):
         # Filter rows with strings in the 'answer_label' column that start with '@var'
         filtered_df = df[df['answer_label'].str.startswith('@var')]
-
+        self.logger.info(filtered_df)
         # Extract the suffixes and sort
         filtered_df['suffix_1'] = filtered_df['answer_label'].str.extract(r'@var(?:iable|ibale)_([0-9]+)')[0].astype(
             int)
         filtered_df['suffix_2'] = filtered_df['answer_label'].str.extract(r'@var(?:iable|ibale)_[0-9]+_([0-9]+)')[
             0].astype(int)
         sorted_df = filtered_df.sort_values(by=['suffix_1', 'suffix_2'])
-
+        self.logger.info(sorted_df)
         # Return the ordered suffixes and uuids as a dict
         result_dict = dict(zip(sorted_df['uuid'], sorted_df['answer_label']))
+        self.logger.info(result_dict)
         return result_dict
 
     def process_gpt_request_for_uuid(self, data, uuid):
         """Process GPT request for a specific UUID and update the DataFrame."""
         group = data[data['uuid'] == uuid]
+        self.logger.info(group)
         messages = [{"role": r["role"], "content": r["content"]} for _, r in group.iterrows()]
+        self.logger.info(messages)
         model = group.iloc[0]['model']
+
+        self.logger.info(model)
 
         request_data = {
             "model": model,
             "messages": messages
         }
+        self.logger.info(request_data)
         response = requests.post(self.openai_base_url, headers=self.headers, json=request_data)
+        self.logger.info(response)
         response_json = response.json()
-
-        self.append_to_jsonl(response_json, uuid)
+        self.logger.info(response_json)
+        table_id = self.append_to_jsonl(response_json, uuid)
+        self.logger.info(table_id)
+        self.dump_gpt_jsonl_to_bigquery(table_id, self.gpt_calls_dataset_id, table_id)
 
         response_content = response_json.get("choices", [{}])[0].get("message", {}).get("content", "")
 
@@ -123,22 +133,32 @@ class AnswerPatternProcessor:
         return response_content
 
     def append_to_jsonl(self, response_content, uuid):
-
         jsonl_filename = f'gpt_answer_{uuid}_{self.timestamp}.jsonl'
 
         with open(jsonl_filename, 'a') as file:
-            graph_id = self.data[self.data['uuid'] == uuid].iloc[0]['graph_id']
+            graph_id = str(self.data[self.data['uuid'] == uuid].iloc[0]['graph_id'])
+            path_id = str(self.data[self.data['uuid'] == uuid].iloc[0]['uuid'])
             answer_node_id = self.data[self.data['uuid'] == uuid].iloc[0]['answer_node_id']
 
-            enriched_response = {
-                "graph_id": graph_id,
-                "uuid": uuid,
-                "answer_node_id": answer_node_id,
-                "response": response_content
-            }
+            # Ensure response_content is a properly formatted JSON
+            if not isinstance(response_content, dict):
+                # Convert response_content to dict if it's not already
+                response_content = json.loads(response_content)
+                self.logger.info(response_content)
+
+            # enriched_response = {
+            #     "graph_id": graph_id,
+            #     "path_id": path_id,
+            #     "answer_node_id": answer_node_id,
+            #     "response": response_content  # Keeping the nested structure
+            # }
+
+            enriched_response = response_content
+            self.logger.info(enriched_response)
 
             json.dump(enriched_response, file)
             file.write('\n')
+
         return jsonl_filename
 
     def dump_gpt_jsonl_to_bigquery(self, file_path, dataset_name, jsonl_filename):
@@ -146,9 +166,12 @@ class AnswerPatternProcessor:
         # client = bigquery.Client()
 
         self.bq_handler.create_dataset_if_not_exists()
-        self.bq_handler.create_table_if_not_exists(jsonl_filename)
+        # test_name = "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl"
+        # test_name.split(".")[0]
+        table_id = jsonl_filename.split(".")[0]
+        self.bq_handler.create_table_if_not_exists(table_id)
 
-        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{jsonl_filename}"
+        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{table_id}"
         job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
             autodetect=True,
@@ -173,28 +196,44 @@ class AnswerPatternProcessor:
         # Process each variable
         for i in range(len(sorted_variables) - 1):
             lower_var_uuid, lower_var_label = sorted_variables[i]
+            self.logger.info(lower_var_uuid)
             higher_var_uuid, higher_var_label = sorted_variables[i + 1]
-
+            self.logger.info(higher_var_uuid)
             # Process the lower variable
-            lower_response = self.process_gpt_request_for_uuid(lower_var_uuid)
+            lower_response = self.process_gpt_request_for_uuid(self.data, lower_var_uuid)
             self.data['answer_label'] = self.data['answer_label'].apply(
                 lambda x: x.replace(lower_var_label, lower_response))
+            self.logger.info(self.data['answer_label'])
             self.data['content'] = self.data['content'].apply(lambda x: x.replace(lower_var_label, lower_response))
-
+            self.logger.info(self.data['content'])
             # Update the higher variable in 'content' with the lower response
             self.data['content'] = self.data['content'].apply(lambda x: x.replace(higher_var_label, lower_response))
 
         # Process the highest variable
         highest_var_uuid, highest_var_label = sorted_variables[-1]
-        highest_response = self.process_gpt_request_for_uuid(highest_var_uuid)
+        self.logger.info(highest_var_uuid)
+        highest_response = self.process_gpt_request_for_uuid(self.data, highest_var_uuid)
+        self.logger.info(highest_response)
         self.data['answer_label'] = self.data['answer_label'].apply(
             lambda x: x.replace(highest_var_label, highest_response))
         self.data['content'] = self.data['content'].apply(lambda x: x.replace(highest_var_label, highest_response))
-
+        self.logger.info(self.data['content'])
         # Process rows with 'None' in 'answer_label'
         none_rows = self.data[self.data['answer_label'] == 'None']
         for idx, row in none_rows.iterrows():
-            response = self.process_gpt_request_for_uuid(row['uuid'])
+            response = self.process_gpt_request_for_uuid(self.data, row['uuid'])
+            self.logger.info(response)
             self.data.at[idx, 'answer_label'] = response
 
         return self.data
+
+
+answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
+
+answer_pat_pro.bq_handler.create_dataset_if_not_exists()
+
+answer_pat_pro.dump_gpt_jsonl_to_bigquery("gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl",
+                                          "graph_to_agent_chat_completions",
+                                          "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236")
+
+answer_pat_pro.run()
