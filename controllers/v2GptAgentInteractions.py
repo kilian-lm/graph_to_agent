@@ -52,7 +52,7 @@ class v2GptAgentInteractions():
         self.edges_table = os.getenv('EDGES_TABLE')
         self.nodes_table = os.getenv('NODES_TABLE')
         self.graph_data = None
-        self.matrix_layer_one = MatrixLayerOne(self.timestamp, self.graph_data, self.matrix_layer_one_dataset_id)
+        self.matrix_layer_one = MatrixLayerOne(self.timestamp, self.graph_data, self.graph_to_agent_adjacency_matrices)
 
         self.dataset_id = dataset_id
         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')

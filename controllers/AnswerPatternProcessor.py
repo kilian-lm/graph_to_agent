@@ -275,7 +275,7 @@ json_file_path = "./logics/simple_va_inheritance_20231117.json"
 with open(json_file_path, 'r') as json_file:
     graph_data = json.load(json_file)
 
-gpt_agent_interactions = v2GptAgentInteractions('graph_to_agent')
+gpt_agent_interactions = v2GptAgentInteractions(key, os.getenv('GRAPH_DATASET_ID'))
 
 gpt_agent_interactions.save_graph_data(graph_data, key)
 
@@ -286,12 +286,12 @@ gpt_agent_interactions.save_graph_data(graph_data, key)
 # self.matrix_layer_one.upload_to_bigquery()
 
 
-matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
+matrix_layer_one = MatrixLayerOne(key, graph_data, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
 
-matrix_layer_one.create_advanced_adjacency_matrix()
-matrix_layer_one.upload_jsonl_to_bigquery('20231117163236_advanced_adjacency_matrix.jsonl')
-
-mat_l_t = MatrixLayerTwo("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent")
+filename = matrix_layer_one.create_advanced_adjacency_matrix()
+matrix_layer_one.upload_jsonl_to_bigquery(filename)
+# '20231117163236_advanced_adjacency_matrix.jsonl'
+mat_l_t = MatrixLayerTwo(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'), os.getenv('GRAPH_DATASET_ID'))
 
 mat_l_t.get_edges()
 mat_l_t.get_nodes()
