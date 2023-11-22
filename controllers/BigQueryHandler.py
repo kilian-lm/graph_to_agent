@@ -54,42 +54,6 @@ class BigQueryHandler:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    # def create_bq_table_schema(self):
-    #     """
-    #     Create a BigQuery table schema for the adjacency matrix.
-    #     """
-    #     schema = [
-    #         bigquery.SchemaField("node_id", "STRING", mode="REQUIRED"),
-    #     ]
-    #     for node in self.graph_data["nodes"]:
-    #         schema.append(bigquery.SchemaField(str(node["id"]), "INTEGER"))
-    #     return schema
-    #
-    # def save_matrix_to_bq(self, dataset_name, table_name):
-    #     """
-    #     Save the adjacency matrix to a BigQuery table.
-    #     """
-    #     client = bigquery.Client()
-    #     table_id = f"{client.project}.{dataset_name}.{table_name}"
-    #
-    #     schema = self.create_bq_table_schema()
-    #     table = bigquery.Table(table_id, schema=schema)
-    #     table = client.create_table(table, exists_ok=True)
-    #
-    #     binary_layer = self.create_binary_layer()
-    #     rows_to_insert = []
-    #
-    #     for node_id, connections in binary_layer.items():
-    #         row = {"node_id": str(node_id)}
-    #         for other_node_id, connection in connections.items():
-    #             row[str(other_node_id)] = connection
-    #         rows_to_insert.append(row)
-    #
-    #     errors = client.insert_rows_json(table, rows_to_insert)
-    #     if errors == []:
-    #         print("New rows have been added.")
-    #     else:
-    #         print("Encountered errors while inserting rows: {}".format(errors))
 
     def create_view(self, dataset_id, view_id, view_query):
         view_ref = self.bigquery_client.dataset(dataset_id).table(view_id)

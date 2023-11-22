@@ -36,16 +36,15 @@ class App():
                                           'graph_to_agent')  # Todo :: need to adapt dataset logic not for instantiating
 
         # All Checkpoints and Externalities
-        self.logs_bucket = os.getenv('LOGS_BUCKET') # ToDo :: If bucket doesnt exist, create
+        self.logs_bucket = os.getenv('LOGS_BUCKET')  # ToDo :: If bucket doesnt exist, create
+        self.edges_table = os.getenv('EDGES_TABLE')
+        self.nodes_table = os.getenv('NODES_TABLE')
         self.matrix_dataset_id = os.getenv('MATRIX_DATASET_ID')
         self.graph_dataset_id = os.getenv('GRAPH_DATASET_ID')
         self.graph = None
-        self.num_steps = os.getenv('NUM_STEPS') # Todo :: implement UI element to set num_steps
+        self.num_steps = os.getenv('NUM_STEPS')  # Todo :: implement UI element to set num_steps
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
-        self.openai_base_url = "https://api.openai.com/v1/chat/completions"
-
-
-
+        self.openai_base_url = os.getenv('OPENAI_BASE_URL')
 
         self.app = Flask(__name__)
         self.setup_routes()
