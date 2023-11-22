@@ -59,12 +59,12 @@ class MatrixLayerOne:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    def upload_jsonl_to_bigquery(self, filename):
+    def upload_jsonl_to_bigquery(self, filename, dataset_id):
         """
         Uploads a .jsonl file to a BigQuery table.
         """
         # Set the destination table and dataset.
-        table_id = f"{self.bq_handler.bigquery_client.project}.{self.dataset_id}.{self.table_name}_multi_layered"
+        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_id}.{self.table_name}"
 
         # Configure the load job
         job_config = bigquery.LoadJobConfig(
@@ -115,64 +115,6 @@ class MatrixLayerOne:
 
         return self.filename
 
-    # def create_bq_schema_for_advanced_matrix(self):
-    #     """
-    #     Create a BigQuery schema for the advanced adjacency matrix using strings instead of integers.
-    #     """
-    #     schema = [
-    #         bigquery.SchemaField("node_id", "STRING", mode="REQUIRED"),
-    #     ]
-    #     for node in self.graph_data["nodes"]:
-    #         field_name = str(node["id"])
-    #         schema.append(bigquery.SchemaField(field_name, "STRING", mode="NULLABLE"))
-    #     return schema
-
-    # def upload_advanced_matrix_to_bigquery(self):
-    #     """
-    #     Upload the advanced adjacency matrix to BigQuery.
-    #     """
-    #     advanced_matrix = self.create_advanced_adjacency_matrix()
-    #     schema = self.create_bq_schema_for_advanced_matrix()
-    #
-    #     table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.table_name + "_multi_layered")
-    #     self.bq_handler.create_dataset_if_not_exists()
-    #     self.bq_handler.create_table_if_not_exists(table_ref, schema)
-    #
-    #     rows_to_insert = []
-    #
-    #     for node_id, connections in advanced_matrix.items():
-    #         row = {"node_id": str(node_id)}
-    #         for other_node_id, connection in connections.items():
-    #             # Convert the connection data to a string representation
-    #             connection_str = f"{connection['connected']};{connection['row_label']};{connection['col_label']}"
-    #             row[other_node_id] = connection_str
-    #         rows_to_insert.append(row)
-    #
-    #     errors = self.bigquery_client.insert_rows_json(table_ref, rows_to_insert)
-    #     if errors:
-    #         self.logger.error(f"Errors occurred while inserting rows: {errors}")
-    #     else:
-    #         self.logger.info("Advanced adjacency matrix data uploaded successfully.")
-
-    # def save_matrix_to_bq(self):
-    #     self.logger.info(self.table_name)
-    #     table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.table_name)
-    #
-    #     schema = self.create_bq_table_schema()
-    #     # self.logger.info(schema)
-    #     self.bq_handler.create_dataset_if_not_exists()
-    #     self.bq_handler.create_table_if_not_exists(table_ref, schema)
-    #
-    #     binary_layer = self.create_binary_layer()
-    #     rows_to_insert = []
-    #
-    #     for node_id, connections in binary_layer.items():
-    #         row = {"node_id": str(node_id)}
-    #         for other_node_id, connection in connections.items():
-    #             row[str(other_node_id)] = connection
-    #         rows_to_insert.append(row)
-    #
-    #     self.bigquery_client.insert_rows(self.table_name, rows_to_insert)
 
     def generate_bigquery_schema_from_graph(self):
         # Initialize schema with 'node_id' field
@@ -185,7 +127,7 @@ class MatrixLayerOne:
 
         return schema
 
-    def upload_to_bigquery(self):
+    def upload_to_bigquery(self, dataset_id):
         # Initialize a BigQuery client
 
         # Generate the binary layer
@@ -195,10 +137,10 @@ class MatrixLayerOne:
         schema = self.generate_bigquery_schema_from_graph()
 
         # Define the table reference
-        table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table(self.key)
+        table_ref = self.bq_handler.bigquery_client.dataset(dataset_id).table(self.key)
 
         # Create or overwrite the table
-        table = self.bq_handler.bigquery_client.Table(table_ref, schema=schema)
+        table = bigquery.Table(table_ref, schema=schema)
         table = self.bq_handler.bigquery_client.create_table(table, exists_ok=True)
 
         # Prepare rows to insert
@@ -209,7 +151,7 @@ class MatrixLayerOne:
             rows_to_insert.append(row)
 
         # Insert data into the table
-        errors = self.bigquery_client.insert_rows_json(table, rows_to_insert)
+        errors = self.bq_handler.bigquery_client.insert_rows_json(table, rows_to_insert)
         if errors:
             print("Errors occurred while inserting rows: {}".format(errors))
         else:
@@ -354,6 +296,7 @@ class MatrixLayerOne:
     #     self.graph_id = self.key
     # mat_3d = Matrix3D(graph_data, "graph_to_agent_adjacency_matrices", f"{graph_id}_2")
 
+
 # json_file_path = "./logics/simple_va_inheritance_20231117.json"
 #
 # with open(json_file_path, 'r') as json_file:
@@ -362,7 +305,7 @@ class MatrixLayerOne:
 # matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
 #
 # matrix_layer_one.create_advanced_adjacency_matrix()
-# matrix_layer_one.upload_jsonl_to_bigquery('20231117163236_advanced_adjacency_matrix.jsonl')
+# # matrix_layer_one.upload_jsonl_to_bigquery('20231117163236_advanced_adjacency_matrix.jsonl')
 
 # matrix_layer_one.create_bq_schema_for_advanced_matrix()
 
