@@ -263,7 +263,8 @@ class AnswerPatternProcessor:
 import uuid
 from controllers.MatrixLayerOne import MatrixLayerOne
 from controllers.GraphPatternProcessor import GraphPatternProcessor
-
+from controllers.MatrixLayerTwo import MatrixLayerTwo
+from controllers.v2GptAgentInteractions import v2GptAgentInteractions
 
 timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 general_uuid = str(uuid.uuid4())
@@ -274,10 +275,40 @@ json_file_path = "./logics/simple_va_inheritance_20231117.json"
 with open(json_file_path, 'r') as json_file:
     graph_data = json.load(json_file)
 
+gpt_agent_interactions = v2GptAgentInteractions('graph_to_agent')
+
+gpt_agent_interactions.save_graph_data(graph_data, key)
+
+# self.graph_to_agent_adjacency_matrices = "graph_to_agent_adjacency_matrices"
+# graph_data = graph_data
+# matrix_layer_one = MatrixLayerOne(timestamp, graph_data, matrix_layer_one_dataset_id)
+#
+# self.matrix_layer_one.upload_to_bigquery()
+
+
 matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
 
 matrix_layer_one.create_advanced_adjacency_matrix()
 matrix_layer_one.upload_jsonl_to_bigquery('20231117163236_advanced_adjacency_matrix.jsonl')
+
+mat_l_t = MatrixLayerTwo("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent")
+
+mat_l_t.get_edges()
+mat_l_t.get_nodes()
+mat_l_t.get_adjacency_matrix()
+
+df = mat_l_t.get_adjacency_matrix().set_index("node_id")
+G = mat_l_t.create_graph_from_adjacency(df)
+G.number_of_edges()
+G
+
+mat_l_t.check_diameter_and_centrality(G)
+mat_l_t.check_degree_distribution(G)
+mat_l_t.check_graph_correctly_recveied_via_matrix(G)
+
+df_nodes = mat_l_t.get_nodes()
+label_dict = df_nodes.set_index('id')['label'].to_dict()
+nx.set_node_attributes(G, label_dict, 'label')
 
 graph_pattern_processor = GraphPatternProcessor("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent",
                                                 G, 10)

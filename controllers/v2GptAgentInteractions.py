@@ -448,11 +448,11 @@ class v2GptAgentInteractions():
         try:
             self.create_dataset_if_not_exists()
 
-            # self.graph_to_agent_adjacency_matrices = "graph_to_agent_adjacency_matrices"
-            self.graph_data = graph_data
-            self.matrix_layer_one = MatrixLayerOne(self.timestamp, self.graph_data, self.matrix_layer_one_dataset_id)
-
-            self.matrix_layer_one.upload_to_bigquery()
+            # # self.graph_to_agent_adjacency_matrices = "graph_to_agent_adjacency_matrices"
+            # self.graph_data = graph_data
+            # self.matrix_layer_one = MatrixLayerOne(self.timestamp, self.graph_data, self.matrix_layer_one_dataset_id)
+            #
+            # self.matrix_layer_one.upload_to_bigquery()
 
 
 
