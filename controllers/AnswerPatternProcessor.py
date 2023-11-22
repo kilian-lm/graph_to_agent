@@ -141,10 +141,14 @@ class AnswerPatternProcessor:
             file.write('\n')
         return jsonl_filename
 
-    def dump_gpt_jsonl_to_bigquery(self, file_path, dataset_name, table_name):
+    def dump_gpt_jsonl_to_bigquery(self, file_path, dataset_name, jsonl_filename):
         """Upload the JSONL data to BigQuery."""
         # client = bigquery.Client()
-        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{table_name}"
+
+        self.bq_handler.create_dataset_if_not_exists()
+        self.bq_handler.create_table_if_not_exists(jsonl_filename)
+
+        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{jsonl_filename}"
         job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
             autodetect=True,
