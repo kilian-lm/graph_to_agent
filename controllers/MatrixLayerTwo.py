@@ -33,11 +33,11 @@ load_dotenv()
 
 
 class MatrixLayerTwo:
-    def __init__(self, timestamp, matrix_dataset_id, graph_dataset_id):
+    def __init__(self, key, matrix_dataset_id, graph_dataset_id):
         try:
             # self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
-            self.timestamp = timestamp
+            self.timestamp = key
             print(self.timestamp)
             self.log_file = f'{self.timestamp}_matrix_layer_two.log'
             print(self.log_file)
