@@ -289,7 +289,11 @@ gpt_agent_interactions.save_graph_data(graph_data, key)
 matrix_layer_one = MatrixLayerOne(key, graph_data, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
 
 filename = matrix_layer_one.create_advanced_adjacency_matrix()
-matrix_layer_one.upload_jsonl_to_bigquery(filename)
+matrix_layer_one.upload_jsonl_to_bigquery(filename, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
+
+filename = matrix_layer_one.upload_to_bigquery(os.getenv('ADJACENCY_MATRIX_DATASET_ID'))
+# matrix_layer_one.upload_jsonl_to_bigquery(os.getenv('ADJACENCY_MATRIX_DATASET_ID'), filename)
+
 # '20231117163236_advanced_adjacency_matrix.jsonl'
 mat_l_t = MatrixLayerTwo(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'), os.getenv('GRAPH_DATASET_ID'))
 

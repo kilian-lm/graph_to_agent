@@ -37,9 +37,9 @@ class MatrixLayerTwo:
         try:
             # self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
-            self.timestamp = key
-            print(self.timestamp)
-            self.log_file = f'{self.timestamp}_matrix_layer_two.log'
+            self.key = key
+            print(self.key)
+            self.log_file = f'{self.key}_matrix_layer_two.log'
             print(self.log_file)
             self.log_dir = './temp_log'
             print(self.log_dir)
@@ -63,7 +63,7 @@ class MatrixLayerTwo:
 
             self.matrix_dataset_id = matrix_dataset_id
             self.graph_dataset_id = graph_dataset_id
-            self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
+            self.bq_handler = BigQueryHandler(self.key, self.graph_dataset_id)
 
             self.edges_tbl = "edges_table"
             self.nodes_tbl = "nodes_table"
@@ -78,14 +78,14 @@ class MatrixLayerTwo:
             raise
 
     def get_adjacency_matrix(self):
-        self.bq_handler = BigQueryHandler(self.timestamp, self.matrix_dataset_id)
-        table_ref = self.bq_handler.bigquery_client.dataset(self.matrix_dataset_id).table(self.timestamp)
+        self.bq_handler = BigQueryHandler(self.key, self.matrix_dataset_id)
+        table_ref = self.bq_handler.bigquery_client.dataset(self.matrix_dataset_id).table(self.key)
         print(table_ref)
         query = ADJACENCY_MATRIX_QUERY.format(
             adjacency_matrix=table_ref)
 
         # self.bq_handler.create_view(self.matrix_views,
-        #                             f'adjacency_matrix_{self.timestamp}',
+        #                             f'adjacency_matrix_{self.key}',
         #                             query)
 
         query_job = self.bq_handler.bigquery_client.query(query)
@@ -95,16 +95,16 @@ class MatrixLayerTwo:
         return df
 
     def get_nodes(self):
-        self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
+        self.bq_handler = BigQueryHandler(self.key, self.graph_dataset_id)
         table_ref = self.bq_handler.bigquery_client.dataset(self.graph_dataset_id).table(self.nodes_tbl)
         self.logger.info(table_ref)
         query = NODES_QUERY.format(
-            tbl_ref=table_ref, graph_id=self.timestamp)
+            tbl_ref=table_ref, graph_id=self.key)
 
         self.logger.info(query)
 
         # self.bq_handler.create_view(self.nodes_views,
-        #                             f'nodes_{self.timestamp}',
+        #                             f'nodes_{self.key}',
         #                             query)
 
         query_job = self.bq_handler.bigquery_client.query(query)
@@ -114,14 +114,14 @@ class MatrixLayerTwo:
         return df
 
     def get_edges(self):
-        self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
+        self.bq_handler = BigQueryHandler(self.key, self.graph_dataset_id)
         table_ref = self.bq_handler.bigquery_client.dataset(self.graph_dataset_id).table(self.edges_tbl)
 
         query = EDGES_QUERY.format(
-            tbl_ref=table_ref, graph_id=self.timestamp)
+            tbl_ref=table_ref, graph_id=self.key)
 
         # self.bq_handler.create_view(self.edges_views,
-        #                             f'edges_{self.timestamp}',
+        #                             f'edges_{self.key}',
         #                             query)
 
         query_job = self.bq_handler.bigquery_client.query(query)
@@ -482,13 +482,13 @@ class MatrixLayerTwo:
     def find_variable_nodes(self):
         """Find all @variable nodes."""
 
-        self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
+        self.bq_handler = BigQueryHandler(self.key, self.graph_dataset_id)
         table_ref = self.bq_handler.bigquery_client.dataset(self.graph_dataset_id).table(self.nodes_tbl)
         self.logger.info(table_ref)
 
         variable_nodes = set()
 
-        query = LAYER_FIND_VARIABLE.format(tbl_ref=table_ref, graph_id=self.timestamp)
+        query = LAYER_FIND_VARIABLE.format(tbl_ref=table_ref, graph_id=self.key)
 
         # query = """
         # SELECT * FROM `enter-universes.graph_to_agent.nodes_table`
