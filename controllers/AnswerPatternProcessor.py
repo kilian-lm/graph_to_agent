@@ -219,7 +219,36 @@ class AnswerPatternProcessor:
             self.logger.info(response)
             self.data.at[idx, 'answer_label'] = response
 
+        self.logger.info(self.data.info())
+
+        self.transform_and_load_to_bigquery(self.data, self.gpt_calls_dataset_id, "test_20231122")
+
         return self.data
+
+    def transform_and_load_to_bigquery(self, df, dataset_name, table_id):
+        # Transform DataFrame to match the BigQuery schema
+        df['answer_node'] = df.apply(lambda row: {'label': row['answer_label'], 'node_id': row['answer_node_id']},
+                                     axis=1)
+        df['gpt_call'] = df.apply(
+            lambda row: {'messages': [{'content': row['content'], 'role': row['role']}], 'model': row['model']}, axis=1)
+
+        # Select only the columns that match the BigQuery table structure
+        df = df[['graph_id', 'uuid', 'answer_node', 'gpt_call']]
+
+        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{table_id}"
+
+        # Define job configuration
+        job_config = bigquery.LoadJobConfig(
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+            autodetect=True,
+        )
+
+        # Load the DataFrame into BigQuery
+        job = self.bq_handler.bigquery_client.load_table_from_dataframe(df, table_id, job_config=job_config)
+        job.result()  # Wait for the job to complete
+
+        print(f"Loaded {job.output_rows} rows into {table_id}")
+
 
 
 answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
