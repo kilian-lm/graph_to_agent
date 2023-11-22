@@ -48,7 +48,9 @@ class v2GptAgentInteractions():
 
         # ToDo :: From mere class initialization in another class to inheritance
 
-        self.matrix_layer_one_dataset_id = None
+        self.graph_to_agent_adjacency_matrices = os.getenv('MATRIX_DATASET_ID')
+        self.edges_table = os.getenv('EDGES_TABLE')
+        self.nodes_table = os.getenv('NODES_TABLE')
         self.graph_data = None
         self.matrix_layer_one = MatrixLayerOne(self.timestamp, self.graph_data, self.matrix_layer_one_dataset_id)
 
@@ -444,17 +446,18 @@ class v2GptAgentInteractions():
 
     def save_graph_data(self, graph_data, graph_id):
         try:
-            # Check and create dataset if it doesn't exist
             self.create_dataset_if_not_exists()
 
-            self.matrix_layer_one_dataset_id = "graph_to_agent_adjacency_matrices"
+            # self.graph_to_agent_adjacency_matrices = "graph_to_agent_adjacency_matrices"
             self.graph_data = graph_data
             self.matrix_layer_one = MatrixLayerOne(self.timestamp, self.graph_data, self.matrix_layer_one_dataset_id)
 
             self.matrix_layer_one.upload_to_bigquery()
 
-            nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
-            edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
+
+
+            nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.nodes_table)
+            edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.edges_table)
 
             # Check and create nodes table if it doesn't exist
             self.create_table_if_not_exists("nodes_table", self.get_node_schema())
