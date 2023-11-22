@@ -24,7 +24,7 @@ class BigQueryHandler:
         # timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         self.timestamp = timestamp
         print(self.timestamp)
-        self.log_file = f'{self.timestamp}_blueprint_designer.log'
+        self.log_file = f'{self.timestamp}_bq_handler.log'
         print(self.log_file)
         self.log_dir = './temp_log'
         print(self.log_dir)
