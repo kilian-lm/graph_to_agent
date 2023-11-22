@@ -142,21 +142,15 @@ class AnswerPatternProcessor:
 
             # Ensure response_content is a properly formatted JSON
             if not isinstance(response_content, dict):
-                # Convert response_content to dict if it's not already
                 response_content = json.loads(response_content)
-                self.logger.info(response_content)
 
-            # enriched_response = {
-            #     "graph_id": graph_id,
-            #     "path_id": path_id,
-            #     "answer_node_id": answer_node_id,
-            #     "response": response_content  # Keeping the nested structure
-            # }
+            # Adding the new fields to the response_content
+            response_content['graph_id'] = graph_id
+            response_content['path_id'] = path_id
+            response_content['answer_node_id'] = answer_node_id
 
-            enriched_response = response_content
-            self.logger.info(enriched_response)
-
-            json.dump(enriched_response, file)
+            # Write the modified response_content to the file
+            json.dump(response_content, file)
             file.write('\n')
 
         return jsonl_filename
