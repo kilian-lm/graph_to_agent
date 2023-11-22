@@ -576,10 +576,10 @@ df_nodes = mat_l_t.get_nodes()
 label_dict = df_nodes.set_index('id')['label'].to_dict()
 nx.set_node_attributes(G, label_dict, 'label')
 
-graph_pattern_processor = GraphPatternProcessor("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent", G, 10)
-
-graph_pattern_processor.dump_to_bigquery('4_test_20231120.jsonl','graph_to_agent_chat_completions','test_2')
-graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231120.jsonl', '20231117163236')
+# graph_pattern_processor = GraphPatternProcessor("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent", G, 10)
+#
+# graph_pattern_processor.dump_to_bigquery('4_test_20231120.jsonl','graph_to_agent_chat_completions','test_2')
+# graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231120.jsonl', '20231117163236')
 
 
 organized_components = mat_l_t.organize_components_by_variable_suffix(G)
