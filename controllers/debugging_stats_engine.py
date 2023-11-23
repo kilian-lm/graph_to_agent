@@ -354,6 +354,47 @@ answer_pat_pro = AnswerPatternProcessor(key)
 key
 
 answer_pat_pro.dump_gpt_jsonl_to_bigquery(os.getenv('CURATED_CHAT_COMPLETIONS'), filename)
+
+from google.cloud import bigquery
+import json
+
+def upload_jsonl_to_bigquery(jsonl_file_path, project_id, dataset_id, table_id):
+    client = bigquery.Client(project=project_id)
+    table_ref = client.dataset(dataset_id).table(table_id)
+
+    # Define the BigQuery schema
+    schema = [
+        bigquery.SchemaField("graph_id", "STRING"),
+        bigquery.SchemaField("uuid", "STRING"),
+        bigquery.SchemaField("answer_node", "RECORD", fields=[
+            bigquery.SchemaField("label", "STRING"),
+            bigquery.SchemaField("node_id", "STRING"),
+        ]),
+        bigquery.SchemaField("gpt_call", "RECORD", fields=[
+            bigquery.SchemaField("messages", "RECORD", mode="REPEATED", fields=[
+                bigquery.SchemaField("content", "STRING"),
+                bigquery.SchemaField("role", "STRING"),
+            ]),
+            bigquery.SchemaField("model", "STRING"),
+        ]),
+        bigquery.SchemaField("path", "STRING", mode="REPEATED"),
+    ]
+
+    # Configure the load job
+    job_config = bigquery.LoadJobConfig(schema=schema, source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON)
+
+    # Load data from the JSONL file into the BigQuery table
+    with open(jsonl_file_path, "rb") as source_file:
+        job = client.load_table_from_file(source_file, table_ref, job_config=job_config)
+
+    # Wait for the load job to complete
+    job.result()
+
+    print(f"Uploaded data to {dataset_id}.{table_id}")
+
+# Example usage
+upload_jsonl_to_bigquery("path/to/your/file.jsonl", "your-project-id", "your_dataset_id", "your_table_id")
+
 key
 # ToDo :: Next up
 answer_pat_pro.get_gpt_calls_blueprint()
