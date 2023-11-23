@@ -21,13 +21,13 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 
 from logger.CustomLogger import CustomLogger
+
 from controllers.BigQueryHandler import BigQueryHandler
 from sql_queries.adjacency_matrix_query import ADJACENCY_MATRIX_QUERY
 from sql_queries.edges_query import EDGES_QUERY
 from sql_queries.nodes_query import NODES_QUERY
 from sql_queries.layer_find_variable import LAYER_FIND_VARIABLE
 
-from controllers.GraphPatternProcessor import GraphPatternProcessor
 
 load_dotenv()
 
@@ -546,15 +546,15 @@ class MatrixLayerTwo:
         else:
             raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
 
-    def main(self):
-        df = self.get_adjacency_matrix(self.graph_id).set_index("node_id")
-        G = self.create_graph_from_adjacency(df)
-        self.check_graph_correctly_recveied_via_matrix(G)  # ToDo :: Translate tree to logs
-        self.check_degree_distribution(G)  # ToDo :: Translate Hist to logs or display it in analysis tab
-        self.check_diameter_and_centrality(G)
-        df_nodes = self.get_nodes()
-        label_dict = df_nodes.set_index('id')['label'].to_dict()
-        nx.set_node_attributes(G, label_dict, 'label')
+    # def main(self):
+    #     df = self.get_adjacency_matrix(self.graph_id).set_index("node_id")
+    #     G = self.create_graph_from_adjacency(df)
+    #     self.check_graph_correctly_recveied_via_matrix(G)  # ToDo :: Translate tree to logs
+    #     self.check_degree_distribution(G)  # ToDo :: Translate Hist to logs or display it in analysis tab
+    #     self.check_diameter_and_centrality(G)
+    #     df_nodes = self.get_nodes()
+    #     label_dict = df_nodes.set_index('id')['label'].to_dict()
+    #     nx.set_node_attributes(G, label_dict, 'label')
 
 # mat_l_t = MatrixLayerTwo("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent")
 
