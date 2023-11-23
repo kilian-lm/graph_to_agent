@@ -272,7 +272,6 @@ class DebuggingDataScience():
         print(f"Uploaded {file_path} to {table_id}")
 
 
-
 key = "20231123102234_fed37e7d-aa97-466a-b723-cb1290fc452f"
 # DebuggingDataScience(key, None, None).query_bigquery(step_1)
 debug_ds = DebuggingDataScience(key, 10)
@@ -281,6 +280,7 @@ df_adj = debug_ds.query_bigquery(q_adj)
 df_adj
 
 df = pd.DataFrame(df_adj).set_index("node_id")
+
 
 def create_graph_from_adjacency(df):
     """
@@ -303,6 +303,7 @@ def create_graph_from_adjacency(df):
                 G.add_edge(i, j)
 
     return G
+
 
 G = debug_ds.create_graph_from_adjacency(df)
 G
@@ -406,12 +407,52 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         except Exception as e:
             raise
 
-    def process_graph(self):
-        """Main method to process the graph."""
-        user_nodes = [node for node, attrs in self.graph.nodes(data=True) if attrs['label'] == 'user']
-        for start_node in user_nodes:
-            for path in self.explore_paths(start_node, steps=self.num_steps):
-                self.check_and_print_gpt_call(path)
+    def create_graph_from_adjacency(self, df_adj):
+        """
+        Create a NetworkX graph from an adjacency matrix DataFrame.
+        Assumes that node identifiers are in the DataFrame's index.
+        """
+        import networkx as nx
+
+        # Create a graph
+        G = nx.Graph()
+
+        # Add nodes
+        for node in df_adj.index:
+            G.add_node(node)
+
+        # Add edges
+        for i, row in df_adj.iterrows():
+            for j, val in row.items():
+                if val != 0:  # Assuming non-zero values indicate an edge
+                    G.add_edge(i, j)
+
+        return G
+
+    def query_bigquery(self, sql_query):
+        """
+        Queries a BigQuery table and returns the results.
+
+        Args:
+            sql_query (str): The SQL query to be executed.
+
+        Returns:
+            bigquery.QueryJob: The result of the query.
+        """
+
+        # Execute the query
+        query_job = self.bq_client.query(sql_query)
+
+        return query_job.result().to_dataframe()  # Waits for the query to finish
+
+    def process_graph(self, df_nodes):
+        """
+        Additional processing on the graph, like adding labels.
+        """
+        label_dict = df_nodes.set_index('id')['label'].to_dict()
+        nx.set_node_attributes(self.graph, label_dict, 'label')
+
+        # Any other graph processing steps can be added here
 
     def explore_paths(self, start_node, steps):
         """Explore all paths up to a certain number of steps from a start node."""
@@ -431,15 +472,31 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
                 self.dfs(neighbor, path, steps - 1, paths)
         path.pop()
 
-
     def is_valid_blueprint(self, labels):
         """Check if labels sequence matches the blueprint pattern."""
         return (len(labels) == 6 and labels[0] == 'user' and labels[2] == 'system' and labels[4] == 'user' and
                 all(label not in ['user', 'system'] for label in [labels[1], labels[3], labels[5]]))
 
-
-    def save_gpt_calls_to_jsonl(self, file_path, graph_id):
+    def save_gpt_calls_to_jsonl(self, q_adj, q_nodes, file_path, graph_id):
         """Save GPT calls to a JSON Lines file with additional UUID and graph_id."""
+
+        df_adj = self.query_bigquery(q_adj)
+        df_adj
+
+        G = self.create_graph_from_adjacency(df_adj)
+        G
+
+        df_nodes = self.query_bigquery(q_nodes)
+
+        # Adding labels to the nodes
+        label_dict = df_nodes.set_index('id')['label'].to_dict()
+        nx.set_node_attributes(G, label_dict, 'label')
+
+        # missing_labels = [node for node in G.nodes() if node not in label_dict]
+        # if missing_labels:
+        #     print("Missing labels for nodes:", missing_labels)
+
+
         with open(file_path, 'w') as file:
             user_nodes = [node for node, attrs in self.graph.nodes(data=True) if attrs['label'] == 'user']
             for start_node in user_nodes:
@@ -475,7 +532,6 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
             return gpt_call_json, True
         return {}, False
 
-
     def get_answer_label(self, path):
         """Get the label for the answer node, considering @variable terms."""
         # Find @variable nodes
@@ -490,7 +546,6 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
                         return self.graph.nodes[node]['label']
 
         return "None"
-
 
     def dump_to_bigquery(self, file_path, dataset_name, table_name):
         """Upload the JSONL data to BigQuery."""
@@ -515,4 +570,9 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 
 graph_processor = GraphPatternProcessor(G, 10)
 
-graph_processor.save_gpt_calls_to_jsonl('20231123102234_fed37e7d-aa97-466a-b723-cb1290fc452f.jsonl', '20231123102234_fed37e7d-aa97-466a-b723-cb1290fc452f')
+graph_processor.save_gpt_calls_to_jsonl('20231123102234_fed37e7d-aa97-466a-b723-cb1290fc452f.jsonl',
+                                        '20231123102234_fed37e7d-aa97-466a-b723-cb1290fc452f')
+
+
+graph_processor.save_gpt_calls_to_jsonl(q_adj, q_nodes, '20231123102234_fed37e7d-aa97-466a-b723-cb1290fc452f.jsonl',
+                                        '20231123102234_fed37e7d-aa97-466a-b723-cb1290fc452f')
