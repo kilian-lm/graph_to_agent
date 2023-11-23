@@ -34,12 +34,13 @@ load_dotenv()
 
 
 class AnswerPatternProcessor:
-    def __init__(self, timestamp, gpt_calls_dataset_id):
+    def __init__(self, key):
         # self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
-        self.timestamp = timestamp
-        print(self.timestamp)
-        self.log_file = f'{self.timestamp}_answer_pattern_processor.log'
+        # self.timestamp = key
+        self.key = key
+        print(self.key)
+        self.log_file = f'{self.key}_answer_pattern_processor.log'
         print(self.log_file)
         self.log_dir = './temp_log'
         print(self.log_dir)
@@ -63,17 +64,19 @@ class AnswerPatternProcessor:
         self.variable_uuid_dict = None
         self.data = None
         self.gpt_blueprint = None
-        self.gpt_calls_dataset_id = gpt_calls_dataset_id
-        self.bq_handler = BigQueryHandler(self.timestamp, self.gpt_calls_dataset_id)
+        self.graph_to_agent_curated_chat_completions = os.getenv('CURATED_CHAT_COMPLETIONS')
+        self.graph_to_agent_answer_curated_chat_completions = os.getenv('ANSWER_CURATED_CHAT_COMPLETIONS')
+        self.bq_handler = BigQueryHandler(self.key, self.graph_to_agent_curated_chat_completions)
 
     def get_gpt_calls_blueprint(self):
         # table_ref = self.bq_handler.bigquery_client.dataset(self.gpt_calls_dataset_id).table(self.nodes_tbl)
 
-        table_ref = "enter-universes.graph_to_agent_chat_completions.test_2"
+        # table_ref = "enter-universes.graph_to_agent_chat_completions.test_2"
+        table_ref = f"enter-universes.{self.graph_to_agent_curated_chat_completions}.{self.key}"
 
         self.logger.info(table_ref)
         query = GPT_CALL_BLUEPRINT.format(
-            tbl_ref=table_ref, graph_id=self.timestamp)
+            tbl_ref=table_ref, graph_id=self.key)
 
         self.logger.info(query)
 
@@ -120,7 +123,7 @@ class AnswerPatternProcessor:
         self.logger.info(response_json)
         table_id = self.append_to_jsonl(response_json, uuid)
         self.logger.info(table_id)
-        self.dump_gpt_jsonl_to_bigquery(table_id, self.gpt_calls_dataset_id, table_id)
+        self.dump_gpt_jsonl_to_bigquery(self.key, self.graph_to_agent_curated_chat_completions)
 
         response_content = response_json.get("choices", [{}])[0].get("message", {}).get("content", "")
 
@@ -133,7 +136,7 @@ class AnswerPatternProcessor:
         return response_content
 
     def append_to_jsonl(self, response_content, uuid):
-        jsonl_filename = f'gpt_answer_{uuid}_{self.timestamp}.jsonl'
+        jsonl_filename = f'gpt_answer_{uuid}_{self.key}.jsonl'
 
         with open(jsonl_filename, 'a') as file:
             graph_id = str(self.data[self.data['uuid'] == uuid].iloc[0]['graph_id'])
@@ -221,7 +224,7 @@ class AnswerPatternProcessor:
 
         self.logger.info(self.data.info())
 
-        self.transform_and_load_to_bigquery(self.data, self.gpt_calls_dataset_id, "test_20231122")
+        self.transform_and_load_to_bigquery(self.data, self.graph_to_agent_answer_curated_chat_completions, self.key)
 
         return self.data
 
