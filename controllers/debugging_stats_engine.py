@@ -354,8 +354,7 @@ answer_pat_pro = AnswerPatternProcessor(key)
 key
 
 answer_pat_pro.dump_gpt_jsonl_to_bigquery(os.getenv('CURATED_CHAT_COMPLETIONS'), filename)
-
+key
 # ToDo :: Next up
 answer_pat_pro.get_gpt_calls_blueprint()
-
 answer_pat_pro.run()
