@@ -76,18 +76,18 @@ class BigQueryHandler:
             print(f"Error creating the view: {str(e)}")
             raise
 
-    def create_dataset_if_not_exists(self):
-        dataset_ref = self.bigquery_client.dataset(self.dataset_id)
+    def create_dataset_if_not_exists(self, dataset_id):
+        dataset_ref = self.bigquery_client.dataset(dataset_id)
         try:
             self.bigquery_client.get_dataset(dataset_ref)
-            self.logger.info(f"Dataset {self.dataset_id} already exists.")
+            self.logger.info(f"Dataset {dataset_id} already exists.")
         except Exception as e:
             try:
                 dataset = bigquery.Dataset(dataset_ref)
                 self.bigquery_client.create_dataset(dataset)
-                self.logger.info(f"Dataset {self.dataset_id} created.")
+                self.logger.info(f"Dataset {dataset_id} created.")
             except Exception as ex:
-                self.logger.error(f"Failed to create dataset {self.dataset_id}: {ex}")
+                self.logger.error(f"Failed to create dataset {dataset_id}: {ex}")
                 raise
 
     def create_table_if_not_exists(self, table_id, schema=None):
@@ -150,19 +150,19 @@ class BigQueryHandler:
 
         return nodes_for_bq, edges_for_bq
 
-    def save_graph_data(self, graph_data, graph_id):
+    def save_graph_data(self, graph_data, graph_id, dataset_id, nodes_table, edges_table):
         try:
             # Check and create dataset if it doesn't exist
-            self.create_dataset_if_not_exists()
+            self.create_dataset_if_not_exists(dataset_id)
 
-            nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
-            edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
+            nodes_table_ref = self.bigquery_client.dataset(dataset_id).table({nodes_table})
+            edges_table_ref = self.bigquery_client.dataset(dataset_id).table({edges_table})
 
             # Check and create nodes table if it doesn't exist
-            self.create_table_if_not_exists("nodes_table", self.get_node_schema())
+            self.create_table_if_not_exists({nodes_table}, self.get_node_schema())
 
             # Check and create edges table if it doesn't exist
-            self.create_table_if_not_exists("edges_table", self.get_edge_schema())
+            self.create_table_if_not_exists({edges_table}, self.get_edge_schema())
 
             # Retrieve the tables and their schemas
             nodes_table = self.bigquery_client.get_table(nodes_table_ref)
@@ -193,6 +193,8 @@ class BigQueryHandler:
                 "edge_errors": errors_edges
             }
 
+            self.logger.debug(all_errors)
+
             if errors_nodes or errors_edges:
                 self.logger.error("Errors occurred during the saving of graph data.")
 
@@ -216,12 +218,12 @@ class BigQueryHandler:
             self.logger.exception("An unexpected error occurred during save_graph_data:")
         raise
 
-    def load_graph_data_by_id(self, graph_id):
-        nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
-        edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
+    def load_graph_data_by_id(self, dataset_id, graph_id, nodes_table, edges_table):
+        nodes_table_ref = self.bigquery_client.dataset(dataset_id).table(nodes_table)
+        edges_table_ref = self.bigquery_client.dataset(dataset_id).table(edges_table)
 
         # Fetch nodes for given graph_id
-        nodes_query = f"SELECT * FROM `{self.dataset_id}.nodes_table` WHERE graph_id = '{graph_id}'"
+        nodes_query = f"SELECT * FROM `{dataset_id}.{nodes_table}` WHERE graph_id = '{graph_id}'"
         nodes_query_job = self.bigquery_client.query(nodes_query)
         nodes_results = nodes_query_job.result()
         nodes = [{"id": row['id'], "label": row['label']} for row in nodes_results]
@@ -229,16 +231,16 @@ class BigQueryHandler:
         self.logger.info(f"nodes loaded by graph id {nodes} already exists.")
 
         # Fetch edges for given graph_id
-        edges_query = f"SELECT * FROM `{self.dataset_id}.edges_table` WHERE graph_id = '{graph_id}'"
+        edges_query = f"SELECT * FROM `{dataset_id}.{edges_table}` WHERE graph_id = '{graph_id}'"
         edges_query_job = self.bigquery_client.query(edges_query)
         edges_results = edges_query_job.result()
         edges = [{"from": row['from'], "to": row['to']} for row in edges_results]
 
         return {"nodes": nodes, "edges": edges}
 
-    def get_available_graphs(self):
+    def get_available_graphs(self, dataset_id, nodes_table):
         # Query to get distinct graph_ids from the nodes_table
-        query = f"SELECT DISTINCT graph_id FROM `{self.dataset_id}.nodes_table`"
+        query = f"SELECT DISTINCT graph_id FROM `{dataset_id}.{nodes_table}`"
         query_job = self.bigquery_client.query(query)
         results = query_job.result()
 
