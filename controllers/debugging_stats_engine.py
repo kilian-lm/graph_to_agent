@@ -279,7 +279,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 
         return "None"
 
-    def dump_to_bigquery(self, file_path, dataset_name, table_name):
+    def dump_to_bigquery(self, table_name, dataset_name, file_path):
         """Upload the JSONL data to BigQuery."""
         table_id = f"{self.bq_client.project}.{dataset_name}.{table_name}"
 
@@ -348,11 +348,14 @@ graph_processor.dump_to_bigquery(filename, os.getenv('CURATED_CHAT_COMPLETIONS')
 
 from controllers.AnswerPatternProcessor import AnswerPatternProcessor
 
-answer_pat_pro = AnswerPatternProcessor(key, os.getenv('CURATED_CHAT_COMPLETIONS'))
+answer_pat_pro = AnswerPatternProcessor(key)
 
 # answer_pat_pro.bq_handler.create_dataset_if_not_exists()
+key
 
-answer_pat_pro.dump_gpt_jsonl_to_bigquery(os.getenv('ANSWER_CURATED_CHAT_COMPLETIONS'), filename)
+answer_pat_pro.dump_gpt_jsonl_to_bigquery(os.getenv('CURATED_CHAT_COMPLETIONS'), filename)
 
 # ToDo :: Next up
+answer_pat_pro.get_gpt_calls_blueprint()
+
 answer_pat_pro.run()
