@@ -9,7 +9,7 @@ from google.oauth2.service_account import Credentials
 
 from logger.CustomLogger import CustomLogger
 from controllers.BigQueryHandler import BigQueryHandler
-from controllers.VariableConnectedComponentsProcessor import VariableConnectedComponentsProcessor
+from controllers.v1VariableConnectedComponentsProcessor import VariableConnectedComponentsProcessor
 from controllers.MatrixLayerOne import MatrixLayerOne
 
 load_dotenv()
@@ -302,49 +302,49 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 #         print(f"Uploaded {file_path} to {table_id}")
 
 
-help(GraphPatternProcessor)
-json_file_path = "./logics/simple_va_inheritance_20231117.json"
-
-with open(json_file_path, 'r') as json_file:
-    graph_data = json.load(json_file)
-
-key = "20231123102234_fed37e7d-aa97-466a-b723-cb1290fc452f"
-# key = "20231117163236"
-
-matrix_layer_one = MatrixLayerOne(key, graph_data, "graph_to_agent")
-# #
-filename = matrix_layer_one.create_advanced_adjacency_matrix()
-filename
-matrix_layer_one.upload_jsonl_to_bigquery(filename, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
+# help(GraphPatternProcessor)
+# json_file_path = "./logics/simple_va_inheritance_20231117.json"
 #
-
-from controllers.MatrixLayerTwo import MatrixLayerTwo
-import networkx as nx
-from collections import defaultdict
-
-mat_l_t = MatrixLayerTwo(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'), os.getenv('GRAPH_DATASET_ID'))
-
-mat_l_t.get_edges()
-mat_l_t.get_nodes()
-mat_l_t.get_adjacency_matrix()
-
-df = mat_l_t.get_adjacency_matrix().set_index("node_id")
-G = mat_l_t.create_graph_from_adjacency(df)
-G.number_of_edges()
-
-df_nodes = mat_l_t.get_nodes()
-label_dict = df_nodes.set_index('id')['label'].to_dict()
-nx.set_node_attributes(G, label_dict, 'label')
-
-# graph_pattern_processor = GraphPatternProcessor(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'), os.getenv('GRAPH_DATASET_ID'),
-#                                                 G, os.getenv('NUM_STEPS'))
-
-graph_pattern_processor = GraphPatternProcessor(key, G, os.getenv('NUM_STEPS'))
-graph_pattern_processor.process_graph()
-
-graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231123.jsonl', key)
-
-graph_pattern_processor.dump_to_bigquery('4_test_20231120.jsonl', 'graph_to_agent_chat_completions', 'test_2')
+# with open(json_file_path, 'r') as json_file:
+#     graph_data = json.load(json_file)
+#
+# key = "20231123102234_fed37e7d-aa97-466a-b723-cb1290fc452f"
+# # key = "20231117163236"
+#
+# matrix_layer_one = MatrixLayerOne(key, graph_data, "graph_to_agent")
+# # #
+# filename = matrix_layer_one.create_advanced_adjacency_matrix()
+# filename
+# matrix_layer_one.upload_jsonl_to_bigquery(filename, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
+# #
+#
+# from controllers.MatrixLayerTwo import MatrixLayerTwo
+# import networkx as nx
+# from collections import defaultdict
+#
+# mat_l_t = MatrixLayerTwo(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'), os.getenv('GRAPH_DATASET_ID'))
+#
+# mat_l_t.get_edges()
+# mat_l_t.get_nodes()
+# mat_l_t.get_adjacency_matrix()
+#
+# df = mat_l_t.get_adjacency_matrix().set_index("node_id")
+# G = mat_l_t.create_graph_from_adjacency(df)
+# G.number_of_edges()
+#
+# df_nodes = mat_l_t.get_nodes()
+# label_dict = df_nodes.set_index('id')['label'].to_dict()
+# nx.set_node_attributes(G, label_dict, 'label')
+#
+# # graph_pattern_processor = GraphPatternProcessor(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'), os.getenv('GRAPH_DATASET_ID'),
+# #                                                 G, os.getenv('NUM_STEPS'))
+#
+# graph_pattern_processor = GraphPatternProcessor(key, G, os.getenv('NUM_STEPS'))
+# graph_pattern_processor.process_graph()
+#
+# graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231123.jsonl', key)
+#
+# graph_pattern_processor.dump_to_bigquery('4_test_20231120.jsonl', 'graph_to_agent_chat_completions', 'test_2')
 
 # answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
 #
