@@ -20,11 +20,11 @@ from logger.CustomLogger import CustomLogger
 
 class BigQueryHandler:
 
-    def __init__(self, timestamp, dataset_id):
+    def __init__(self, key, dataset_id):
         # timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        self.timestamp = timestamp
-        print(self.timestamp)
-        self.log_file = f'{self.timestamp}_bq_handler.log'
+        self.key = key
+        print(self.key)
+        self.log_file = f'{self.key}_bq_handler.log'
         print(self.log_file)
         self.log_dir = './temp_log'
         print(self.log_dir)
@@ -53,7 +53,6 @@ class BigQueryHandler:
         except Exception as e:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
-
 
     def create_view(self, dataset_id, view_id, view_query):
         view_ref = self.bigquery_client.dataset(dataset_id).table(view_id)
