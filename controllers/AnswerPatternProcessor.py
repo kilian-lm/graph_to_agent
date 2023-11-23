@@ -155,11 +155,11 @@ class AnswerPatternProcessor:
 
         return jsonl_filename
 
-    def dump_gpt_jsonl_to_bigquery(self, file_path, dataset_name, jsonl_filename):
+    def dump_gpt_jsonl_to_bigquery(self, dataset_name, jsonl_filename):
         """Upload the JSONL data to BigQuery."""
         # client = bigquery.Client()
 
-        self.bq_handler.create_dataset_if_not_exists()
+        self.bq_handler.create_dataset_if_not_exists(dataset_name)
         # test_name = "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl"
         # test_name.split(".")[0]
         table_id = jsonl_filename.split(".")[0]
@@ -171,7 +171,7 @@ class AnswerPatternProcessor:
             autodetect=True,
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
         )
-        with open(file_path, "rb") as source_file:
+        with open(jsonl_filename, "rb") as source_file:
             job = self.bq_handler.bigquery_client.load_table_from_file(
                 source_file, table_id, job_config=job_config
             )
@@ -260,74 +260,74 @@ class AnswerPatternProcessor:
 #
 # answer_pat_pro.run()
 
-import uuid
-from controllers.MatrixLayerOne import MatrixLayerOne
-
-from controllers.GraphPatternProcessor import GraphPatternProcessor
-
-from controllers.MatrixLayerTwo import MatrixLayerTwo
-from controllers.v2GptAgentInteractions import v2GptAgentInteractions
-
-timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-general_uuid = str(uuid.uuid4())
-key = f"{timestamp}_{general_uuid}"
-
-json_file_path = "./logics/simple_va_inheritance_20231117.json"
-
-with open(json_file_path, 'r') as json_file:
-    graph_data = json.load(json_file)
-
-gpt_agent_interactions = v2GptAgentInteractions(key, os.getenv('GRAPH_DATASET_ID'))
-
-gpt_agent_interactions.save_graph_data(graph_data, key)
-
-# self.graph_to_agent_adjacency_matrices = "graph_to_agent_adjacency_matrices"
-# graph_data = graph_data
-# matrix_layer_one = MatrixLayerOne(timestamp, graph_data, matrix_layer_one_dataset_id)
+# import uuid
+# from controllers.MatrixLayerOne import MatrixLayerOne
 #
-# self.matrix_layer_one.upload_to_bigquery()
-
-
-matrix_layer_one = MatrixLayerOne(key, graph_data, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
-
-filename = matrix_layer_one.create_advanced_adjacency_matrix()
-matrix_layer_one.upload_jsonl_to_bigquery(filename, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
-
-filename = matrix_layer_one.upload_to_bigquery(os.getenv('ADJACENCY_MATRIX_DATASET_ID'))
-# matrix_layer_one.upload_jsonl_to_bigquery(os.getenv('ADJACENCY_MATRIX_DATASET_ID'), filename)
-
-# '20231117163236_advanced_adjacency_matrix.jsonl'
-mat_l_t = MatrixLayerTwo(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'), os.getenv('GRAPH_DATASET_ID'))
-
-mat_l_t.get_edges()
-mat_l_t.get_nodes()
-mat_l_t.get_adjacency_matrix()
-
-df = mat_l_t.get_adjacency_matrix().set_index("node_id")
-G = mat_l_t.create_graph_from_adjacency(df)
-G.number_of_edges()
-
-df_nodes = mat_l_t.get_nodes()
-label_dict = df_nodes.set_index('id')['label'].to_dict()
-nx.set_node_attributes(G, label_dict, 'label')
-
-# ToDo :: Continue here
-
-graph_pattern_processor = GraphPatternProcessor(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'),
-                                                os.getenv('GRAPH_DATASET_ID'),
-                                                G, os.getenv('NUM_STEPS'))
-
-filename = f'{key}_multi_layered_matrix.jsonl'
-graph_pattern_processor.save_gpt_calls_to_jsonl(filename, key)
-
-graph_pattern_processor.dump_to_bigquery(filename, os.getenv('CURATED_CHAT_COMPLETIONS'), key)
-
-answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
-
-answer_pat_pro.bq_handler.create_dataset_if_not_exists()
-
-answer_pat_pro.dump_gpt_jsonl_to_bigquery("gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl",
-                                          "graph_to_agent_chat_completions",
-                                          "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236")
-
-answer_pat_pro.run()
+# from controllers.GraphPatternProcessor import GraphPatternProcessor
+#
+# from controllers.MatrixLayerTwo import MatrixLayerTwo
+# from controllers.v2GptAgentInteractions import v2GptAgentInteractions
+#
+# timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+# general_uuid = str(uuid.uuid4())
+# key = f"{timestamp}_{general_uuid}"
+#
+# json_file_path = "./logics/simple_va_inheritance_20231117.json"
+#
+# with open(json_file_path, 'r') as json_file:
+#     graph_data = json.load(json_file)
+#
+# gpt_agent_interactions = v2GptAgentInteractions(key, os.getenv('GRAPH_DATASET_ID'))
+#
+# gpt_agent_interactions.save_graph_data(graph_data, key)
+#
+# # self.graph_to_agent_adjacency_matrices = "graph_to_agent_adjacency_matrices"
+# # graph_data = graph_data
+# # matrix_layer_one = MatrixLayerOne(timestamp, graph_data, matrix_layer_one_dataset_id)
+# #
+# # self.matrix_layer_one.upload_to_bigquery()
+#
+#
+# matrix_layer_one = MatrixLayerOne(key, graph_data, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
+#
+# filename = matrix_layer_one.create_advanced_adjacency_matrix()
+# matrix_layer_one.upload_jsonl_to_bigquery(filename, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
+#
+# filename = matrix_layer_one.upload_to_bigquery(os.getenv('ADJACENCY_MATRIX_DATASET_ID'))
+# # matrix_layer_one.upload_jsonl_to_bigquery(os.getenv('ADJACENCY_MATRIX_DATASET_ID'), filename)
+#
+# # '20231117163236_advanced_adjacency_matrix.jsonl'
+# mat_l_t = MatrixLayerTwo(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'), os.getenv('GRAPH_DATASET_ID'))
+#
+# mat_l_t.get_edges()
+# mat_l_t.get_nodes()
+# mat_l_t.get_adjacency_matrix()
+#
+# df = mat_l_t.get_adjacency_matrix().set_index("node_id")
+# G = mat_l_t.create_graph_from_adjacency(df)
+# G.number_of_edges()
+#
+# df_nodes = mat_l_t.get_nodes()
+# label_dict = df_nodes.set_index('id')['label'].to_dict()
+# nx.set_node_attributes(G, label_dict, 'label')
+#
+# # ToDo :: Continue here
+#
+# graph_pattern_processor = GraphPatternProcessor(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'),
+#                                                 os.getenv('GRAPH_DATASET_ID'),
+#                                                 G, os.getenv('NUM_STEPS'))
+#
+# filename = f'{key}_multi_layered_matrix.jsonl'
+# graph_pattern_processor.save_gpt_calls_to_jsonl(filename, key)
+#
+# graph_pattern_processor.dump_to_bigquery(filename, os.getenv('CURATED_CHAT_COMPLETIONS'), key)
+#
+# answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
+#
+# answer_pat_pro.bq_handler.create_dataset_if_not_exists()
+#
+# answer_pat_pro.dump_gpt_jsonl_to_bigquery("gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl",
+#                                           "graph_to_agent_chat_completions",
+#                                           "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236")
+#
+# answer_pat_pro.run()
