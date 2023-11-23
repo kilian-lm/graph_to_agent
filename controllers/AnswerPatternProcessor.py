@@ -314,11 +314,16 @@ df_nodes = mat_l_t.get_nodes()
 label_dict = df_nodes.set_index('id')['label'].to_dict()
 nx.set_node_attributes(G, label_dict, 'label')
 
-graph_pattern_processor = GraphPatternProcessor("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent",
-                                                G, 10)
+# ToDo :: Continue here
 
-graph_pattern_processor.dump_to_bigquery('4_test_20231120.jsonl', 'graph_to_agent_chat_completions', 'test_2')
-graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231120.jsonl', '20231117163236')
+graph_pattern_processor = GraphPatternProcessor(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'),
+                                                os.getenv('GRAPH_DATASET_ID'),
+                                                G, os.getenv('NUM_STEPS'))
+
+filename = f'{key}.jsonl'
+graph_pattern_processor.save_gpt_calls_to_jsonl(filename, key)
+
+graph_pattern_processor.dump_to_bigquery(filename, os.getenv('CURATED_CHAT_COMPLETIONS'), key)
 
 answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
 
