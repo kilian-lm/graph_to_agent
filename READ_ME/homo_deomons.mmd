@@ -1,0 +1,218 @@
+
+
+graph TD
+  subgraph Environment
+    a[YouTube]
+    b[Instagram]
+    c[X]
+    d[LinkedIn]
+  end
+
+  subgraph Agents
+    A(User A) --> a
+    B(User B) --> a
+    C(User C) --> b
+    D(User D) --> b
+    E(User E) --> c
+    F(User F) --> c
+    F(User F) --> d
+    A(User F) --> d
+  end
+
+  subgraph Algorithms & Incentives
+    a -->|Likes, Dislikes, Comments| L(Algorithm)
+    b -->|Likes, Dislikes, Comments| L(Algorithm)
+    c -->|Likes, Dislikes, Comments| L(Algorithm)
+    d -->|Likes, Dislikes, Comments| L(Algorithm)
+  end
+
+  subgraph Feedback Mechanism
+    L -->|Selective Feedback| SF(Selective Feedback)
+  end
+
+  subgraph Reward Functions
+    L --> |Likes| RL(Reward for Likes)
+    L --> |Dislikes| RD(Reward for Dislikes)
+    L --> |Comments| RC(Reward for Comments)
+    L --> |Short, Shallow Hype News| RN(Reward for Short, Shallow Hype News)
+    L --> |Formats| RF(Reward for Formats)
+  end
+
+  subgraph kojima'sTypology
+    A -->|Mules| M(Mules) --> |Consumers| RL
+    B -->|Mules| M(Mules) --> |Consumers| RL
+    C -->|Homo Demens| H(Homo Demens) --> |Addicted| RN -->  SF --> P5
+    D -->|Homo Demens| H(Homo Demens) --> |Addicted| RN -->  SF --> P5
+    E -->|Mules| M(Mules) --> |Consumers| RL --> SF --> P6
+    F -->|Homo Demens| H(Homo Demens) --> |Consumers| RN --> SF --> P6
+  end
+
+  subgraph Society's Problems
+    SF --> |Enhances| P1(Problem: Focus Hijacking)
+    SF --> |Enhances| P2(Problem: Distraction)
+    SF --> |Enhances| P3(Problem: Loss of Autonomy)
+    SF --> |Enhances| P4(Problem: Lack of Transparency)
+    SF --> |Enhances| P5(Problem: Adhere to reward function in real life)
+    SF --> |Enhances| P6(Problem: Adhere to reward function online)
+  end
+
+  subgraph Passage Quote
+    P1 -->|Reflects| Q("In the glow of our devices lies a reflection of us, willingly ensnared...")
+  end
+
+
+%%graph TD
+%%  subgraph Environment
+%%    a[YouTube]
+%%    b[Twitter]
+%%    c[X]
+%%  end
+%%
+%%  subgraph Agents
+%%    A(User A) --> a
+%%    B(User B) --> a
+%%    C(User C) --> b
+%%    D(User D) --> b
+%%    E(User E) --> c
+%%    F(User F) --> c
+%%  end
+%%
+%%  subgraph Algorithms & Incentives
+%%    a -->|Likes, Dislikes, Comments| L(Algorithm)
+%%    b -->|Likes, Dislikes, Comments| L(Algorithm)
+%%    c -->|Likes, Dislikes, Comments| L(Algorithm)
+%%  end
+%%
+%%  subgraph Feedback Mechanism
+%%    L -->|Selective Feedback| SF(Selective Feedback)
+%%  end
+%%
+%%  subgraph Reward Functions
+%%    L --> |Likes| RL(Reward for Likes)
+%%    L --> |Dislikes| RD(Reward for Dislikes)
+%%    L --> |Comments| RC(Reward for Comments)
+%%    L --> |Character Restrictions| RC(Reward for Character Restrictions)
+%%    L --> |Formats| RF(Reward for Formats)
+%%  end
+%%
+%%  subgraph kojima'sTypology
+%%    A -->|Mules| M(Mules)
+%%    B -->|Mules| M(Mules)
+%%    C -->|Homo Demens| H(Homo Demens)
+%%    D -->|Homo Demens| H(Homo Demens)
+%%    E -->|Mules| M(Mules)
+%%    F -->|Homo Demens| H(Homo Demens)
+%%  end
+%%
+%%  subgraph Society's Problems
+%%    SF --> |Enhances| P1(Problem: Focus Hijacking)
+%%    SF --> |Enhances| P2(Problem: Distraction)
+%%    SF --> |Enhances| P3(Problem: Loss of Autonomy)
+%%    SF --> |Enhances| P4(Problem: Lack of Transparency)
+%%  end
+%%
+%%  subgraph Passage Quote
+%%    P1 -->|Reflects| Q("In the glow of our devices lies a reflection of us, willingly ensnared...")
+%%    P2 -->|Reflects| Q("The endless scroll, a digital Siren's song, beckons us deeper into a sea of distraction.")
+%%    P3 -->|Reflects| Q("Our desires and dislikes are no longer solely our own. They are molded...")
+%%    P4 -->|Reflects| Q("This is not a transparent system. Its workings are obscured...")
+%%  end
+
+
+%%graph TD
+%%  subgraph Environment
+%%    a[YouTube]
+%%    b[Twitter]
+%%    c[X]
+%%  end
+%%
+%%  subgraph Agents
+%%    A(User A) --> a
+%%    B(User B) --> a
+%%    C(User C) --> b
+%%    D(User D) --> b
+%%    E(User E) --> c
+%%    F(User F) --> c
+%%  end
+%%
+%%  subgraph Algorithms & Incentives
+%%    a -->|Likes, Dislikes, Comments| L(Algorithm)
+%%    b -->|Likes, Dislikes, Comments| L(Algorithm)
+%%    c -->|Likes, Dislikes, Comments| L(Algorithm)
+%%  end
+%%
+%%  subgraph Reward Functions
+%%    L --> |Likes| RL(Reward for Likes)
+%%    L --> |Dislikes| RD(Reward for Dislikes)
+%%    L --> |Comments| RC(Reward for Comments)
+%%    L --> |Character Restrictions| RC(Reward for Character Restrictions)
+%%    L --> |Formats| RF(Reward for Formats)
+%%  end
+%%
+%%  subgraph kojima'sTypology
+%%    A -->|Mules| M(Mules)
+%%    B -->|Mules| M(Mules)
+%%    C -->|Homo Demens| H(Homo Demens)
+%%    D -->|Homo Demens| H(Homo Demens)
+%%    E -->|Mules| M(Mules)
+%%    F -->|Homo Demens| H(Homo Demens)
+%%  end
+
+
+
+%%sequenceDiagram
+%%    participant User1 as User
+%%    participant User2 as User
+%%    participant Algorithm as Algorithm
+%%    participant Environment as Environment
+%%
+%%    User1 ->> Algorithm: Interacts with the Environment
+%%    User2 ->> Algorithm: Interacts with the Environment
+%%
+%%    Algorithm ->> Environment: Collects Data
+%%    Environment -->> Algorithm: Provides Content
+%%
+%%    Algorithm ->> User1: Suggests Content
+%%    Algorithm ->> User2: Suggests Content
+%%
+%%    User1 ->> Algorithm: Likes, Dislikes, Comments
+%%    User2 ->> Algorithm: Likes, Dislikes, Comments
+%%
+%%    Algorithm ->> Environment: Records User Actions
+%%    Environment -->> Algorithm: Updates Content
+%%
+%%    Algorithm -->> User1: Rewards (Likes, Comments, etc.)
+%%    Algorithm -->> User2: Rewards (Likes, Comments, etc.)
+%%
+%%    User1 ->> Environment: Shares Content
+%%    User2 ->> Environment: Shares Content
+%%
+%%    Environment -->> User1: Exposure to Audience
+%%    Environment -->> User2: Exposure to Audience
+
+%%sequenceDiagram
+%%    participant User as User
+%%    participant YouTube as YouTube
+%%    participant Twitter as Twitter
+%%    participant X as X
+%%    participant Algorithm as Algorithm
+%%    participant Incentives as Incentives
+%%
+%%    User->>YouTube: Uploads Video
+%%    User->>Twitter: Posts Tweet
+%%    User->>X: Shares Content
+%%
+%%    YouTube->>Algorithm: Video Recommendation
+%%    Twitter->>Algorithm: Tweet Engagement
+%%    X->>Algorithm: Content Sharing
+%%
+%%    Algorithm->>Incentives: Likes, Dislikes, Comments
+%%    Incentives-->>User: Feedback & Rewards
+%%
+%%    User->>Incentives: Capitalizes on Rewards
+%%    User->>Algorithm: Adapts Content
+%%    Algorithm-->>User: Enhanced Visibility
+%%
+%%    loop kojima'sTypology
+%%        User->>Incentives: Capitalizes on Environment
+%%    end
