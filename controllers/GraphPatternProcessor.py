@@ -19,9 +19,9 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         super().__init__(key, matrix_dataset_id, graph_dataset_id, graph)
         self.graph = graph
         self.num_steps = num_steps
-        self.timestamp = key
-        print(self.timestamp)
-        self.log_file = f'{self.timestamp}_matrix_layer_two.log'
+        self.key = key
+        print(self.key)
+        self.log_file = f'{self.key}_matrix_layer_two.log'
         print(self.log_file)
         self.log_dir = './temp_log'
         print(self.log_dir)
@@ -47,17 +47,25 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         self.nodes_tbl = "nodes_table"
         self.matrix_dataset_id = matrix_dataset_id
         self.graph_dataset_id = graph_dataset_id
-        self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
+        self.bq_handler = BigQueryHandler(self.key, self.graph_dataset_id)
 
 
     def explore_paths(self, start_node, steps):
         """Explore all paths up to a certain number of steps from a start node."""
         paths = []
         self.dfs(start_node, [], steps, paths)
+
+        self.logger.info(paths)
         return paths
 
     def dfs(self, node, path, steps, paths):
         """Depth-first search to explore paths."""
+
+        self.logger.info(node)
+        self.logger.info(path)
+        self.logger.info(steps)
+        self.logger.info(paths)
+
         if steps == 0 or node in path:
             return
         path.append(node)
@@ -65,7 +73,9 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
             paths.append(path.copy())
         else:
             for neighbor in self.graph.neighbors(node):
+                self.logger.info(neighbor)
                 self.dfs(neighbor, path, steps - 1, paths)
+        self.logger.info(path)
         path.pop()
 
     def is_valid_blueprint(self, labels):
@@ -95,6 +105,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
     def generate_gpt_call_json(self, path, path_uuid, graph_id):
         """Generate a JSON representation of a GPT call with UUID and graph_id."""
         labels = [self.graph.nodes[node]['label'] for node in path]
+        self.logger.info(labels)
         if self.is_valid_blueprint(labels):
             gpt_call_json = {
                 "path": path,
@@ -113,6 +124,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
                 "uuid": path_uuid,
                 "graph_id": graph_id
             }
+            self.logger.info(gpt_call_json)
             return gpt_call_json, True
         return {}, False
 
@@ -157,6 +169,8 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         print(f"Uploaded {file_path} to {table_id}")
 
 
+
+help(GraphPatternProcessor)
 json_file_path = "./logics/simple_va_inheritance_20231117.json"
 
 with open(json_file_path, 'r') as json_file:
@@ -192,6 +206,7 @@ nx.set_node_attributes(G, label_dict, 'label')
 graph_pattern_processor = GraphPatternProcessor(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'), os.getenv('GRAPH_DATASET_ID'),
                                                 G, os.getenv('NUM_STEPS'))
 
+graph_pattern_processor.process_graph()
 graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231123.jsonl', key)
 
 graph_pattern_processor.dump_to_bigquery('4_test_20231120.jsonl', 'graph_to_agent_chat_completions', 'test_2')
