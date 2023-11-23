@@ -37,9 +37,9 @@ load_dotenv()
 
 
 class VariableConnectedComponentsProcessor:
-    def __init__(self, timestamp, matrix_dataset_id, graph_dataset_id, graph):
+    def __init__(self, key, matrix_dataset_id, graph_dataset_id, graph):
         self.graph = graph
-        self.timestamp = timestamp
+        self.timestamp = key
         print(self.timestamp)
         self.log_file = f'{self.timestamp}_matrix_layer_two.log'
         print(self.log_file)
@@ -77,19 +77,6 @@ class VariableConnectedComponentsProcessor:
         for component in connected_components_with_variables:
             print("Connected Component containing @variable node:", list(component))
 
-    # def find_variable_nodes(self):
-    #     """Find all @variable nodes."""
-    #     variable_nodes = set()
-    #     query = """
-    #     SELECT * FROM `enter-universes.graph_to_agent.nodes_table`
-    #     WHERE graph_id = "20231114181549" AND STARTS_WITH(label, "@")
-    #     """
-    #     query_job = self.bq_client.query(query)
-    #     results = query_job.result()
-    #     for row in results:
-    #         node_id = row['id']
-    #         variable_nodes.add(node_id)
-    #     return variable_nodes
 
     def find_variable_nodes(self):
         """Find all @variable nodes."""

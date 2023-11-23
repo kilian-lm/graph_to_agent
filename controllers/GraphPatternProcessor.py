@@ -15,11 +15,11 @@ load_dotenv()
 
 
 class GraphPatternProcessor(VariableConnectedComponentsProcessor):
-    def __init__(self, timestamp, matrix_dataset_id, graph_dataset_id, graph, num_steps):
-        super().__init__(timestamp, matrix_dataset_id, graph_dataset_id, graph)
+    def __init__(self, key, matrix_dataset_id, graph_dataset_id, graph, num_steps):
+        super().__init__(key, matrix_dataset_id, graph_dataset_id, graph)
         self.graph = graph
         self.num_steps = num_steps
-        self.timestamp = timestamp
+        self.timestamp = key
         print(self.timestamp)
         self.log_file = f'{self.timestamp}_matrix_layer_two.log'
         print(self.log_file)
@@ -49,12 +49,6 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         self.graph_dataset_id = graph_dataset_id
         self.bq_handler = BigQueryHandler(self.timestamp, self.graph_dataset_id)
 
-    # def process_graph(self):
-    #     """Main method to process the graph."""
-    #     user_nodes = [node for node, attrs in self.graph.nodes(data=True) if attrs['label'] == 'user']
-    #     for start_node in user_nodes:
-    #         for path in self.explore_paths(start_node, steps=self.num_steps):
-    #             self.check_and_print_gpt_call(path)
 
     def explore_paths(self, start_node, steps):
         """Explore all paths up to a certain number of steps from a start node."""
@@ -83,14 +77,20 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         """Save GPT calls to a JSON Lines file with additional UUID and graph_id."""
         with open(file_path, 'w') as file:
             user_nodes = [node for node, attrs in self.graph.nodes(data=True) if attrs['label'] == 'user']
+            self.logger.info(user_nodes)
             for start_node in user_nodes:
+                self.logger.info(start_node)
                 # Generate a UUID for each component path
                 path_uuid = str(uuid.uuid4())  # ToDo :: Backroll PK logic until here
+                self.logger.info(path_uuid)
                 for path in self.explore_paths(start_node, steps=self.num_steps):
                     gpt_call, is_valid = self.generate_gpt_call_json(path, path_uuid, graph_id)
+                    self.logger.info(gpt_call)
                     if is_valid:
                         json_line = json.dumps(gpt_call)
                         file.write(json_line + '\n')
+
+        return file_path
 
     def generate_gpt_call_json(self, path, path_uuid, graph_id):
         """Generate a JSON representation of a GPT call with UUID and graph_id."""
@@ -156,23 +156,46 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 
         print(f"Uploaded {file_path} to {table_id}")
 
+
+json_file_path = "./logics/simple_va_inheritance_20231117.json"
+
+with open(json_file_path, 'r') as json_file:
+    graph_data = json.load(json_file)
+
+key = "20231123102234_fed37e7d-aa97-466a-b723-cb1290fc452f"
+matrix_layer_one = MatrixLayerOne(key, graph_data, "graph_to_agent")
+# #
+filename = matrix_layer_one.create_advanced_adjacency_matrix()
+filename
+matrix_layer_one.upload_jsonl_to_bigquery(filename, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
 #
-# json_file_path = "./logics/simple_va_inheritance_20231117.json"
-#
-# with open(json_file_path, 'r') as json_file:
-#     graph_data = json.load(json_file)
-#
-# matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
-#
-# matrix_layer_one.create_advanced_adjacency_matrix()
-# matrix_layer_one.upload_jsonl_to_bigquery('20231117163236_advanced_adjacency_matrix.jsonl')
-#
-# graph_pattern_processor = GraphPatternProcessor("20231117163236", "graph_to_agent_adjacency_matrices", "graph_to_agent",
-#                                                 G, 10)
-#
-# graph_pattern_processor.dump_to_bigquery('4_test_20231120.jsonl', 'graph_to_agent_chat_completions', 'test_2')
-# graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231120.jsonl', '20231117163236')
-#
+from controllers.MatrixLayerTwo import MatrixLayerTwo
+import networkx as nx
+from collections import defaultdict
+
+
+mat_l_t = MatrixLayerTwo(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'), os.getenv('GRAPH_DATASET_ID'))
+
+mat_l_t.get_edges()
+mat_l_t.get_nodes()
+mat_l_t.get_adjacency_matrix()
+
+df = mat_l_t.get_adjacency_matrix().set_index("node_id")
+G = mat_l_t.create_graph_from_adjacency(df)
+G.number_of_edges()
+
+df_nodes = mat_l_t.get_nodes()
+label_dict = df_nodes.set_index('id')['label'].to_dict()
+nx.set_node_attributes(G, label_dict, 'label')
+
+
+graph_pattern_processor = GraphPatternProcessor(key, os.getenv('ADJACENCY_MATRIX_DATASET_ID'), os.getenv('GRAPH_DATASET_ID'),
+                                                G, os.getenv('NUM_STEPS'))
+
+graph_pattern_processor.save_gpt_calls_to_jsonl('4_test_20231123.jsonl', key)
+
+graph_pattern_processor.dump_to_bigquery('4_test_20231120.jsonl', 'graph_to_agent_chat_completions', 'test_2')
+
 # answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
 #
 # answer_pat_pro.bq_handler.create_dataset_if_not_exists()

@@ -262,7 +262,9 @@ class AnswerPatternProcessor:
 
 import uuid
 from controllers.MatrixLayerOne import MatrixLayerOne
+
 from controllers.GraphPatternProcessor import GraphPatternProcessor
+
 from controllers.MatrixLayerTwo import MatrixLayerTwo
 from controllers.v2GptAgentInteractions import v2GptAgentInteractions
 
@@ -304,11 +306,6 @@ mat_l_t.get_adjacency_matrix()
 df = mat_l_t.get_adjacency_matrix().set_index("node_id")
 G = mat_l_t.create_graph_from_adjacency(df)
 G.number_of_edges()
-G
-
-mat_l_t.check_diameter_and_centrality(G)
-mat_l_t.check_degree_distribution(G)
-mat_l_t.check_graph_correctly_recveied_via_matrix(G)
 
 df_nodes = mat_l_t.get_nodes()
 label_dict = df_nodes.set_index('id')['label'].to_dict()
@@ -320,7 +317,7 @@ graph_pattern_processor = GraphPatternProcessor(key, os.getenv('ADJACENCY_MATRIX
                                                 os.getenv('GRAPH_DATASET_ID'),
                                                 G, os.getenv('NUM_STEPS'))
 
-filename = f'{key}.jsonl'
+filename = f'{key}_multi_layered_matrix.jsonl'
 graph_pattern_processor.save_gpt_calls_to_jsonl(filename, key)
 
 graph_pattern_processor.dump_to_bigquery(filename, os.getenv('CURATED_CHAT_COMPLETIONS'), key)

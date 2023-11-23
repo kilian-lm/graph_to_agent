@@ -90,7 +90,7 @@ class MatrixLayerOne:
         edges = self.graph_data["edges"]
 
         # Open the .jsonl file for writing
-        self.filename = f'{self.key}_advanced_adjacency_matrix.jsonl'
+        self.filename = f'{self.key}_multi_layered_matrix.jsonl'
         with open(self.filename, 'w') as jsonl_file:
             for row_node in nodes:
                 row_node_id = row_node["id"]
