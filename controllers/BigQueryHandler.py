@@ -90,8 +90,9 @@ class BigQueryHandler:
                 self.logger.error(f"Failed to create dataset {dataset_id}: {ex}")
                 raise
 
-    def create_table_if_not_exists(self, table_id, schema=None):
-        table_ref = self.bigquery_client.dataset(self.dataset_id).table(table_id)
+
+    def create_table_if_not_exists(self, dataset_id, table_id, schema=None):
+        table_ref = self.bigquery_client.dataset(dataset_id).table(table_id)
 
         try:
             self.bigquery_client.get_table(table_ref)
