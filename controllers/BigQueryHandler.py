@@ -20,7 +20,7 @@ from logger.CustomLogger import CustomLogger
 
 class BigQueryHandler:
 
-    def __init__(self, key, dataset_id):
+    def __init__(self, key):
         # timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         self.key = key
         print(self.key)
@@ -38,7 +38,7 @@ class BigQueryHandler:
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.openai_api_key}'
         }
-        self.dataset_id = dataset_id
+        # self.dataset_id = dataset_id
         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
 
         try:
