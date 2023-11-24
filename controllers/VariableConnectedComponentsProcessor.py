@@ -69,10 +69,13 @@ class VariableConnectedComponentsProcessor:
 
         query = f"SELECT * FROM `enter-universes.graph_to_agent.nodes_table` WHERE graph_id = '{key}' AND STARTS_WITH(label, '@')"
         query_job = self.bq_client.query(query)
+        self.logger.info(f"Querying BigQuery for variable nodes: {query}")
         results = query_job.result()
         for row in results:
             node_id = row['id']
+            self.logger.info(f"Found variable node: {node_id}")
             variable_nodes.add(node_id)
+            self.logger.info(f"Variable nodes: {variable_nodes}")
         return variable_nodes
 
     def find_connected_components_with_variables(self, variable_nodes):
@@ -83,9 +86,9 @@ class VariableConnectedComponentsProcessor:
                 components_with_variables.append(component)
         return components_with_variables
 
-    def organize_components_by_variable_suffix(self):
+    def organize_components_by_variable_suffix(self, key):
         """Organize connected components based on @variable suffixes."""
-        variable_nodes = self.find_variable_nodes()
+        variable_nodes = self.find_variable_nodes(key)
         connected_components = self.find_connected_components_with_variables(variable_nodes)
         components_dict = defaultdict(list)
 
@@ -103,7 +106,8 @@ class VariableConnectedComponentsProcessor:
         for suffix, nodes in ordered_components_dict.items():
             print(f"Connected Component for @variable_{suffix}:", nodes)
 
-    def extract_variable_suffix(self, label):
+    @staticmethod
+    def extract_variable_suffix(label):
         """Extract the variable suffix from the label."""
         match = re.search(r"@(\w+_\d+_\d+)", label)
         return match.group(1) if match else None
