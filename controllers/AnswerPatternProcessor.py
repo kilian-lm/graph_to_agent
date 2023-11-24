@@ -123,7 +123,7 @@ class AnswerPatternProcessor:
         self.logger.info(response_json)
         table_id = self.append_to_jsonl(response_json, uuid)
         self.logger.info(table_id)
-        self.dump_gpt_jsonl_to_bigquery(self.key, self.graph_to_agent_curated_chat_completions)
+        self.dump_gpt_jsonl_to_bigquery(self.key)
 
         response_content = response_json.get("choices", [{}])[0].get("message", {}).get("content", "")
 
