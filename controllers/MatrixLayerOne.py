@@ -33,24 +33,12 @@ class MatrixLayerOne:
             print(self.log_level)
             self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
-            # todo: hand form app.py graph_id , think about coherent logic to ident nodes with matrix
             self.filename = None
-            self.graph_id = self.key
-            self.table_name = self.graph_id
-
             self.graph_data = graph_data
 
             self.dataset_id = dataset_id
             self.bq_handler = BigQueryHandler(self.key)
 
-            # ToDo :: Dublicated import of bq !!
-            #  From mere class initialization in another class to inheritance
-            # bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
-            # bq_client_secrets_parsed = json.loads(bq_client_secrets)
-            # self.bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
-            # self.bigquery_client = bigquery.Client(credentials=self.bq_client_secrets,
-            #                                        project=self.bq_client_secrets.project_id)
-            # self.logger.info("BigQuery client successfully initialized.")
         except json.JSONDecodeError as e:
             self.logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
             raise
@@ -58,12 +46,12 @@ class MatrixLayerOne:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    def upload_jsonl_to_bigquery(self, filename, dataset_id):
+    def multi_layered_matrix_upload_jsonl_to_bigquery(self, filename, dataset_id):
         """
-        Uploads a .jsonl file to a BigQuery table.
+        Uploads multi_layered_matrix as .jsonl file to a BigQuery table.
         """
         # Set the destination table and dataset.
-        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_id}.{self.table_name}"
+        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_id}.{self.key}"
 
         # Configure the load job
         job_config = bigquery.LoadJobConfig(
@@ -125,7 +113,7 @@ class MatrixLayerOne:
 
         return schema
 
-    def upload_to_bigquery(self, dataset_id):
+    def adjacency_matrix_upload_to_bigquery(self, dataset_id):
         # Initialize a BigQuery client
 
         # Generate the binary layer
