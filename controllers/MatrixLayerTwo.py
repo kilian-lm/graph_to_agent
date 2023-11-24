@@ -435,7 +435,7 @@ class MatrixLayerTwo:
             gpt_call_json = {
                 "path": path,
                 "gpt_call": {
-                    "model": "gpt-4",
+                    "model": os.getenv('MODEL'),
                     "messages": [
                         {"role": "user", "content": labels[1]},
                         {"role": "system", "content": labels[3]},
