@@ -9,7 +9,7 @@ Want to jump the theory?
 
 - [Video](#video)
 - [Demo](#demo)
-- [Repo (Unlicense license)](#repo-unlicense-license)
+- [Repo](https://github.com/kilian-lm/graph_to_agent)
 
 ## Table of Contents
 
@@ -223,6 +223,69 @@ system https://www.youtube.com/watch?v=FFtYXoOowKQ&ab_channel=Gingy). This paire
 knowledge graphs and the crumbeling of language barriers (we do mean all kind of languages as we can now use LLMs to
 translate not only words but meaning), makes the time feel as right as it could be to submit this proposal to the WWW.
 
+```mermaid
+graph TD
+  subgraph Environment
+    a[YouTube]
+    b[Instagram]
+    c[X]
+    d[LinkedIn]
+  end
+
+  subgraph Agents
+    A(User A) --> a
+    B(User B) --> a
+    C(User C) --> b
+    D(User D) --> b
+    E(User E) --> c
+    F(User F) --> c
+    F(User F) --> d
+    A(User F) --> d
+  end
+
+  subgraph Algorithms & Incentives
+    a -->|Likes, Dislikes, Comments| L(Algorithm)
+    b -->|Likes, Dislikes, Comments| L(Algorithm)
+    c -->|Likes, Dislikes, Comments| L(Algorithm)
+    d -->|Likes, Dislikes, Comments| L(Algorithm)
+  end
+
+  subgraph Feedback Mechanism
+    L -->|Selective Feedback| SF(Selective Feedback)
+  end
+
+  subgraph Reward Functions
+    L --> |Likes| RL(Reward for Likes)
+    L --> |Dislikes| RD(Reward for Dislikes)
+    L --> |Comments| RC(Reward for Comments)
+    L --> |Short, Shallow Hype News| RN(Reward for Short, Shallow Hype News)
+    L --> |Formats| RF(Reward for Formats)
+  end
+
+  subgraph kojima'sTypology
+    A -->|Mules| M(Mules) --> |Consumers| RL
+    B -->|Mules| M(Mules) --> |Consumers| RL
+    C -->|Homo Demens| H(Homo Demens) --> |Addicted| RN -->  SF --> P5
+    D -->|Homo Demens| H(Homo Demens) --> |Addicted| RN -->  SF --> P5
+    E -->|Mules| M(Mules) --> |Consumers| RL --> SF --> P6
+    F -->|Homo Demens| H(Homo Demens) --> |Consumers| RN --> SF --> P6
+  end
+
+  subgraph Society's Problems
+    SF --> |Enhances| P1(Problem: Focus Hijacking)
+    SF --> |Enhances| P2(Problem: Distraction)
+    SF --> |Enhances| P3(Problem: Loss of Autonomy)
+    SF --> |Enhances| P4(Problem: Lack of Transparency)
+    SF --> |Enhances| P5(Problem: Rational Agent :: Adhere to reward function in real life)
+    SF --> |Enhances| P6(Problem: Optimal Agent :: Adhere to reward function online)
+    SF --> |Enhances| P7(Problem: Repetitive, Shallow Content)
+
+  end
+
+  subgraph Long Term Consequences
+    P1 -->|Reflects| Q(Barrier for for sustainable knowledge growth)
+  end
+```
 ## In Sum
 
 Our endeavor is not merely to refine the digital landscape (cheers to Chamath Palihapitiya, Social Capital) but to
@@ -243,7 +306,7 @@ knowledge-transfer, that we're indulging in at the moment.
 
 If you resonate with our vision, consider giving me constructive feedback or give me a "duplicated" (please refer the
 source in case there is already a solution as described above), forward this proposal, come up with an own approach,
-fork my repo, use the app to layer agents. If you want to know more about the "We"/ "Us", check here.
+fork my repo, use the app to layer agents. If you want to know more about the "We"/ "Us", check [here](https://cv-gieklps3ea-uc.a.run.app/graph_to_agent_normative_approach).
 
 ## References
 
