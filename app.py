@@ -8,7 +8,7 @@ import logging
 # All custom classes
 from logger.CustomLogger import CustomLogger
 from controllers.EngineRoom import EngineRoom
-from controllers.v2GptAgentInteractions import v2GptAgentInteractions
+from controllers.GptAgentInteractions import v2GptAgentInteractions
 from controllers.BigQueryHandler import BigQueryHandler
 from controllers.v1GraphPatternProcessor import GraphPatternProcessor
 
