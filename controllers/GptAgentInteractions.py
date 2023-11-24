@@ -55,7 +55,6 @@ class GptAgentInteractions():
         self.matrix_layer_one = MatrixLayerOne(self.key, self.graph_data, self.graph_to_agent_adjacency_matrices)
         self.bq_handler = BigQueryHandler(self.key)
 
-
         self.dataset_id = dataset_id
         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
 
@@ -72,19 +71,19 @@ class GptAgentInteractions():
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    def create_dataset_if_not_exists(self):
-        dataset_ref = self.bigquery_client.dataset(self.dataset_id)
-        try:
-            self.bigquery_client.get_dataset(dataset_ref)
-            self.logger.info(f"Dataset {self.dataset_id} already exists.")
-        except Exception as e:
-            try:
-                dataset = bigquery.Dataset(dataset_ref)
-                self.bigquery_client.create_dataset(dataset)
-                self.logger.info(f"Dataset {self.dataset_id} created.")
-            except Exception as ex:
-                self.logger.error(f"Failed to create dataset {self.dataset_id}: {ex}")
-                raise
+    # def create_dataset_if_not_exists(self):
+    #     dataset_ref = self.bigquery_client.dataset(self.dataset_id)
+    #     try:
+    #         self.bigquery_client.get_dataset(dataset_ref)
+    #         self.logger.info(f"Dataset {self.dataset_id} already exists.")
+    #     except Exception as e:
+    #         try:
+    #             dataset = bigquery.Dataset(dataset_ref)
+    #             self.bigquery_client.create_dataset(dataset)
+    #             self.logger.info(f"Dataset {self.dataset_id} created.")
+    #         except Exception as ex:
+    #             self.logger.error(f"Failed to create dataset {self.dataset_id}: {ex}")
+    #             raise
 
     def create_table_if_not_exists(self, table_id, schema):
         table_ref = self.bigquery_client.dataset(self.dataset_id).table(table_id)
@@ -142,27 +141,27 @@ class GptAgentInteractions():
 
         return {"nodes": nodes, "edges": edges}
 
-    def build_tree_structure(self, nodes, edges):
-        # graph_data = json.loads(graph_data)
-        # nodes = graph_data['nodes']
-        # edges = graph_data['edges']
+    # def build_tree_structure(self, nodes, edges):
+    #     # graph_data = json.loads(graph_data)
+    #     # nodes = graph_data['nodes']
+    #     # edges = graph_data['edges']
+    #
+    #     tree = {}
+    #     for node in nodes:
+    #         tree[node['id']] = {
+    #             'label': node['label'],
+    #             'children': []
+    #         }
+    #     for edge in edges:
+    #         tree[edge['from']]['children'].append(edge['to'])
+    #     return tree
 
-        tree = {}
-        for node in nodes:
-            tree[node['id']] = {
-                'label': node['label'],
-                'children': []
-            }
-        for edge in edges:
-            tree[edge['from']]['children'].append(edge['to'])
-        return tree
-
-    def print_tree(self, tree, node_id, depth=0):
-        # This function recursively prints the tree.
-        indent = ' ' * depth * 2
-        print(f"{indent}- {tree[node_id]['label']}")
-        for child_id in tree[node_id]['children']:
-            self.print_tree(tree, child_id, depth + 1)
+    # def print_tree(self, tree, node_id, depth=0):
+    #     # This function recursively prints the tree.
+    #     indent = ' ' * depth * 2
+    #     print(f"{indent}- {tree[node_id]['label']}")
+    #     for child_id in tree[node_id]['children']:
+    #         self.print_tree(tree, child_id, depth + 1)
 
     def load_json_graph(self, json_graph_data):
         graph_data = json.loads(json_graph_data)
@@ -202,37 +201,37 @@ class GptAgentInteractions():
 
         return messages
 
-    def tree_based_design_general(self, root_nodes, tree):
-        all_messages = []
+    # def tree_based_design_general(self, root_nodes, tree):
+    #     all_messages = []
+    #
+    #     for root_id in root_nodes:
+    #         messages = self.tree_to_gpt_call(tree, root_id)
+    #         all_messages.extend(messages)
+    #
+    #     gpt_call = {
+    #         "model": "gpt-3.5-turbo",
+    #         "messages": all_messages
+    #     }
+    #
+    #     return gpt_call
 
-        for root_id in root_nodes:
-            messages = self.tree_to_gpt_call(tree, root_id)
-            all_messages.extend(messages)
-
-        gpt_call = {
-            "model": "gpt-3.5-turbo",
-            "messages": all_messages
-        }
-
-        return gpt_call
-
-    def main_tree_based_design_general(self, graph_data):
-        # graph_data = self.load_json_graph(json_graph_data)
-        self.logger.info(graph_data)
-        tree = self.build_tree_structure(graph_data['nodes'], graph_data['edges'])
-        self.logger.info(tree)
-
-        root_nodes = self.provide_root_nodes(graph_data)
-        self.logger.info(root_nodes)
-
-        gpt_calls = self.tree_based_design_general(root_nodes, tree)
-        self.logger.info(gpt_calls)
-        self.logger.info(self.call_tree(root_nodes, tree))
-        response = self.get_gpt_response(gpt_calls)
-
-        # process_gpt_response_and_update_graph
-
-        return response
+    # def main_tree_based_design_general(self, graph_data):
+    #     # graph_data = self.load_json_graph(json_graph_data)
+    #     self.logger.info(graph_data)
+    #     tree = self.build_tree_structure(graph_data['nodes'], graph_data['edges'])
+    #     self.logger.info(tree)
+    #
+    #     root_nodes = self.provide_root_nodes(graph_data)
+    #     self.logger.info(root_nodes)
+    #
+    #     gpt_calls = self.tree_based_design_general(root_nodes, tree)
+    #     self.logger.info(gpt_calls)
+    #     self.logger.info(self.call_tree(root_nodes, tree))
+    #     response = self.get_gpt_response(gpt_calls)
+    #
+    #     # process_gpt_response_and_update_graph
+    #
+    #     return response
 
     def translate_graph_data_for_bigquery(self, graph_data, graph_id):
         # Extract nodes and edges from the graph data
@@ -273,63 +272,63 @@ class GptAgentInteractions():
         else:
             return 'content'
 
-    def translate_graph_to_gpt_sequence(self, graph_data):
-        nodes = graph_data["nodes"]
-        edges = graph_data["edges"]
-
-        # Build a mapping of node IDs to nodes
-        node_mapping = {node['id']: node for node in nodes}
-        self.logger.info(f"node_map: {node_mapping}")
-
-        # Initialize the data structure
-        translated_data = {
-            "model": os.getenv("MODEL"),
-            "messages": []
-        }
-
-        self.logger.info(f"translated_data: {translated_data}")
-
-        # Define valid transitions
-        valid_transitions = {
-            'user': 'content',
-            'content': 'system',
-            'system': 'content'
-        }
-
-        # Start from 'user' nodes and follow the valid transitions
-        current_expected = 'user'
-
-        for edge in edges:
-            from_node = node_mapping[edge['from']]
-            to_node = node_mapping[edge['to']]
-
-            self.logger.info(f"from_node: {from_node}")
-            self.logger.info(f"to_node: {to_node}")
-
-            from_node_type = self.get_node_type(from_node)
-            to_node_type = self.get_node_type(to_node)
-
-            self.logger.info(f"from_node_type: {from_node_type}")
-            self.logger.info(f"to_node_type: {to_node_type}")
-
-        # Serialize data to json
-        json_data = json.dumps(translated_data, indent=4)
-        filename = f"temp_local/processed_graph_{self.key}.json"
-
-        # Check if the temp_local directory exists
-        if not os.path.exists('temp_local'):
-            os.makedirs('temp_local')
-
-        # Save the JSON data to the file
-        with open(filename, 'w') as json_file:
-            json_file.write(json_data)
-
-        # breakpoint()  # todo ::
-
-        return {
-            'bigquery_errors': {'node_errors': [], 'edge_errors': []},
-            'processed_data': translated_data
-        }
+    # def translate_graph_to_gpt_sequence(self, graph_data):
+    #     nodes = graph_data["nodes"]
+    #     edges = graph_data["edges"]
+    #
+    #     # Build a mapping of node IDs to nodes
+    #     node_mapping = {node['id']: node for node in nodes}
+    #     self.logger.info(f"node_map: {node_mapping}")
+    #
+    #     # Initialize the data structure
+    #     translated_data = {
+    #         "model": os.getenv("MODEL"),
+    #         "messages": []
+    #     }
+    #
+    #     self.logger.info(f"translated_data: {translated_data}")
+    #
+    #     # Define valid transitions
+    #     valid_transitions = {
+    #         'user': 'content',
+    #         'content': 'system',
+    #         'system': 'content'
+    #     }
+    #
+    #     # Start from 'user' nodes and follow the valid transitions
+    #     current_expected = 'user'
+    #
+    #     for edge in edges:
+    #         from_node = node_mapping[edge['from']]
+    #         to_node = node_mapping[edge['to']]
+    #
+    #         self.logger.info(f"from_node: {from_node}")
+    #         self.logger.info(f"to_node: {to_node}")
+    #
+    #         from_node_type = self.get_node_type(from_node)
+    #         to_node_type = self.get_node_type(to_node)
+    #
+    #         self.logger.info(f"from_node_type: {from_node_type}")
+    #         self.logger.info(f"to_node_type: {to_node_type}")
+    #
+    #     # Serialize data to json
+    #     json_data = json.dumps(translated_data, indent=4)
+    #     filename = f"temp_local/processed_graph_{self.key}.json"
+    #
+    #     # Check if the temp_local directory exists
+    #     if not os.path.exists('temp_local'):
+    #         os.makedirs('temp_local')
+    #
+    #     # Save the JSON data to the file
+    #     with open(filename, 'w') as json_file:
+    #         json_file.write(json_data)
+    #
+    #     # breakpoint()  # todo ::
+    #
+    #     return {
+    #         'bigquery_errors': {'node_errors': [], 'edge_errors': []},
+    #         'processed_data': translated_data
+    #     }
 
     def extract_and_send_to_gpt(self, processed_data):
 
@@ -350,27 +349,27 @@ class GptAgentInteractions():
         else:
             raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
 
-    def extract_gpt_interactions_before_save(self, graph_data, graph_id):
-
-        nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
-        # Log the transformed data for debugging
-        self.logger.info(f"extract_gpt_interactions_before_save, Transformed Nodes: {nodes_for_bq}")
-        self.logger.info(f"extract_gpt_interactions_before_save, Transformed Edges: {edges_for_bq}")
-
-        graph_data_as_dicts = {
-            "nodes": nodes_for_bq,
-            "edges": edges_for_bq
-        }
-
-        self.logger.info(f"extract_gpt_interactions_before_save, graph_data_as_dicts: {graph_data_as_dicts}")
-
-        # Pass the dictionaries to the workflow logic
-        processed_data = self.translate_graph_to_gpt_sequence(graph_data_as_dicts)
-
-        processed_data = processed_data["processed_data"]
-        self.logger.info(f"processed_data: {processed_data}")
-        agent_content = self.extract_and_send_to_gpt(processed_data)
-        self.logger.info(f"agent_content: {agent_content}")
+    # def extract_gpt_interactions_before_save(self, graph_data, graph_id):
+    #
+    #     nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
+    #     # Log the transformed data for debugging
+    #     self.logger.info(f"extract_gpt_interactions_before_save, Transformed Nodes: {nodes_for_bq}")
+    #     self.logger.info(f"extract_gpt_interactions_before_save, Transformed Edges: {edges_for_bq}")
+    #
+    #     graph_data_as_dicts = {
+    #         "nodes": nodes_for_bq,
+    #         "edges": edges_for_bq
+    #     }
+    #
+    #     self.logger.info(f"extract_gpt_interactions_before_save, graph_data_as_dicts: {graph_data_as_dicts}")
+    #
+    #     # Pass the dictionaries to the workflow logic
+    #     processed_data = self.translate_graph_to_gpt_sequence(graph_data_as_dicts)
+    #
+    #     processed_data = processed_data["processed_data"]
+    #     self.logger.info(f"processed_data: {processed_data}")
+    #     agent_content = self.extract_and_send_to_gpt(processed_data)
+    #     self.logger.info(f"agent_content: {agent_content}")
 
     def get_last_content_node(self, edges, nodes):
         # Assuming edges are ordered
@@ -447,8 +446,9 @@ class GptAgentInteractions():
 
     def save_graph_data(self, graph_data, graph_id):
         try:
-            self.create_dataset_if_not_exists()
+            self.bq_handler.create_dataset_if_not_exists(os.getenv('GRAPH_DATASET_ID'))
 
+            # self.bq_handler.create_dataset_if_not_exists(os.getenv())
 
             nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.nodes_table)
             edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.edges_table)
@@ -460,8 +460,8 @@ class GptAgentInteractions():
             self.create_table_if_not_exists(self.edges_table, self.get_edge_schema())
 
             # Retrieve the tables and their schemas
-            nodes_table = self.bigquery_client.get_table(nodes_table_ref)
-            edges_table = self.bigquery_client.get_table(edges_table_ref)
+            nodes_table = self.bq_handler.bigquery_client.get_table(nodes_table_ref)
+            edges_table = self.bq_handler.bigquery_client.get_table(edges_table_ref)
 
             # Use the translator function to transform the data
             nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
@@ -481,7 +481,6 @@ class GptAgentInteractions():
                                                             selected_fields=edges_table.schema)
             if errors_edges:
                 self.logger.info(f"Encountered errors while inserting edges: {errors_edges}")
-
 
             if errors_nodes or errors_edges:
                 self.logger.error("Errors occurred during the saving of graph data.")
