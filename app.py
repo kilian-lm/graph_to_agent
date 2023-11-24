@@ -1,16 +1,17 @@
 import os
 import datetime
 from flask import Flask, render_template, jsonify, request
-import json
 import uuid
 import logging
 
 # All custom classes
+from controllers.MatrixLayerOne import MatrixLayerOne
+from controllers.AnswerPatternProcessor import AnswerPatternProcessor
 from logger.CustomLogger import CustomLogger
 from controllers.EngineRoom import EngineRoom
-from controllers.GptAgentInteractions import v2GptAgentInteractions
+from controllers.GptAgentInteractions import GptAgentInteractions
 from controllers.BigQueryHandler import BigQueryHandler
-from controllers.v1GraphPatternProcessor import GraphPatternProcessor
+from controllers.GraphPatternProcessor import GraphPatternProcessor
 
 app = Flask(__name__)
 
@@ -31,10 +32,9 @@ class App():
 
         # All custom classes
         self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
-        self.engine_room = EngineRoom(self.key, 'graph_to_agent')
-        self.gpt_agent_interactions = v2GptAgentInteractions(self.key, 'graph_to_agent')
-        self.bq_handler = BigQueryHandler(self.key,
-                                          'graph_to_agent')  # Todo :: need to adapt dataset logic not for instantiating
+        self.engine_room = EngineRoom(self.key, os.getenv('GRAPH_DATASET_ID'))
+        self.gpt_agent_interactions = GptAgentInteractions(self.key, os.getenv('GRAPH_DATASET_ID'))
+        self.bq_handler = BigQueryHandler(self.key)
 
         # All Checkpoints and Externalities
         self.logs_bucket = os.getenv('LOGS_BUCKET')  # ToDo :: If bucket doesnt exist, create
@@ -170,6 +170,51 @@ class App():
         self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.return_gpt_agent_answer_to_graph)
         # self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.engine_room.main_tree_based_design_general)
         self.app.route('/save-graph', methods=['POST'])(self.save_graph)
+
+    def matrix_sudoku_approach(self):
+        import json
+
+        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        general_uuid = str(uuid.uuid4())
+        key = f"{timestamp}_{general_uuid}"
+
+        json_file_path = "./logics/simple_va_inheritance_20231117.json"
+
+        with open(json_file_path, 'r') as json_file:
+            graph_data = json.load(json_file)
+
+        gpt_agent_interactions = GptAgentInteractions(key, os.getenv('GRAPH_DATASET_ID'))
+
+        gpt_agent_interactions.save_graph_data(graph_data, key)
+
+        matrix_layer_one = MatrixLayerOne(key, graph_data, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
+
+        filename = matrix_layer_one.create_advanced_adjacency_matrix()
+        filename
+
+        matrix_layer_one.multi_layered_matrix_upload_jsonl_to_bigquery(filename,
+                                                                       os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
+
+        matrix_layer_one.adjacency_matrix_upload_to_bigquery(os.getenv('ADJACENCY_MATRIX_DATASET_ID'))
+
+        graph_processor = GraphPatternProcessor(10, key)
+
+        graph_processor.save_gpt_calls_to_jsonl(key)
+        filename
+        graph_processor.dump_to_bigquery(key, os.getenv('CURATED_CHAT_COMPLETIONS'))
+
+        answer_pat_pro = AnswerPatternProcessor(key)
+
+        key
+
+        answer_pat_pro.dump_gpt_jsonl_to_bigquery(key)
+
+        from google.cloud import bigquery
+        import json
+
+        # ToDo :: Next up
+        answer_pat_pro.get_gpt_calls_blueprint()
+        answer_pat_pro.run()
 
     def run(self):
         self.app.run(debug=True)
