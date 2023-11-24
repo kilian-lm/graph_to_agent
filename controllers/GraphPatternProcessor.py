@@ -238,53 +238,53 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 
 
 
-import uuid
-from controllers.MatrixLayerOne import MatrixLayerOne
-from controllers.MatrixLayerTwo import MatrixLayerTwo
-from controllers.GptAgentInteractions import GptAgentInteractions
-from controllers.AnswerPatternProcessor import AnswerPatternProcessor
-from controllers.BigQueryHandler import BigQueryHandler
+# import uuid
+# from controllers.MatrixLayerOne import MatrixLayerOne
+# from controllers.MatrixLayerTwo import MatrixLayerTwo
+# from controllers.GptAgentInteractions import GptAgentInteractions
+# from controllers.AnswerPatternProcessor import AnswerPatternProcessor
+# from controllers.BigQueryHandler import BigQueryHandler
 
 
-
-timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-general_uuid = str(uuid.uuid4())
-key = f"{timestamp}_{general_uuid}"
-
-json_file_path = "./logics/simple_va_inheritance_20231117.json"
-
-with open(json_file_path, 'r') as json_file:
-    graph_data = json.load(json_file)
-
-
-gpt_agent_interactions = GptAgentInteractions(key, os.getenv('GRAPH_DATASET_ID'))
-
-gpt_agent_interactions.save_graph_data(graph_data, key)
-
-matrix_layer_one = MatrixLayerOne(key, graph_data, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
-
-filename = matrix_layer_one.create_advanced_adjacency_matrix()
-filename
-
-matrix_layer_one.multi_layered_matrix_upload_jsonl_to_bigquery(filename, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
-
-matrix_layer_one.adjacency_matrix_upload_to_bigquery(os.getenv('ADJACENCY_MATRIX_DATASET_ID'))
-
-graph_processor = GraphPatternProcessor(10, key)
-
-graph_processor.save_gpt_calls_to_jsonl(key)
-filename
-graph_processor.dump_to_bigquery(key, os.getenv('CURATED_CHAT_COMPLETIONS'))
-
-answer_pat_pro = AnswerPatternProcessor(key)
-
-key
-
-answer_pat_pro.dump_gpt_jsonl_to_bigquery(key)
-
-from google.cloud import bigquery
-import json
-
-# ToDo :: Next up
-answer_pat_pro.get_gpt_calls_blueprint()
-answer_pat_pro.run()
+#
+# timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+# general_uuid = str(uuid.uuid4())
+# key = f"{timestamp}_{general_uuid}"
+#
+# json_file_path = "./logics/simple_va_inheritance_20231117.json"
+#
+# with open(json_file_path, 'r') as json_file:
+#     graph_data = json.load(json_file)
+#
+#
+# gpt_agent_interactions = GptAgentInteractions(key, os.getenv('GRAPH_DATASET_ID'))
+#
+# gpt_agent_interactions.save_graph_data(graph_data, key)
+#
+# matrix_layer_one = MatrixLayerOne(key, graph_data, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
+#
+# filename = matrix_layer_one.create_advanced_adjacency_matrix()
+# filename
+#
+# matrix_layer_one.multi_layered_matrix_upload_jsonl_to_bigquery(filename, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
+#
+# matrix_layer_one.adjacency_matrix_upload_to_bigquery(os.getenv('ADJACENCY_MATRIX_DATASET_ID'))
+#
+# graph_processor = GraphPatternProcessor(10, key)
+#
+# graph_processor.save_gpt_calls_to_jsonl(key)
+# filename
+# graph_processor.dump_to_bigquery(key, os.getenv('CURATED_CHAT_COMPLETIONS'))
+#
+# answer_pat_pro = AnswerPatternProcessor(key)
+#
+# key
+#
+# answer_pat_pro.dump_gpt_jsonl_to_bigquery(key)
+#
+# from google.cloud import bigquery
+# import json
+#
+# # ToDo :: Next up
+# answer_pat_pro.get_gpt_calls_blueprint()
+# answer_pat_pro.run()
