@@ -324,6 +324,14 @@ class AnswerPatternProcessor:
 
         print(f"Loaded {job.output_rows} rows into {table_id}")
 
+
+
+
+
+
+
+
+
 # answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
 #
 # answer_pat_pro.bq_handler.create_dataset_if_not_exists()
