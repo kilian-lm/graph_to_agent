@@ -22,29 +22,21 @@ load_dotenv()
 
 class MatrixLayerOne:
     def __init__(self, key, graph_data, dataset_id):
-        try:
-            self.key = key
-            print(self.key)
-            self.log_file = f'{self.key}_matrix_layer_one.log'
-            print(self.log_file)
-            self.log_dir = './temp_log'
-            print(self.log_dir)
-            self.log_level = logging.DEBUG
-            print(self.log_level)
-            self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
+        self.key = key
+        print(self.key)
+        self.log_file = f'{self.key}_matrix_layer_one.log'
+        print(self.log_file)
+        self.log_dir = './temp_log'
+        print(self.log_dir)
+        self.log_level = logging.DEBUG
+        print(self.log_level)
+        self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
-            self.filename = None
-            self.graph_data = graph_data
+        self.filename = None
+        self.graph_data = graph_data
 
-            self.dataset_id = dataset_id
-            self.bq_handler = BigQueryHandler(self.key)
-
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
-            raise
-        except Exception as e:
-            self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
-            raise
+        self.dataset_id = dataset_id
+        self.bq_handler = BigQueryHandler(self.key)
 
     def multi_layered_matrix_upload_jsonl_to_bigquery(self, filename, dataset_id):
         """
@@ -192,77 +184,3 @@ class MatrixLayerOne:
         edges = self.graph_data.get("edges", [])
         for edge in edges:
             print(f"From {edge['from']} to {edge['to']}")
-
-    # def prepare_and_identify_label(self, search_label):
-    #     """
-    #     Prepare a third layer and identify a single string in the label data.
-    #     """
-    #     label_layer = self.create_label_layer()
-    #     matching_nodes = [node_id for node_id, label in label_layer.items() if label == search_label]
-    #     print(f"Nodes with label '{search_label}': {matching_nodes}")
-    #     return matching_nodes
-
-    # Example usage:
-    # patterns = your_matrix_instance.find_patterns()
-    # print(patterns)
-    # def get_patterns(self):
-    # Return the found patterns
-    # return self.find_patterns()
-
-    # def main_matrix_layer_one(self, json_graph_data):
-    #     graph_data = json.loads(json_graph_data)
-    #     self.graph_id = self.key
-    # mat_3d = Matrix3D(graph_data, "graph_to_agent_adjacency_matrices", f"{graph_id}_2")
-
-# json_file_path = "./logics/simple_va_inheritance_20231117.json"
-#
-# with open(json_file_path, 'r') as json_file:
-#     graph_data = json.load(json_file)
-
-# matrix_layer_one = MatrixLayerOne("20231117163236", graph_data, "graph_to_agent")
-#
-# matrix_layer_one.create_advanced_adjacency_matrix()
-# # matrix_layer_one.upload_jsonl_to_bigquery('20231117163236_advanced_adjacency_matrix.jsonl')
-
-# matrix_layer_one.create_bq_schema_for_advanced_matrix()
-
-# matrix_layer_one.upload_advanced_matrix_to_bigquery()
-#
-# timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-#
-# # mat_3d = Matrix3D(graph_data, "graph_to_agent_adjacency_matrices", f"{graph_id}_2")
-#
-# mat_3d = MatrixLayerOne(timestamp, graph_data, "graph_to_agent_adjacency_matrices")
-# mat_3d.upload_to_bigquery()
-# # mat_1 = mat_3d.create_binary_layer()
-# # mat_1
-# #
-# # tbl = mat_3d.bigquery_client.get_table("enter-universes.graph_to_agent_adjacency_matrices.20231114115221_2")
-# #
-# # tbl_id = "enter-universes.graph_to_agent_adjacency_matrices.20231114115221_2"
-# #
-# # df = mat_3d.bigquery_client.query(f"SELECT * FROM `{tbl_id}`").to_dataframe()
-# # df
-#
-# # mat_3d.count_trees_in_matrix(df)
-#
-# mat_3d.upload_to_bigquery("graph_to_agent_adjacency_matrices",f"{graph_id}_2")
-# mat_3d.upload_jsonl_to_bq(f"{graph_id}_2","test.jsonl")
-# mat_3d.save_matrix_to_jsonl("test.jsonl")
-#
-# mat_3d.bq_handler.load_jsonl_to_bq("graph_to_agent_adjacency_matrices", graph_id, "test.jsonl")
-#
-# mat_3d.save_matrix_to_bq()
-#
-# mat_3d.create_binary_layer()
-#
-# mat_3d.bigquery_client.schema_from_json('test.jsonl')
-#
-# mat_3d.bigquery_client.get_table("enter-universes.graph_to_agent_adjacency_matrices.test").schema
-#
-# mat_3d.print_binary_layer_matrix()
-# mat_3d.count_connected_subtrees()
-#
-# mat_3d.find_connected_subtrees()
-#
-# mat_3d.find_patterns()
