@@ -37,9 +37,8 @@ load_dotenv()
 
 
 class GraphPatternProcessor(VariableConnectedComponentsProcessor):
-    def __init__(self, num_steps, key, graph):
+    def __init__(self, num_steps, key):
 
-        super().__init__(graph, key)
         self.key = key
         print(self.key)
         self.log_file = f'{self.key}_stats_engine_debug.log'
@@ -175,7 +174,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
                         json_line = json.dumps(gpt_call)
                         file.write(json_line + '\n')
 
-    def generate_gpt_call_json(self, path, path_uuid, graph_id):
+    def generate_gpt_call_json(self, path, path_uuid, key):
         """Generate a JSON representation of a GPT call with UUID and graph_id."""
         labels = [self.graph.nodes[node]['label'] for node in path]
         if self.is_valid_blueprint(labels):
@@ -191,15 +190,15 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
                 },
                 "answer_node": {
                     "node_id": f"answer_{path[-1]}",
-                    "label": self.get_answer_label(path)
+                    "label": self.get_answer_label(path, key)
                 },
                 "uuid": path_uuid,
-                "graph_id": graph_id
+                "graph_id": key
             }
             return gpt_call_json, True
         return {}, False
 
-    def get_answer_label(self, path):
+    def get_answer_label(self, path, key):
         """Get the label for the answer node, considering @variable terms."""
         # Find @variable nodes
         variable_nodes = self.find_variable_nodes(key)
@@ -235,8 +234,6 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         job.result()
 
         print(f"Uploaded {file_path} to {table_id}")
-
-
 
 # import uuid
 # from controllers.MatrixLayerOne import MatrixLayerOne

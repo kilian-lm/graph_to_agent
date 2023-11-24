@@ -198,22 +198,10 @@ class App():
         matrix_layer_one.adjacency_matrix_upload_to_bigquery(os.getenv('ADJACENCY_MATRIX_DATASET_ID'))
 
         graph_processor = GraphPatternProcessor(10, key)
-
         graph_processor.save_gpt_calls_to_jsonl(key)
-        filename
         graph_processor.dump_to_bigquery(key, os.getenv('CURATED_CHAT_COMPLETIONS'))
-
         answer_pat_pro = AnswerPatternProcessor(key)
-
-        key
-
         answer_pat_pro.dump_gpt_jsonl_to_bigquery(key)
-
-        from google.cloud import bigquery
-        import json
-
-        # ToDo :: Next up
-        answer_pat_pro.get_gpt_calls_blueprint()
         answer_pat_pro.run()
 
     def run(self):
