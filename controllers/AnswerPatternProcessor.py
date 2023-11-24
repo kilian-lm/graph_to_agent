@@ -158,27 +158,87 @@ class AnswerPatternProcessor:
 
         return jsonl_filename
 
-    def dump_gpt_jsonl_to_bigquery(self, dataset_name, jsonl_filename):
-        """Upload the JSONL data to BigQuery."""
-        # client = bigquery.Client()
+    # def dump_gpt_jsonl_to_bigquery(self, dataset_name, jsonl_filename):
+    #     """Upload the JSONL data to BigQuery."""
+    #     # client = bigquery.Client()
+    #
+    #     self.bq_handler.create_dataset_if_not_exists(dataset_name)
+    #     # test_name = "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl"
+    #     # test_name.split(".")[0]
+    #     table_id = jsonl_filename.split(".")[0]
+    #     self.bq_handler.create_table_if_not_exists(table_id)
+    #
+    #     table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{table_id}"
+    #     job_config = bigquery.LoadJobConfig(
+    #         source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+    #         autodetect=True,
+    #         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+    #     )
+    #     with open(jsonl_filename, "rb") as source_file:
+    #         job = self.bq_handler.bigquery_client.load_table_from_file(
+    #             source_file, table_id, job_config=job_config
+    #         )
+    #     job.result()
 
-        self.bq_handler.create_dataset_if_not_exists(dataset_name)
-        # test_name = "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl"
-        # test_name.split(".")[0]
-        table_id = jsonl_filename.split(".")[0]
-        self.bq_handler.create_table_if_not_exists(table_id)
+    def transform_record(self, record):
+        """
+        Transforms a record from the JSONL format to the BigQuery schema.
+        """
+        transformed = {
+            'graph_id': record.get('graph_id'),
+            'uuid': record.get('uuid'),
+            'answer_node': {
+                'label': record.get('answer_node', {}).get('label'),
+                'node_id': record.get('answer_node', {}).get('node_id')
+            },
+            'gpt_call': {
+                'model': record.get('gpt_call', {}).get('model'),
+                'messages': record.get('gpt_call', {}).get('messages', [])
+            },
+            'path': record.get('path', [])
+        }
+        return transformed
 
-        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{table_id}"
+    def load_to_bigquery(self, data, table_id):
+        """
+        Loads data to a BigQuery table.
+        """
         job_config = bigquery.LoadJobConfig(
-            source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
-            autodetect=True,
-            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+            schema=[
+                bigquery.SchemaField("graph_id", "STRING"),
+                bigquery.SchemaField("uuid", "STRING"),
+                bigquery.SchemaField("answer_node", "RECORD", fields=[
+                    bigquery.SchemaField("label", "STRING"),
+                    bigquery.SchemaField("node_id", "STRING"),
+                ]),
+                bigquery.SchemaField("gpt_call", "RECORD", fields=[
+                    bigquery.SchemaField("model", "STRING"),
+                    bigquery.SchemaField("messages", "RECORD", mode="REPEATED", fields=[
+                        bigquery.SchemaField("content", "STRING"),
+                        bigquery.SchemaField("role", "STRING"),
+                    ]),
+                ]),
+                bigquery.SchemaField("path", "STRING", mode="REPEATED")
+            ],
+            write_disposition="WRITE_TRUNCATE",
         )
-        with open(jsonl_filename, "rb") as source_file:
-            job = self.bq_handler.bigquery_client.load_table_from_file(
-                source_file, table_id, job_config=job_config
-            )
-        job.result()
+
+        bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
+
+        bq_client_secrets_parsed = json.loads(bq_client_secrets)
+        bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
+        bq_client = bigquery.Client(credentials=bq_client_secrets,
+                                    project=bq_client_secrets.project_id)
+
+        job = bq_client.load_table_from_json(data, table_id, job_config=job_config)
+        job.result()  # Wait for the job to complete
+
+        if job.errors:
+            raise Exception(f'BigQuery load error: {job.errors}')
+        else:
+            print(f'Loaded {len(data)} rows into {table_id}.')
+
+        # Define your BigQuery table ID
 
     def run(self):
         # Get the GPT calls blueprint

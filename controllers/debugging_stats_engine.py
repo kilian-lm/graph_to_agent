@@ -358,42 +358,123 @@ answer_pat_pro.dump_gpt_jsonl_to_bigquery(os.getenv('CURATED_CHAT_COMPLETIONS'),
 from google.cloud import bigquery
 import json
 
-def upload_jsonl_to_bigquery(jsonl_file_path, project_id, dataset_id, table_id):
-    client = bigquery.Client(project=project_id)
-    table_ref = client.dataset(dataset_id).table(table_id)
 
-    # Define the BigQuery schema
-    schema = [
-        bigquery.SchemaField("graph_id", "STRING"),
-        bigquery.SchemaField("uuid", "STRING"),
-        bigquery.SchemaField("answer_node", "RECORD", fields=[
-            bigquery.SchemaField("label", "STRING"),
-            bigquery.SchemaField("node_id", "STRING"),
-        ]),
-        bigquery.SchemaField("gpt_call", "RECORD", fields=[
-            bigquery.SchemaField("messages", "RECORD", mode="REPEATED", fields=[
-                bigquery.SchemaField("content", "STRING"),
-                bigquery.SchemaField("role", "STRING"),
+# def upload_jsonl_to_bigquery(jsonl_file_path, dataset_id, table_id):
+#     bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
+#
+#     bq_client_secrets_parsed = json.loads(bq_client_secrets)
+#     bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
+#     bq_client = bigquery.Client(credentials=bq_client_secrets,
+#                                 project=bq_client_secrets.project_id)
+#     table_ref = bq_client.dataset(dataset_id).table(table_id)
+#
+#     # Define the BigQuery schema
+#     schema = [
+#         bigquery.SchemaField("graph_id", "STRING"),
+#         bigquery.SchemaField("uuid", "STRING"),
+#         bigquery.SchemaField("answer_node", "RECORD", fields=[
+#             bigquery.SchemaField("label", "STRING"),
+#             bigquery.SchemaField("node_id", "STRING"),
+#         ]),
+#         bigquery.SchemaField("gpt_call", "RECORD", fields=[
+#             bigquery.SchemaField("messages", "RECORD", mode="REPEATED", fields=[
+#                 bigquery.SchemaField("content", "STRING"),
+#                 bigquery.SchemaField("role", "STRING"),
+#             ]),
+#             bigquery.SchemaField("model", "STRING"),
+#         ]),
+#         bigquery.SchemaField("path", "STRING", mode="REPEATED"),
+#     ]
+#
+#     # Configure the load job
+#     job_config = bigquery.LoadJobConfig(schema=schema, source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON)
+#
+#     # Load data from the JSONL file into the BigQuery table
+#     with open(jsonl_file_path, "rb") as source_file:
+#         job = bq_client.load_table_from_file(source_file, table_ref, job_config=job_config)
+#
+#     # Wait for the load job to complete
+#     job.result()
+#
+#     print(f"Uploaded data to {dataset_id}.{table_id}")
+
+
+def transform_record(record):
+    """
+    Transforms a record from the JSONL format to the BigQuery schema.
+    """
+    transformed = {
+        'graph_id': record.get('graph_id'),
+        'uuid': record.get('uuid'),
+        'answer_node': {
+            'label': record.get('answer_node', {}).get('label'),
+            'node_id': record.get('answer_node', {}).get('node_id')
+        },
+        'gpt_call': {
+            'model': record.get('gpt_call', {}).get('model'),
+            'messages': record.get('gpt_call', {}).get('messages', [])
+        },
+        'path': record.get('path', [])
+    }
+    return transformed
+
+def load_to_bigquery(data, table_id):
+    """
+    Loads data to a BigQuery table.
+    """
+    job_config = bigquery.LoadJobConfig(
+        schema=[
+            bigquery.SchemaField("graph_id", "STRING"),
+            bigquery.SchemaField("uuid", "STRING"),
+            bigquery.SchemaField("answer_node", "RECORD", fields=[
+                bigquery.SchemaField("label", "STRING"),
+                bigquery.SchemaField("node_id", "STRING"),
             ]),
-            bigquery.SchemaField("model", "STRING"),
-        ]),
-        bigquery.SchemaField("path", "STRING", mode="REPEATED"),
-    ]
+            bigquery.SchemaField("gpt_call", "RECORD", fields=[
+                bigquery.SchemaField("model", "STRING"),
+                bigquery.SchemaField("messages", "RECORD", mode="REPEATED", fields=[
+                    bigquery.SchemaField("content", "STRING"),
+                    bigquery.SchemaField("role", "STRING"),
+                ]),
+            ]),
+            bigquery.SchemaField("path", "STRING", mode="REPEATED")
+        ],
+        write_disposition="WRITE_TRUNCATE",
+    )
 
-    # Configure the load job
-    job_config = bigquery.LoadJobConfig(schema=schema, source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON)
+    bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
 
-    # Load data from the JSONL file into the BigQuery table
-    with open(jsonl_file_path, "rb") as source_file:
-        job = client.load_table_from_file(source_file, table_ref, job_config=job_config)
+    bq_client_secrets_parsed = json.loads(bq_client_secrets)
+    bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
+    bq_client = bigquery.Client(credentials=bq_client_secrets,
+                                project=bq_client_secrets.project_id)
 
-    # Wait for the load job to complete
-    job.result()
+    job = bq_client.load_table_from_json(data, table_id, job_config=job_config)
+    job.result()  # Wait for the job to complete
 
-    print(f"Uploaded data to {dataset_id}.{table_id}")
+    if job.errors:
+        raise Exception(f'BigQuery load error: {job.errors}')
+    else:
+        print(f'Loaded {len(data)} rows into {table_id}.')
+
+    # Define your BigQuery table ID
+
+table_id = 'enter-universes.graph_to_agent_chat_completions.20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e'
+
+# Read and transform data from the JSONL file
+transformed_data = []
+with open('20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e.jsonl', 'r') as file:
+    for line in file:
+        record = json.loads(line)
+        transformed_data.append(transform_record(record))
+
+# Load data to BigQuery
+load_to_bigquery(transformed_data, table_id)
+
+
 
 # Example usage
-upload_jsonl_to_bigquery("path/to/your/file.jsonl", "your-project-id", "your_dataset_id", "your_table_id")
+upload_jsonl_to_bigquery("20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e.jsonl",  os.getenv('CURATED_CHAT_COMPLETIONS'), "20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e")
 
 key
 # ToDo :: Next up
