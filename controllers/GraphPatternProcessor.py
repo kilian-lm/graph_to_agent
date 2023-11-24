@@ -15,6 +15,7 @@ import inspect
 import re
 from google.api_core.exceptions import NotFound
 import numpy as np
+import uuid
 
 import pandas as pd
 import networkx as nx
@@ -201,7 +202,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
     def get_answer_label(self, path):
         """Get the label for the answer node, considering @variable terms."""
         # Find @variable nodes
-        variable_nodes = self.find_variable_nodes()
+        variable_nodes = self.find_variable_nodes(key)
         components_with_variables = self.find_connected_components_with_variables(variable_nodes)
 
         # Check if any node in the path is part of a connected component with @variables
@@ -236,6 +237,16 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         print(f"Uploaded {file_path} to {table_id}")
 
 
+
+import uuid
+from controllers.MatrixLayerOne import MatrixLayerOne
+from controllers.MatrixLayerTwo import MatrixLayerTwo
+from controllers.GptAgentInteractions import GptAgentInteractions
+from controllers.AnswerPatternProcessor import AnswerPatternProcessor
+from controllers.BigQueryHandler import BigQueryHandler
+
+
+
 timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 general_uuid = str(uuid.uuid4())
 key = f"{timestamp}_{general_uuid}"
@@ -245,7 +256,8 @@ json_file_path = "./logics/simple_va_inheritance_20231117.json"
 with open(json_file_path, 'r') as json_file:
     graph_data = json.load(json_file)
 
-gpt_agent_interactions = v2GptAgentInteractions(key, os.getenv('GRAPH_DATASET_ID'))
+
+gpt_agent_interactions = GptAgentInteractions(key, os.getenv('GRAPH_DATASET_ID'))
 
 gpt_agent_interactions.save_graph_data(graph_data, key)
 

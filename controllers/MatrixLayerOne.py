@@ -23,7 +23,6 @@ load_dotenv()
 class MatrixLayerOne:
     def __init__(self, key, graph_data, dataset_id):
         try:
-            # timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
             self.key = key
             print(self.key)
             self.log_file = f'{self.key}_matrix_layer_one.log'
@@ -42,7 +41,7 @@ class MatrixLayerOne:
             self.graph_data = graph_data
 
             self.dataset_id = dataset_id
-            self.bq_handler = BigQueryHandler(self.key, self.dataset_id)
+            self.bq_handler = BigQueryHandler(self.key)
 
             # ToDo :: Dublicated import of bq !!
             #  From mere class initialization in another class to inheritance
@@ -115,7 +114,6 @@ class MatrixLayerOne:
 
         return self.filename
 
-
     def generate_bigquery_schema_from_graph(self):
         # Initialize schema with 'node_id' field
         schema = [bigquery.SchemaField('node_id', 'STRING', 'NULLABLE')]
@@ -157,28 +155,6 @@ class MatrixLayerOne:
         else:
             print("Data uploaded successfully.")
 
-    # def count_trees_in_matrix(self, df):
-    #     """
-    #     Count the number of distinct trees (connected components) in the adjacency matrix represented by a pandas DataFrame.
-    #     """
-    #
-    #     def dfs(node, visited):
-    #         visited.add(node)
-    #         for neighbor in range(len(df)):
-    #             # Check if there's an edge and the neighbor hasn't been visited
-    #             if df.iloc[node, neighbor] == 1 and neighbor not in visited:
-    #                 dfs(neighbor, visited)
-    #
-    #     visited = set()
-    #     tree_count = 0
-    #
-    #     for node in range(len(df)):
-    #         if node not in visited:
-    #             dfs(node, visited)
-    #             tree_count += 1
-    #
-    #     return tree_count
-
     def create_binary_layer(self):
         # Create a binary layer based on node connections
         nodes = self.graph_data["nodes"]
@@ -198,52 +174,6 @@ class MatrixLayerOne:
         self.logger.info(binary_layer)
 
         return binary_layer
-
-    # def create_label_layer(self):
-    #     # Create a label layer based on node labels
-    #     nodes = self.graph_data["nodes"]
-    #     label_layer = {}
-    #     for node in nodes:
-    #         label_layer[node["id"]] = node["label"]
-    #     return label_layer
-
-    # def find_patterns(self):
-    #     # Find hierarchical patterns in the 3D matrix
-    #     patterns = []
-    #     nodes = self.graph_data["nodes"]
-    #     edges = self.graph_data["edges"]
-    #
-    #     def is_valid_pattern(pattern):
-    #         # Check if a pattern is valid (e.g., "user", "system", "user")
-    #         if len(pattern) != 6:
-    #             return False
-    #         return (
-    #                 pattern[0] == "user" and
-    #                 pattern[2] == "system" and
-    #                 pattern[4] == "user"
-    #         )
-    #
-    #     def dfs(node, pattern):
-    #         # Depth-first search to traverse the hierarchy and find patterns
-    #         pattern.append(node["label"])
-    #
-    #         if node["label"] == "system" and len(pattern) > 1:
-    #             for edge in edges:
-    #                 if edge["from"] == node["id"]:
-    #                     next_node = next(n for n in nodes if n["id"] == edge["to"])
-    #                     dfs(next_node, pattern)
-    #
-    #         if node["label"] == "user" and len(pattern) > 1:
-    #             patterns.append(tuple(pattern))
-    #
-    #         pattern.pop()
-    #
-    #     for node in nodes:
-    #         if node["label"] == "user":
-    #             dfs(node, [])
-    #
-    #     valid_patterns = [p for p in patterns if is_valid_pattern(p)]
-    #     return valid_patterns
 
     def print_binary_layer_matrix(self):
         """
@@ -295,7 +225,6 @@ class MatrixLayerOne:
     #     graph_data = json.loads(json_graph_data)
     #     self.graph_id = self.key
     # mat_3d = Matrix3D(graph_data, "graph_to_agent_adjacency_matrices", f"{graph_id}_2")
-
 
 # json_file_path = "./logics/simple_va_inheritance_20231117.json"
 #

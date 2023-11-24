@@ -16,6 +16,7 @@ import inspect
 # custom classes
 from logger.CustomLogger import CustomLogger
 from controllers.MatrixLayerOne import MatrixLayerOne
+from controllers.BigQueryHandler import BigQueryHandler
 
 load_dotenv()
 
@@ -24,14 +25,12 @@ load_dotenv()
 
 # class v2GptAgentInteractions(MatrixLayerOne):
 
-class v2GptAgentInteractions():
+class GptAgentInteractions():
 
-    def __init__(self, timestamp, dataset_id):
-        # First logging
-        # self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        self.timestamp = timestamp
-        print(self.timestamp)
-        self.log_file = f'{self.timestamp}_gpt_agent_interactions.log'
+    def __init__(self, key, dataset_id):
+        self.key = key
+        print(self.key)
+        self.log_file = f'{self.key}_gpt_agent_interactions.log'
         print(self.log_file)
         self.log_dir = './temp_log'
         print(self.log_dir)
@@ -52,7 +51,10 @@ class v2GptAgentInteractions():
         self.edges_table = os.getenv('EDGES_TABLE')
         self.nodes_table = os.getenv('NODES_TABLE')
         self.graph_data = None
-        self.matrix_layer_one = MatrixLayerOne(self.timestamp, self.graph_data, self.graph_to_agent_adjacency_matrices)
+
+        self.matrix_layer_one = MatrixLayerOne(self.key, self.graph_data, self.graph_to_agent_adjacency_matrices)
+        self.bq_handler = BigQueryHandler(self.key)
+
 
         self.dataset_id = dataset_id
         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
@@ -312,8 +314,7 @@ class v2GptAgentInteractions():
 
         # Serialize data to json
         json_data = json.dumps(translated_data, indent=4)
-        # timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        filename = f"temp_local/processed_graph_{self.timestamp}.json"
+        filename = f"temp_local/processed_graph_{self.key}.json"
 
         # Check if the temp_local directory exists
         if not os.path.exists('temp_local'):
@@ -448,13 +449,6 @@ class v2GptAgentInteractions():
         try:
             self.create_dataset_if_not_exists()
 
-            # # self.graph_to_agent_adjacency_matrices = "graph_to_agent_adjacency_matrices"
-            # self.graph_data = graph_data
-            # self.matrix_layer_one = MatrixLayerOne(self.timestamp, self.graph_data, self.matrix_layer_one_dataset_id)
-            #
-            # self.matrix_layer_one.upload_to_bigquery()
-
-
 
             nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.nodes_table)
             edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.edges_table)
@@ -488,11 +482,6 @@ class v2GptAgentInteractions():
             if errors_edges:
                 self.logger.info(f"Encountered errors while inserting edges: {errors_edges}")
 
-            # Compile all errors
-            # all_errors = {
-            #     "node_errors": errors_nodes,
-            #     "edge_errors": errors_edges
-            # }
 
             if errors_nodes or errors_edges:
                 self.logger.error("Errors occurred during the saving of graph data.")
