@@ -3,6 +3,7 @@ import datetime
 from flask import Flask, render_template, jsonify, request
 import uuid
 import logging
+import json
 
 # All custom classes
 from controllers.MatrixLayerOne import MatrixLayerOne
@@ -172,7 +173,7 @@ class App():
         self.app.route('/save-graph', methods=['POST'])(self.save_graph)
 
     def matrix_sudoku_approach(self):
-        import json
+        # import json
 
         timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         general_uuid = str(uuid.uuid4())
