@@ -52,9 +52,9 @@ class VariableConnectedComponentsProcessor:
         except Exception as e:
             raise
 
-    def process_graph(self):
+    def process_graph(self, key):
         """Process the graph to find connected components with @variable nodes."""
-        variable_nodes = self.find_variable_nodes()
+        variable_nodes = self.find_variable_nodes(key)
         connected_components_with_variables = self.find_connected_components_with_variables(variable_nodes)
         for component in connected_components_with_variables:
             print("Connected Component containing @variable node:", list(component))
