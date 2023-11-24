@@ -38,66 +38,16 @@ class GptAgentInteractions():
         print(self.log_level)
         self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
-        self.openai_api_key = os.getenv('OPENAI_API_KEY')
-        self.openai_base_url = "https://api.openai.com/v1/chat/completions"
-        self.headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.openai_api_key}'
-        }
-
-        # ToDo :: From mere class initialization in another class to inheritance
-
+        self.graph_dataset_id = os.getenv('GRAPH_DATASET_ID')
         self.graph_to_agent_adjacency_matrices = os.getenv('MATRIX_DATASET_ID')
         self.edges_table = os.getenv('EDGES_TABLE')
         self.nodes_table = os.getenv('NODES_TABLE')
         self.graph_data = None
 
-        self.matrix_layer_one = MatrixLayerOne(self.key, self.graph_data, self.graph_to_agent_adjacency_matrices)
+        # self.matrix_layer_one = MatrixLayerOne(self.key, self.graph_data, self.graph_to_agent_adjacency_matrices)
         self.bq_handler = BigQueryHandler(self.key)
 
         self.dataset_id = dataset_id
-        bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
-
-        try:
-            bq_client_secrets_parsed = json.loads(bq_client_secrets)
-            self.bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
-            self.bigquery_client = bigquery.Client(credentials=self.bq_client_secrets,
-                                                   project=self.bq_client_secrets.project_id)
-            self.logger.info("BigQuery client successfully initialized.")
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
-            raise
-        except Exception as e:
-            self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
-            raise
-
-    # def create_dataset_if_not_exists(self):
-    #     dataset_ref = self.bigquery_client.dataset(self.dataset_id)
-    #     try:
-    #         self.bigquery_client.get_dataset(dataset_ref)
-    #         self.logger.info(f"Dataset {self.dataset_id} already exists.")
-    #     except Exception as e:
-    #         try:
-    #             dataset = bigquery.Dataset(dataset_ref)
-    #             self.bigquery_client.create_dataset(dataset)
-    #             self.logger.info(f"Dataset {self.dataset_id} created.")
-    #         except Exception as ex:
-    #             self.logger.error(f"Failed to create dataset {self.dataset_id}: {ex}")
-    #             raise
-
-    def create_table_if_not_exists(self, table_id, schema):
-        table_ref = self.bigquery_client.dataset(self.dataset_id).table(table_id)
-        try:
-            self.bigquery_client.get_table(table_ref)
-            self.logger.info(f"Table {table_id} already exists.")
-        except Exception as e:
-            try:
-                table = bigquery.Table(table_ref, schema=schema)
-                self.bigquery_client.create_table(table)
-                self.logger.info(f"Table {table_id} created.")
-            except Exception as ex:
-                self.logger.error(f"Failed to create table {table_id}: {ex}")
-                raise
 
     def get_node_schema(self):
         return [
@@ -115,27 +65,27 @@ class GptAgentInteractions():
 
     def get_available_graphs(self):
         # Query to get distinct graph_ids from the nodes_table
-        query = f"SELECT DISTINCT graph_id FROM `{self.dataset_id}.nodes_table`"
-        query_job = self.bigquery_client.query(query)
+        query = f"SELECT DISTINCT graph_id FROM `{self.dataset_id}.{self.nodes_table}`"
+        query_job = self.bq_handler.bigquery_client.query(query)
         results = query_job.result()
 
         return [{"graph_id": row["graph_id"], "graph_name": row["graph_id"]} for row in results]
 
-    def load_graph_data_by_id(self, graph_id):
-        nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
-        edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
+    def load_graph_data_by_id(self):
+        # nodes_table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table("nodes_table")
+        # edges_table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table("edges_table")
 
         # Fetch nodes for given graph_id
-        nodes_query = f"SELECT * FROM `{self.dataset_id}.nodes_table` WHERE graph_id = '{graph_id}'"
-        nodes_query_job = self.bigquery_client.query(nodes_query)
+        nodes_query = f"SELECT * FROM `{self.dataset_id}.{self.nodes_table}` WHERE graph_id = '{self.key}'"
+        nodes_query_job = self.bq_handler.bigquery_client.query(nodes_query)
         nodes_results = nodes_query_job.result()
         nodes = [{"id": row['id'], "label": row['label']} for row in nodes_results]
 
         self.logger.info(f"nodes loaded by graph id {nodes} already exists.")
 
         # Fetch edges for given graph_id
-        edges_query = f"SELECT * FROM `{self.dataset_id}.edges_table` WHERE graph_id = '{graph_id}'"
-        edges_query_job = self.bigquery_client.query(edges_query)
+        edges_query = f"SELECT * FROM `{self.dataset_id}.{self.edges_table}` WHERE graph_id = '{self.key}'"
+        edges_query_job = self.bq_handler.bigquery_client.query(edges_query)
         edges_results = edges_query_job.result()
         edges = [{"from": row['from'], "to": row['to']} for row in edges_results]
 
@@ -172,66 +122,6 @@ class GptAgentInteractions():
                       not any(edge['to'] == node['id'] for edge in graph_data['edges'])]
 
         return root_nodes
-
-    def call_tree(self, root_nodes, tree):
-
-        # tree = self.build_tree_structure(graph_data['nodes'], graph_data['edges'])
-
-        # Now let's print the trees. There may be multiple roots if the graph is not a single tree.
-        for root_id in root_nodes:
-            self.print_tree(tree, root_id)
-            print("\n")  # Add spacing between different trees (if any)
-
-    def tree_to_gpt_call(self, tree, node_id, is_user=True):
-        messages = []
-        node = tree[node_id]
-
-        # If the current node is a 'user' or 'system', process its first child as the content.
-        if node['label'] in ['user', 'system']:
-            role = 'user' if is_user else 'system'
-            if node['children']:
-                content_node_id = node['children'][0]  # First child is the content.
-                content = tree[content_node_id]['label']
-                messages.append({"role": role, "content": content})
-
-                # Process the response (next child of the content node).
-                if len(tree[content_node_id]['children']) > 0:
-                    response_node_id = tree[content_node_id]['children'][0]
-                    messages.extend(self.tree_to_gpt_call(tree, response_node_id, not is_user))
-
-        return messages
-
-    # def tree_based_design_general(self, root_nodes, tree):
-    #     all_messages = []
-    #
-    #     for root_id in root_nodes:
-    #         messages = self.tree_to_gpt_call(tree, root_id)
-    #         all_messages.extend(messages)
-    #
-    #     gpt_call = {
-    #         "model": "gpt-3.5-turbo",
-    #         "messages": all_messages
-    #     }
-    #
-    #     return gpt_call
-
-    # def main_tree_based_design_general(self, graph_data):
-    #     # graph_data = self.load_json_graph(json_graph_data)
-    #     self.logger.info(graph_data)
-    #     tree = self.build_tree_structure(graph_data['nodes'], graph_data['edges'])
-    #     self.logger.info(tree)
-    #
-    #     root_nodes = self.provide_root_nodes(graph_data)
-    #     self.logger.info(root_nodes)
-    #
-    #     gpt_calls = self.tree_based_design_general(root_nodes, tree)
-    #     self.logger.info(gpt_calls)
-    #     self.logger.info(self.call_tree(root_nodes, tree))
-    #     response = self.get_gpt_response(gpt_calls)
-    #
-    #     # process_gpt_response_and_update_graph
-    #
-    #     return response
 
     def translate_graph_data_for_bigquery(self, graph_data, graph_id):
         # Extract nodes and edges from the graph data
@@ -330,47 +220,6 @@ class GptAgentInteractions():
     #         'processed_data': translated_data
     #     }
 
-    def extract_and_send_to_gpt(self, processed_data):
-
-        actual_data = processed_data.get("processed_data", {})
-        messages = actual_data.get("messages", [])
-
-        post_data = {
-            "model": os.getenv("MODEL"),
-            "messages": messages
-        }
-
-        # Send POST request to GPT
-        response = requests.post(self.openai_base_url, headers=self.headers, json=post_data)
-
-        if response.status_code == 200:
-            agent_content = response.json()["choices"][0]["message"]["content"]
-            return agent_content
-        else:
-            raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
-
-    # def extract_gpt_interactions_before_save(self, graph_data, graph_id):
-    #
-    #     nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
-    #     # Log the transformed data for debugging
-    #     self.logger.info(f"extract_gpt_interactions_before_save, Transformed Nodes: {nodes_for_bq}")
-    #     self.logger.info(f"extract_gpt_interactions_before_save, Transformed Edges: {edges_for_bq}")
-    #
-    #     graph_data_as_dicts = {
-    #         "nodes": nodes_for_bq,
-    #         "edges": edges_for_bq
-    #     }
-    #
-    #     self.logger.info(f"extract_gpt_interactions_before_save, graph_data_as_dicts: {graph_data_as_dicts}")
-    #
-    #     # Pass the dictionaries to the workflow logic
-    #     processed_data = self.translate_graph_to_gpt_sequence(graph_data_as_dicts)
-    #
-    #     processed_data = processed_data["processed_data"]
-    #     self.logger.info(f"processed_data: {processed_data}")
-    #     agent_content = self.extract_and_send_to_gpt(processed_data)
-    #     self.logger.info(f"agent_content: {agent_content}")
-
     def get_last_content_node(self, edges, nodes):
         # Assuming edges are ordered
         last_edge = edges[-1]
@@ -450,18 +299,18 @@ class GptAgentInteractions():
 
             # self.bq_handler.create_dataset_if_not_exists(os.getenv())
 
-            nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.nodes_table)
-            edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table(self.edges_table)
+            nodes_table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table(self.nodes_table)
+            edges_table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table(self.edges_table)
 
             # Check and create nodes table if it doesn't exist
-            self.create_table_if_not_exists(self.nodes_table, self.get_node_schema())
+            self.bq_handler.create_table_if_not_exists(self.graph_dataset_id, self.nodes_table, self.get_node_schema())
 
             # Check and create edges table if it doesn't exist
-            self.create_table_if_not_exists(self.edges_table, self.get_edge_schema())
+            self.bq_handler.create_table_if_not_exists(self.graph_dataset_id, self.edges_table, self.get_edge_schema())
 
             # Retrieve the tables and their schemas
-            nodes_table = self.bq_handler.bigquery_client.get_table(nodes_table_ref)
-            edges_table = self.bq_handler.bigquery_client.get_table(edges_table_ref)
+            self.nodes_table = self.bq_handler.bigquery_client.get_table(nodes_table_ref)
+            self.edges_table = self.bq_handler.bigquery_client.get_table(edges_table_ref)
 
             # Use the translator function to transform the data
             nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
@@ -471,14 +320,14 @@ class GptAgentInteractions():
             self.logger.info(f"controller save_graph_data, Transformed Edges: {edges_for_bq}")
 
             # Insert nodes and pass in the schema explicitly
-            errors_nodes = self.bigquery_client.insert_rows(nodes_table, nodes_for_bq,
-                                                            selected_fields=nodes_table.schema)
+            errors_nodes = self.bq_handler.bigquery_client.insert_rows(self.nodes_table, nodes_for_bq,
+                                                                       selected_fields=self.nodes_table.schema)
             if errors_nodes:
                 self.logger.info(f"Encountered errors while inserting nodes: {errors_nodes}")
 
             # Insert edges and pass in the schema explicitly
-            errors_edges = self.bigquery_client.insert_rows(edges_table, edges_for_bq,
-                                                            selected_fields=edges_table.schema)
+            errors_edges = self.bq_handler.bigquery_client.insert_rows(self.edges_table, edges_for_bq,
+                                                                       selected_fields=self.edges_table.schema)
             if errors_edges:
                 self.logger.info(f"Encountered errors while inserting edges: {errors_edges}")
 
@@ -503,169 +352,3 @@ class GptAgentInteractions():
         except Exception as e:
             self.logger.error("An unexpected error occurred during save_graph_data:")
         raise
-
-# graph_data_json = """
-# {
-#   "nodes": [
-#     {
-#       "id": "c7d1c0a4-6365-44d6-be0c-bd3fc5436b85",
-#       "label": "user"
-#     },
-#     {
-#       "id": "757e7439-08f8-4cea-afac-c25b01167d32",
-#       "label": "user"
-#     },
-#     {
-#       "id": "2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "label": "system"
-#     },
-#     {
-#       "id": "07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "label": "Understood! As I'm an expert in the .puml syntax i will correct it"
-#     },
-#     {
-#       "id": "1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "label": "The following is a .puml content generated by an agent. Please critically review it and correct any mistakes, especially ensuring it strictly adheres to .puml syntax and does not contain any elements from other diagramming languages like Mermaid"
-#     },
-#     {
-#       "id": "2d545024-3765-4b01-b1df-04da99ea4e80",
-#       "x": -575.9889498552049,
-#       "y": -331.9214349905721,
-#       "label": "sequenceDiagramAlice->>John: Hello John, how are you?John-->>Alice: Great!Alice-)John: See you later!"
-#     }
-#   ],
-#   "edges": [
-#     {
-#       "from": "07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "to": "757e7439-08f8-4cea-afac-c25b01167d32",
-#       "id": "84f178f5-9dba-4f5c-b525-e16ea173be2f"
-#     },
-#     {
-#       "from": "1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "to": "2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "id": "d535cac8-7bec-452e-b3ef-4c0184610ba3"
-#     },
-#     {
-#       "from": "2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "to": "07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "id": "1764a3dc-3198-4e08-819e-51ccf56f4a07"
-#     },
-#     {
-#       "from": "c7d1c0a4-6365-44d6-be0c-bd3fc5436b85",
-#       "to": "1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "id": "10bad7e6-bf61-42f2-95aa-47ba7abe6b30"
-#     },
-#     {
-#       "from": "757e7439-08f8-4cea-afac-c25b01167d32",
-#       "to": "2d545024-3765-4b01-b1df-04da99ea4e80",
-#       "id": "eb438078-7275-414e-9eed-cf77d931e0c3"
-#     }
-#   ]
-# }
-# """
-
-
-#
-# gpt_agent_interactions = v2GptAgentInteractions('graph_to_agent')
-
-# gpt_agent_interactions.main_tree_based_design_general(graph_data_json)
-
-#
-# graph_data = gpt_agent_interactions.load_json_graph(graph_data_json)
-#
-# gpt_agent_interactions.logger.info(graph_data)
-# tree = gpt_agent_interactions.build_tree_structure(graph_data['nodes'], graph_data['edges'])
-# gpt_agent_interactions.logger.info(tree)
-#
-# root_nodes = gpt_agent_interactions.provide_root_nodes(graph_data)
-# gpt_agent_interactions.logger.info(root_nodes)
-#
-# gpt_calls = gpt_agent_interactions.tree_based_design_general(root_nodes, tree)
-# gpt_agent_interactions.logger.info(gpt_calls)
-#
-# type(gpt_calls)
-#
-# test = json.dumps(gpt_calls)
-
-# post_data = {
-#     # "model": os.getenv("MODEL"),
-#     "model": test["model"],
-#     "messages": gpt_calls["messages"]
-# }
-
-# gpt_agent_interactions.extract_and_send_to_gpt(gpt_calls)
-
-# response =gpt_agent_interactions.get_gpt_response(gpt_calls)
-#
-# response = gpt_agent_interactions.get_gpt_response(gpt_calls)
-# response
-#
-#
-#
-# gpt_agent_interactions.call_tree(graph_data_json)
-# nodes_for_bq, edges_for_bq = gpt_agent_interactions.translate_graph_data_for_bigquery(graph_data_json, "test")
-
-# graph_data_json = """
-# {
-#   "nodes": [
-#     {
-#       "id": "c7d1c0a4-6365-44d6-be0c-bd3fc5436b85",
-#       "label": "user"
-#     },
-#     {
-#       "id": "757e7439-08f8-4cea-afac-c25b01167d32",
-#       "label": "user"
-#     },
-#     {
-#       "id": "2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "label": "system"
-#     },
-#     {
-#       "id": "07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "label": "Understood! As I'm an expert in the .puml syntax i will correct it"
-#     },
-#     {
-#       "id": "1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "label": "The following is a .puml content generated by an agent. Please critically review it and correct any mistakes, especially ensuring it strictly adheres to .puml syntax and does not contain any elements from other diagramming languages like Mermaid"
-#     },
-#     {
-#       "id": "2d545024-3765-4b01-b1df-04da99ea4e80",
-#       "x": -575.9889498552049,
-#       "y": -331.9214349905721,
-#       "label": "sequenceDiagramAlice->>John: Hello John, how are you?John-->>Alice: Great!Alice-)John: See you later!"
-#     }
-#   ],
-#   "edges": [
-#     {
-#       "from": "07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "to": "757e7439-08f8-4cea-afac-c25b01167d32",
-#       "id": "84f178f5-9dba-4f5c-b525-e16ea173be2f"
-#     },
-#     {
-#       "from": "1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "to": "2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "id": "d535cac8-7bec-452e-b3ef-4c0184610ba3"
-#     },
-#     {
-#       "from": "2e419e7e-a540-4c9a-af4e-5110e54fad96",
-#       "to": "07537a68-1c7e-4edb-a72f-2d82015c490f",
-#       "id": "1764a3dc-3198-4e08-819e-51ccf56f4a07"
-#     },
-#     {
-#       "from": "c7d1c0a4-6365-44d6-be0c-bd3fc5436b85",
-#       "to": "1cc45118-72ee-4efe-95d8-06e8c02fb4c0",
-#       "id": "10bad7e6-bf61-42f2-95aa-47ba7abe6b30"
-#     },
-#     {
-#       "from": "757e7439-08f8-4cea-afac-c25b01167d32",
-#       "to": "2d545024-3765-4b01-b1df-04da99ea4e80",
-#       "id": "eb438078-7275-414e-9eed-cf77d931e0c3"
-#     }
-#   ]
-# }
-# """
-# graph_data = json.loads(graph_data_json)
-# gpt_agent_interactions.translate_graph_to_gpt_sequence(graph_data)
-
-#
-# help(GptAgentInteractions)
