@@ -203,6 +203,7 @@ class AnswerPatternProcessor:
         """
         Loads data to a BigQuery table.
         """
+
         job_config = bigquery.LoadJobConfig(
             schema=[
                 bigquery.SchemaField("graph_id", "STRING"),
@@ -239,6 +240,17 @@ class AnswerPatternProcessor:
             print(f'Loaded {len(data)} rows into {table_id}.')
 
         # Define your BigQuery table ID
+
+    def dump_gpt_jsonl_to_bigquery(self, key):
+        transformed_data = []
+        with open(f'{key}.jsonl', 'r') as file:
+            for line in file:
+                record = json.loads(line)
+                transformed_data.append(self.transform_record(record))
+
+        # Load data to BigQuery
+        table_id = f"{self.bq_handler.bigquery_client.project}.{os.getenv('CURATED_CHAT_COMPLETIONS')}.{key}"
+        self.load_to_bigquery(transformed_data, table_id)
 
     def run(self):
         # Get the GPT calls blueprint
@@ -311,7 +323,6 @@ class AnswerPatternProcessor:
         job.result()  # Wait for the job to complete
 
         print(f"Loaded {job.output_rows} rows into {table_id}")
-
 
 # answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
 #

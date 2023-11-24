@@ -247,7 +247,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
             gpt_call_json = {
                 "path": path,
                 "gpt_call": {
-                    "model": "gpt-4",
+                    "model": os.getenv('MODEL'),
                     "messages": [
                         {"role": "user", "content": labels[1]},
                         {"role": "system", "content": labels[3]},
@@ -279,8 +279,11 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 
         return "None"
 
-    def dump_to_bigquery(self, table_name, dataset_name, file_path):
+    def dump_to_bigquery(self, key, dataset_name):
         """Upload the JSONL data to BigQuery."""
+
+        table_name = key
+        file_path = f"{key}.jsonl"
         table_id = f"{self.bq_client.project}.{dataset_name}.{table_name}"
 
         # Configure the load job
@@ -306,6 +309,8 @@ from controllers.MatrixLayerOne import MatrixLayerOne
 # from controllers.v1GraphPatternProcessor import v1GraphPatternProcessor
 from controllers.MatrixLayerTwo import MatrixLayerTwo
 from controllers.v2GptAgentInteractions import v2GptAgentInteractions
+from controllers.AnswerPatternProcessor import AnswerPatternProcessor
+from controllers.BigQueryHandler import BigQueryHandler
 
 timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 general_uuid = str(uuid.uuid4())
@@ -324,6 +329,7 @@ matrix_layer_one = MatrixLayerOne(key, graph_data, os.getenv('MULTI_LAYERED_MATR
 
 filename = matrix_layer_one.create_advanced_adjacency_matrix()
 filename
+
 matrix_layer_one.upload_jsonl_to_bigquery(filename, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
 
 matrix_layer_one.upload_to_bigquery(os.getenv('ADJACENCY_MATRIX_DATASET_ID'))
@@ -343,17 +349,19 @@ graph_processor = GraphPatternProcessor(10, key)
 # key ='20231123102234_fed37e7d-aa97-466a-b723-cb1290fc452f'
 
 graph_processor.save_gpt_calls_to_jsonl(key)
+filename
+graph_processor.dump_to_bigquery(key, os.getenv('CURATED_CHAT_COMPLETIONS'))
 
-graph_processor.dump_to_bigquery(filename, os.getenv('CURATED_CHAT_COMPLETIONS'), key)
 
-from controllers.AnswerPatternProcessor import AnswerPatternProcessor
+
+# key = "20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e"
 
 answer_pat_pro = AnswerPatternProcessor(key)
 
 # answer_pat_pro.bq_handler.create_dataset_if_not_exists()
 key
 
-answer_pat_pro.dump_gpt_jsonl_to_bigquery(os.getenv('CURATED_CHAT_COMPLETIONS'), filename)
+answer_pat_pro.dump_gpt_jsonl_to_bigquery(key)
 
 from google.cloud import bigquery
 import json
@@ -399,84 +407,84 @@ import json
 #     print(f"Uploaded data to {dataset_id}.{table_id}")
 
 
-def transform_record(record):
-    """
-    Transforms a record from the JSONL format to the BigQuery schema.
-    """
-    transformed = {
-        'graph_id': record.get('graph_id'),
-        'uuid': record.get('uuid'),
-        'answer_node': {
-            'label': record.get('answer_node', {}).get('label'),
-            'node_id': record.get('answer_node', {}).get('node_id')
-        },
-        'gpt_call': {
-            'model': record.get('gpt_call', {}).get('model'),
-            'messages': record.get('gpt_call', {}).get('messages', [])
-        },
-        'path': record.get('path', [])
-    }
-    return transformed
-
-def load_to_bigquery(data, table_id):
-    """
-    Loads data to a BigQuery table.
-    """
-    job_config = bigquery.LoadJobConfig(
-        schema=[
-            bigquery.SchemaField("graph_id", "STRING"),
-            bigquery.SchemaField("uuid", "STRING"),
-            bigquery.SchemaField("answer_node", "RECORD", fields=[
-                bigquery.SchemaField("label", "STRING"),
-                bigquery.SchemaField("node_id", "STRING"),
-            ]),
-            bigquery.SchemaField("gpt_call", "RECORD", fields=[
-                bigquery.SchemaField("model", "STRING"),
-                bigquery.SchemaField("messages", "RECORD", mode="REPEATED", fields=[
-                    bigquery.SchemaField("content", "STRING"),
-                    bigquery.SchemaField("role", "STRING"),
-                ]),
-            ]),
-            bigquery.SchemaField("path", "STRING", mode="REPEATED")
-        ],
-        write_disposition="WRITE_TRUNCATE",
-    )
-
-    bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
-
-    bq_client_secrets_parsed = json.loads(bq_client_secrets)
-    bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
-    bq_client = bigquery.Client(credentials=bq_client_secrets,
-                                project=bq_client_secrets.project_id)
-
-    job = bq_client.load_table_from_json(data, table_id, job_config=job_config)
-    job.result()  # Wait for the job to complete
-
-    if job.errors:
-        raise Exception(f'BigQuery load error: {job.errors}')
-    else:
-        print(f'Loaded {len(data)} rows into {table_id}.')
-
-    # Define your BigQuery table ID
-
-table_id = 'enter-universes.graph_to_agent_chat_completions.20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e'
-
-# Read and transform data from the JSONL file
-transformed_data = []
-with open('20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e.jsonl', 'r') as file:
-    for line in file:
-        record = json.loads(line)
-        transformed_data.append(transform_record(record))
-
-# Load data to BigQuery
-load_to_bigquery(transformed_data, table_id)
-
-
-
-# Example usage
-upload_jsonl_to_bigquery("20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e.jsonl",  os.getenv('CURATED_CHAT_COMPLETIONS'), "20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e")
-
-key
+# def transform_record(record):
+#     """
+#     Transforms a record from the JSONL format to the BigQuery schema.
+#     """
+#     transformed = {
+#         'graph_id': record.get('graph_id'),
+#         'uuid': record.get('uuid'),
+#         'answer_node': {
+#             'label': record.get('answer_node', {}).get('label'),
+#             'node_id': record.get('answer_node', {}).get('node_id')
+#         },
+#         'gpt_call': {
+#             'model': record.get('gpt_call', {}).get('model'),
+#             'messages': record.get('gpt_call', {}).get('messages', [])
+#         },
+#         'path': record.get('path', [])
+#     }
+#     return transformed
+#
+# def load_to_bigquery(data, table_id):
+#     """
+#     Loads data to a BigQuery table.
+#     """
+#     job_config = bigquery.LoadJobConfig(
+#         schema=[
+#             bigquery.SchemaField("graph_id", "STRING"),
+#             bigquery.SchemaField("uuid", "STRING"),
+#             bigquery.SchemaField("answer_node", "RECORD", fields=[
+#                 bigquery.SchemaField("label", "STRING"),
+#                 bigquery.SchemaField("node_id", "STRING"),
+#             ]),
+#             bigquery.SchemaField("gpt_call", "RECORD", fields=[
+#                 bigquery.SchemaField("model", "STRING"),
+#                 bigquery.SchemaField("messages", "RECORD", mode="REPEATED", fields=[
+#                     bigquery.SchemaField("content", "STRING"),
+#                     bigquery.SchemaField("role", "STRING"),
+#                 ]),
+#             ]),
+#             bigquery.SchemaField("path", "STRING", mode="REPEATED")
+#         ],
+#         write_disposition="WRITE_TRUNCATE",
+#     )
+#
+#     bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
+#
+#     bq_client_secrets_parsed = json.loads(bq_client_secrets)
+#     bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
+#     bq_client = bigquery.Client(credentials=bq_client_secrets,
+#                                 project=bq_client_secrets.project_id)
+#
+#     job = bq_client.load_table_from_json(data, table_id, job_config=job_config)
+#     job.result()  # Wait for the job to complete
+#
+#     if job.errors:
+#         raise Exception(f'BigQuery load error: {job.errors}')
+#     else:
+#         print(f'Loaded {len(data)} rows into {table_id}.')
+#
+#     # Define your BigQuery table ID
+#
+# table_id = 'enter-universes.graph_to_agent_chat_completions.20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e'
+#
+# # Read and transform data from the JSONL file
+# transformed_data = []
+# with open('20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e.jsonl', 'r') as file:
+#     for line in file:
+#         record = json.loads(line)
+#         transformed_data.append(transform_record(record))
+#
+# # Load data to BigQuery
+# load_to_bigquery(transformed_data, table_id)
+#
+#
+#
+# # Example usage
+# upload_jsonl_to_bigquery("20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e.jsonl",  os.getenv('CURATED_CHAT_COMPLETIONS'), "20231123202254_d478da50-ce59-4edf-9ed7-ba47c61b000e")
+#
+# key
 # ToDo :: Next up
 answer_pat_pro.get_gpt_calls_blueprint()
 answer_pat_pro.run()
