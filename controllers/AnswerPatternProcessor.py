@@ -35,9 +35,6 @@ load_dotenv()
 
 class AnswerPatternProcessor:
     def __init__(self, key):
-        # self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-
-        # self.timestamp = key
         self.key = key
         print(self.key)
         self.log_file = f'{self.key}_answer_pattern_processor.log'
@@ -54,20 +51,22 @@ class AnswerPatternProcessor:
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.openai_api_key}'
         }
-        # todo: hand form app.py graph_id , think about coherent logic to ident nodes with matrix
-        # self.graph_id = graph_id
-        # self.table_name = self.graph_id
 
-        # self.graph_data = graph_data
+        # Tbls
+        self.raw_chat_completions = os.getenv('RAW_CHAT_COMPLETIONS')
+        self.graph_to_agent_curated_chat_completions = os.getenv('CURATED_CHAT_COMPLETIONS')
+        self.graph_to_agent_answer_curated_chat_completions = os.getenv('ANSWER_CURATED_CHAT_COMPLETIONS')
 
+        # Dir
         self.temp_checkpoints_gpt_calls = os.getenv('TEMP_CHECKPOINTS_GPT_CALLS')
         self.temp_raw_chat_completions = os.getenv('TEMP_RAW_CHAT_COMPLETIONS_DIR')
+
+        # Datasets
         self.bq_response_json = None
         self.variable_uuid_dict = None
         self.data = None
         self.gpt_blueprint = None
-        self.graph_to_agent_curated_chat_completions = os.getenv('CURATED_CHAT_COMPLETIONS')
-        self.graph_to_agent_answer_curated_chat_completions = os.getenv('ANSWER_CURATED_CHAT_COMPLETIONS')
+
         self.bq_handler = BigQueryHandler(self.key)
 
     def get_gpt_calls_blueprint(self):
@@ -126,7 +125,7 @@ class AnswerPatternProcessor:
         table_id = self.append_to_jsonl(response_json, uuid)
         self.logger.info(table_id)
         # todo :: include raw safe to bq
-        self.raw_gpt_answer_dump_gpt_jsonl_to_bigquery()
+        self.raw_gpt_answer_dump_gpt_jsonl_to_bigquery(uuid)
         self.dump_gpt_jsonl_to_bigquery(self.key)
 
         response_content = response_json.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -162,17 +161,18 @@ class AnswerPatternProcessor:
 
         return jsonl_filename
 
-    def raw_gpt_answer_dump_gpt_jsonl_to_bigquery(self, file_path, dataset_name, jsonl_filename):
-        """Upload the JSONL data to BigQuery."""
-        # client = bigquery.Client()
+    def raw_gpt_answer_dump_gpt_jsonl_to_bigquery(self, path_uuid):
+        """Upload raw_gpt_answerthe JSONL data to BigQuery."""
 
-        self.bq_handler.create_dataset_if_not_exists()
+        file_path = f'{self.temp_raw_chat_completions}/gpt_answer_{path_uuid}_{self.key}.jsonl'
+
+        self.bq_handler.create_dataset_if_not_exists(self.raw_chat_completions)
         # test_name = "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl"
         # test_name.split(".")[0]
-        table_id = jsonl_filename.split(".")[0]
-        self.bq_handler.create_table_if_not_exists(table_id)
+        # table_id = path_uuid
+        self.bq_handler.create_table_if_not_exists(self.raw_chat_completions, path_uuid)
 
-        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{table_id}"
+        table_id = f"{self.bq_handler.bigquery_client.project}.{self.raw_chat_completions}.{path_uuid}"
         job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
             autodetect=True,
@@ -183,8 +183,6 @@ class AnswerPatternProcessor:
                 source_file, table_id, job_config=job_config
             )
         job.result()
-
-
 
     def transform_record(self, record):
         """
@@ -330,14 +328,6 @@ class AnswerPatternProcessor:
         job.result()  # Wait for the job to complete
 
         print(f"Loaded {job.output_rows} rows into {table_id}")
-
-
-
-
-
-
-
-
 
 # answer_pat_pro = AnswerPatternProcessor("20231117163236", "graph_to_agent_chat_completions")
 #
