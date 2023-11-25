@@ -168,25 +168,23 @@ class App():
             self.logger.error(f"Error saving graph: {e}")
             return jsonify({"status": "error", "message": str(e)})
 
-    def setup_routes(self):
-        self.app.route('/')(self.index_call)
-        self.app.route('/get-graph-data', methods=['POST'])(self.get_graph_data)
-        self.app.route('/get-available-graphs', methods=['GET'])(self.get_available_graphs)
-        self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.return_gpt_agent_answer_to_graph)
-        # self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.engine_room.main_tree_based_design_general)
-        self.app.route('/save-graph', methods=['POST'])(self.save_graph)
 
     def matrix_sudoku_approach(self):
         # import json
 
-        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        general_uuid = str(uuid.uuid4())
-        key = f"{timestamp}_{general_uuid}"
+        # timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        # general_uuid = str(uuid.uuid4())
+        # key = f"{timestamp}_{general_uuid}"
+        #
+        # json_file_path = "./logics/simple_va_inheritance_20231117.json"
+        #
+        # with open(json_file_path, 'r') as json_file:
+        #     graph_data = json.load(json_file)
 
-        json_file_path = "./logics/simple_va_inheritance_20231117.json"
+        graph_data = request.json
+        self.logger.info(f"save_graph, graph_data: {graph_data}")
 
-        with open(json_file_path, 'r') as json_file:
-            graph_data = json.load(json_file)
+        key = self.key
 
         gpt_agent_interactions = GptAgentInteractions(key, os.getenv('GRAPH_DATASET_ID'))
 
@@ -210,6 +208,19 @@ class App():
         answer_pat_pro = AnswerPatternProcessor(key)
         answer_pat_pro.dump_gpt_jsonl_to_bigquery(key)
         answer_pat_pro.run()
+
+        return jsonify({"status": "success", "message": 200})
+
+    def setup_routes(self):
+        self.app.route('/')(self.index_call)
+        self.app.route('/get-graph-data', methods=['POST'])(self.get_graph_data)
+        self.app.route('/get-available-graphs', methods=['GET'])(self.get_available_graphs)
+        self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.return_gpt_agent_answer_to_graph)
+        # self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.engine_room.main_tree_based_design_general)
+        # self.app.route('/save-graph', methods=['POST'])(self.save_graph)
+        self.app.route('/save-graph', methods=['POST'])(self.matrix_sudoku_approach)
+
+
 
     def run(self):
         self.app.run(debug=True)
