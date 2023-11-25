@@ -60,6 +60,7 @@ class AnswerPatternProcessor:
 
         # self.graph_data = graph_data
 
+        self.temp_checkpoints_gpt_calls = os.getenv('TEMP_CHECKPOINTS_GPT_CALLS')
         self.temp_raw_chat_completions = os.getenv('TEMP_RAW_CHAT_COMPLETIONS_DIR')
         self.bq_response_json = None
         self.variable_uuid_dict = None
@@ -223,7 +224,8 @@ class AnswerPatternProcessor:
 
     def dump_gpt_jsonl_to_bigquery(self, key):
         transformed_data = []
-        with open(f'{key}.jsonl', 'r') as file:
+        self.logger.info(f'checking dir : {self.temp_checkpoints_gpt_calls}.{key}.jsonl')
+        with open(f'{self.temp_checkpoints_gpt_calls}/{key}.jsonl', 'r') as file:
             for line in file:
                 record = json.loads(line)
                 transformed_data.append(self.transform_record(record))

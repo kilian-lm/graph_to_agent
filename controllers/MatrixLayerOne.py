@@ -131,9 +131,9 @@ class MatrixLayerOne:
         # Insert data into the table
         errors = self.bq_handler.bigquery_client.insert_rows_json(table, rows_to_insert)
         if errors:
-            print("Errors occurred while inserting rows: {}".format(errors))
+            self.logger.error("Errors occurred while inserting rows: {}".format(errors))
         else:
-            print("Data uploaded successfully.")
+            self.logger.info(f"Data uploaded successfully to {table}")
 
     def create_binary_layer(self):
         # Create a binary layer based on node connections

@@ -206,6 +206,7 @@ class App():
         graph_processor.save_gpt_calls_to_jsonl(key)
 
         graph_processor.dump_to_bigquery(key, os.getenv('CURATED_CHAT_COMPLETIONS'))
+
         answer_pat_pro = AnswerPatternProcessor(key)
         answer_pat_pro.dump_gpt_jsonl_to_bigquery(key)
         answer_pat_pro.run()
