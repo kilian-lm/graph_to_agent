@@ -125,6 +125,8 @@ class AnswerPatternProcessor:
         self.logger.info(response_json)
         table_id = self.append_to_jsonl(response_json, uuid)
         self.logger.info(table_id)
+        # todo :: include raw safe to bq
+        self.raw_gpt_answer_dump_gpt_jsonl_to_bigquery()
         self.dump_gpt_jsonl_to_bigquery(self.key)
 
         response_content = response_json.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -159,6 +161,29 @@ class AnswerPatternProcessor:
             file.write('\n')
 
         return jsonl_filename
+
+    def raw_gpt_answer_dump_gpt_jsonl_to_bigquery(self, file_path, dataset_name, jsonl_filename):
+        """Upload the JSONL data to BigQuery."""
+        # client = bigquery.Client()
+
+        self.bq_handler.create_dataset_if_not_exists()
+        # test_name = "gpt_answer_8262cd2c-c5e5-4ad1-a418-0217131aba70_20231117163236.jsonl"
+        # test_name.split(".")[0]
+        table_id = jsonl_filename.split(".")[0]
+        self.bq_handler.create_table_if_not_exists(table_id)
+
+        table_id = f"{self.bq_handler.bigquery_client.project}.{dataset_name}.{table_id}"
+        job_config = bigquery.LoadJobConfig(
+            source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+            autodetect=True,
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        )
+        with open(file_path, "rb") as source_file:
+            job = self.bq_handler.bigquery_client.load_table_from_file(
+                source_file, table_id, job_config=job_config
+            )
+        job.result()
+
 
 
     def transform_record(self, record):
