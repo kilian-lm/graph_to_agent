@@ -60,6 +60,7 @@ class AnswerPatternProcessor:
 
         # self.graph_data = graph_data
 
+        self.temp_raw_chat_completions = os.getenv('TEMP_RAW_CHAT_COMPLETIONS_DIR')
         self.bq_response_json = None
         self.variable_uuid_dict = None
         self.data = None
@@ -136,7 +137,7 @@ class AnswerPatternProcessor:
         return response_content
 
     def append_to_jsonl(self, response_content, uuid):
-        jsonl_filename = f'gpt_answer_{uuid}_{self.key}.jsonl'
+        jsonl_filename = f'{self.temp_raw_chat_completions}/gpt_answer_{uuid}_{self.key}.jsonl'
 
         with open(jsonl_filename, 'a') as file:
             graph_id = str(self.data[self.data['uuid'] == uuid].iloc[0]['graph_id'])
