@@ -34,7 +34,7 @@ class MatrixLayerOne:
 
         self.filename = None
         self.graph_data = graph_data
-
+        self.temp_multi_layered_matrix_dir = os.getenv('TEMP_MULTI_LAYERED_MATRIX_DIR')
         self.dataset_id = dataset_id
         self.bq_handler = BigQueryHandler(self.key)
 
@@ -69,7 +69,7 @@ class MatrixLayerOne:
         edges = self.graph_data["edges"]
 
         # Open the .jsonl file for writing
-        self.filename = f'{self.key}_multi_layered_matrix.jsonl'
+        self.filename = f'{self.temp_multi_layered_matrix_dir}/{self.key}_multi_layered_matrix.jsonl'
         with open(self.filename, 'w') as jsonl_file:
             for row_node in nodes:
                 row_node_id = row_node["id"]

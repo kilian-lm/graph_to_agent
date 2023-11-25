@@ -51,7 +51,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 
         self.graph = None
         self.num_steps = num_steps
-        self.checkpoints_gpt_calls = os.getenv('CHECKPOINTS_GPT_CALLS')
+        self.temp_checkpoints_gpt_calls = os.getenv('TEMP_CHECKPOINTS_GPT_CALLS')
 
         try:
             bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
@@ -158,7 +158,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
     def save_gpt_calls_to_jsonl(self, graph_id):
         """Save GPT calls to a JSON Lines file with additional UUID and self.graph_id."""
 
-        file_path = f"{self.checkpoints_gpt_calls}/{graph_id}.jsonl"
+        file_path = f"{self.temp_checkpoints_gpt_calls}/{graph_id}.jsonl"
         self.logger.info(f"file_path: {file_path}")
 
         with open(file_path, 'w') as file:
@@ -217,7 +217,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         """Upload the JSONL data to BigQuery."""
 
         table_name = key
-        file_path = f"{self.checkpoints_gpt_calls}/{key}.jsonl"
+        file_path = f"{self.temp_checkpoints_gpt_calls}/{key}.jsonl"
         self.logger.info(f"file_path: {file_path}")
 
         table_id = f"{self.bq_client.project}.{dataset_name}.{table_name}"
