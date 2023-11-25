@@ -43,7 +43,7 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         print(self.key)
         self.log_file = f'{self.key}_graph_pattern_processor.log'
         print(self.log_file)
-        self.log_dir = './temp_log'
+        self.log_dir = os.getenv('LOG_DIR_LOCAL')
         print(self.log_dir)
         self.log_level = logging.DEBUG
         print(self.log_level)
@@ -51,6 +51,8 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
 
         self.graph = None
         self.num_steps = num_steps
+        self.checkpoints_gpt_calls = os.getenv('CHECKPOINTS_GPT_CALLS')
+
         try:
             bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
 
@@ -156,7 +158,8 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
     def save_gpt_calls_to_jsonl(self, graph_id):
         """Save GPT calls to a JSON Lines file with additional UUID and self.graph_id."""
 
-        file_path = f"{graph_id}.jsonl"
+        file_path = f"{self.checkpoints_gpt_calls}/{graph_id}.jsonl"
+        self.logger.info(f"file_path: {file_path}")
 
         with open(file_path, 'w') as file:
             user_nodes = [node for node, attrs in self.graph.nodes(data=True) if attrs['label'] == 'user']
@@ -168,6 +171,8 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
                     if is_valid:
                         json_line = json.dumps(gpt_call)
                         file.write(json_line + '\n')
+
+        return file_path
 
     def generate_gpt_call_json(self, path, path_uuid, key):
         """Generate a JSON representation of a GPT call with UUID and graph_id."""
@@ -212,8 +217,11 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
         """Upload the JSONL data to BigQuery."""
 
         table_name = key
-        file_path = f"{key}.jsonl"
+        file_path = f"{self.checkpoints_gpt_calls}/{key}.jsonl"
+        self.logger.info(f"file_path: {file_path}")
+
         table_id = f"{self.bq_client.project}.{dataset_name}.{table_name}"
+        self.logger.info(f"table_id: {table_id}")
 
         # Configure the load job
         job_config = bigquery.LoadJobConfig(
