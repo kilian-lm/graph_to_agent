@@ -43,44 +43,6 @@ class GraphUI {
 
     }
 
-    // constructor() {
-    //     // Initialization of properties
-    //     this.nodes = new vis.DataSet();
-    //     this.edges = new vis.DataSet();
-    //     this.network = null;
-    //     this.copiedData = null;
-    //
-    //     // Bind class methods
-    //     this.bindMethods();
-    //     this.defaultPhysics = this.getDefaultPhysicsSettings();
-    // }
-    //
-    // bindMethods() {
-    //     const methods = [
-    //         'loadAvailableGraphs', 'loadGraphData', 'updateGraph', 'saveEntireGraphToJSON',
-    //         'setupNetwork', 'attachEventListeners', 'handleSelection', 'editNodeFunction',
-    //         'applyNodeChanges', 'cancelNodeChanges', 'saveGraphData', 'updatePhysics',
-    //         'updateGraphFromJSON', 'gptPostRequest', 'createMessagePassingDropdown',
-    //         'handleMessagePassingChange', 'copySelection', 'pasteSelection'
-    //     ];
-    //
-    //     methods.forEach(method => {
-    //         this[method] = this[method].bind(this);
-    //     });
-    // }
-    //
-    // // physics
-    //
-    // getDefaultPhysicsSettings() {
-    //     return {
-    //         centralGravity: 0.01,
-    //         springLength: 50,
-    //         springConstant: 0.01,
-    //         nodeDistance: 50,
-    //         damping: 0.1,
-    //         solver: 'hierarchicalRepulsion'
-    //     };
-    // }
 
     // add copy
     copySelection() {
