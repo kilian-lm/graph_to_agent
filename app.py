@@ -75,53 +75,53 @@ class App():
             self.logger.error(f"Error loading available graphs: {e}")
             return jsonify({"status": "error", "message": str(e)})
 
-    def return_gpt_agent_answer_to_graph(self):
-        graph_data = request.json
-        self.logger.info(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
-        # gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data)
-        updated_graph = self.engine_room.main_tree_based_design_general(graph_data)
-        # print(gpt_response)
-        print(updated_graph)
-        # breakpoint()
-        # timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        # filename = f"temp_local/debugging_var_method_{self.timestamp}.json"
-        #
-        # # Check if the temp_local directory exists
-        # if not os.path.exists('temp_local'):
-        #     os.makedirs('temp_local')
-        #
-        # # Save the JSON data to the file
-        # with open(filename, 'w') as json_file:
-        #     json_file.write(json.dumps(graph_data))  # Serialize dict to JSON formatted string
-        #
-        # processed_data = self.gpt_agent_interactions.translate_graph_to_gpt_sequence(graph_data)
-        # self.logger.info(f"return_gpt_agent_answer_to_graph, processed_data: {processed_data}")
-        #
-        # # Identify if any @variable placeholders are present
-        # variable_node_present = any('@variable' in node['label'] for node in graph_data['nodes'])
-        # self.logger.info(f"return_gpt_agent_answer_to_graph, variable_node_present: {variable_node_present}")
-        #
-        # if variable_node_present:
-        #     # Call the populate_variable_nodes method
-        #     # Note: You need to obtain the initial GPT response to populate the base @variable
-        #     initial_gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
-        #     self.logger.info(f"return_gpt_agent_answer_to_graph, initial_gpt_response: {initial_gpt_response}")
-        #     updated_graph = self.gpt_agent_interactions.populate_variable_nodes(graph_data, initial_gpt_response)
-        #     self.logger.info(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
-        #
-        # else:
-        #     # Continue with the legacy workflow
-        #     # gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
-        #
-        #     # gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data)
-        #     # gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data_json)
-        #     gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data)
-        #
-        #     self.logger.info(f"return_gpt_agent_answer_to_graph, gpt_response: {gpt_response}")
-        #     updated_graph = self.gpt_agent_interactions.process_gpt_response_and_update_graph(gpt_response, graph_data)
-        #     self.logger.info(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
-
-        return jsonify({"status": "success", "updatedGraph": updated_graph})
+    # def return_gpt_agent_answer_to_graph(self):
+    #     graph_data = request.json
+    #     self.logger.info(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
+    #     # gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data)
+    #     updated_graph = self.engine_room.main_tree_based_design_general(graph_data)
+    #     # print(gpt_response)
+    #     print(updated_graph)
+    #     # breakpoint()
+    #     # timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    #     # filename = f"temp_local/debugging_var_method_{self.timestamp}.json"
+    #     #
+    #     # # Check if the temp_local directory exists
+    #     # if not os.path.exists('temp_local'):
+    #     #     os.makedirs('temp_local')
+    #     #
+    #     # # Save the JSON data to the file
+    #     # with open(filename, 'w') as json_file:
+    #     #     json_file.write(json.dumps(graph_data))  # Serialize dict to JSON formatted string
+    #     #
+    #     # processed_data = self.gpt_agent_interactions.translate_graph_to_gpt_sequence(graph_data)
+    #     # self.logger.info(f"return_gpt_agent_answer_to_graph, processed_data: {processed_data}")
+    #     #
+    #     # # Identify if any @variable placeholders are present
+    #     # variable_node_present = any('@variable' in node['label'] for node in graph_data['nodes'])
+    #     # self.logger.info(f"return_gpt_agent_answer_to_graph, variable_node_present: {variable_node_present}")
+    #     #
+    #     # if variable_node_present:
+    #     #     # Call the populate_variable_nodes method
+    #     #     # Note: You need to obtain the initial GPT response to populate the base @variable
+    #     #     initial_gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
+    #     #     self.logger.info(f"return_gpt_agent_answer_to_graph, initial_gpt_response: {initial_gpt_response}")
+    #     #     updated_graph = self.gpt_agent_interactions.populate_variable_nodes(graph_data, initial_gpt_response)
+    #     #     self.logger.info(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
+    #     #
+    #     # else:
+    #     #     # Continue with the legacy workflow
+    #     #     # gpt_response = self.gpt_agent_interactions.extract_and_send_to_gpt(processed_data)
+    #     #
+    #     #     # gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data)
+    #     #     # gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data_json)
+    #     #     gpt_response = self.gpt_agent_interactions.main_tree_based_design_general(graph_data)
+    #     #
+    #     #     self.logger.info(f"return_gpt_agent_answer_to_graph, gpt_response: {gpt_response}")
+    #         updated_graph = self.gpt_agent_interactions.process_gpt_response_and_update_graph(gpt_response, graph_data)
+    #     self.logger.info(f"return_gpt_agent_answer_to_graph, updated_graph: {updated_graph}")
+    #
+    #     return jsonify({"status": "success", "updatedGraph": updated_graph})
 
     # except Exception as e:
     #     self.logger.error(f"Error processing GPT agent request: {e}")
@@ -168,7 +168,6 @@ class App():
             self.logger.error(f"Error saving graph: {e}")
             return jsonify({"status": "error", "message": str(e)})
 
-
     def matrix_sudoku_approach(self):
         # import json
 
@@ -209,18 +208,101 @@ class App():
         answer_pat_pro.dump_gpt_jsonl_to_bigquery(key)
         answer_pat_pro.run()
 
-        return jsonify({"status": "success", "message": 200})
+        graph_data = self.return_gpt_agent_answer_to_graph(graph_data)
+
+        return graph_data
+
+    # def return_gpt_agent_answer_to_graph(self, graph_data):
+    #     # SQL query to fetch distinct answer_node.node_id and answer_node.label
+    #
+    #     node_answers_tbl_id = f"{self.bq_handler.bigquery_client.project}.{os.getenv('ANSWER_CURATED_CHAT_COMPLETIONS')}.{self.key}"
+    #     self.logger.info(f"return_gpt_agent_answer_to_graph, node_answers_tbl_id: {node_answers_tbl_id}")
+    #
+    #     node_answers_tbl_id = f"{self.bq_handler.bigquery_client.project}.{os.getenv('ANSWER_CURATED_CHAT_COMPLETIONS')}.20231126125746_3f77f8f3-fd76-48d1-b28c-03054e6c3a06"
+    #     query = f"""
+    #     SELECT DISTINCT answer_node.node_id, answer_node.label
+    #     FROM `{node_answers_tbl_id}`
+    #     """
+    #
+    #     # Execute the query
+    #     query_job = self.bq_handler.bigquery_client.query(query)
+    #     results = query_job.result()
+    #     self.logger.info(f"return_gpt_agent_answer_to_graph, results: {results}")
+    #
+    #     # Process each result
+    #     for row in results:
+    #         # Remove prefix 'answer_' from node_id
+    #         modified_node_id = row.node_id.replace('answer_', '')
+    #         self.logger.info(f"return_gpt_agent_answer_to_graph, modified_node_id: {modified_node_id}")
+    #
+    #         # Check if this modified_node_id exists in graph_data
+    #         matching_node = next((node for node in graph_data['nodes'] if node['id'] == modified_node_id), None)
+    #         self.logger.info(f"return_gpt_agent_answer_to_graph, matching_node: {matching_node}")
+    #         if matching_node:
+    #             # Add a new edge if matching node is found
+    #             new_edge = {
+    #                 'from': matching_node['id'],
+    #                 'to': f'answer_{row.node_id}',
+    #                 'label': row.label
+    #             }
+    #             self.logger.info(f"return_gpt_agent_answer_to_graph, new_edge: {new_edge}")
+    #             graph_data['edges'].append(new_edge)
+    #             self.logger.info(f"return_gpt_agent_answer_to_graph, graph_data: {graph_data}")
+    #         else:
+    #             # Continue searching for other matches if no match is found
+    #             continue
+    #
+    #     # Return updated graph_data or a message if no matches are found
+    #     if not any('answer_' in edge['to'] for edge in graph_data['edges']):
+    #         return "No matching nodes found in graph data for the provided node IDs."
+    #
+    #     return graph_data
+
+    def return_gpt_agent_answer_to_graph(self, graph_data):
+        node_answers_tbl_id = f"{self.bq_handler.bigquery_client.project}.{os.getenv('ANSWER_CURATED_CHAT_COMPLETIONS')}.{self.key}"
+
+        # node_answers_tbl_id = f"{self.bq_handler.bigquery_client.project}.{os.getenv('ANSWER_CURATED_CHAT_COMPLETIONS')}.20231126125746_3f77f8f3-fd76-48d1-b28c-03054e6c3a06"
+
+        query = f"""
+        SELECT DISTINCT answer_node.node_id, answer_node.label
+        FROM `{node_answers_tbl_id}`
+        """
+
+        # Execute the query
+        query_job = self.bq_handler.bigquery_client.query(query)
+        results = query_job.result()
+
+        # Process each result
+        for row in results:
+            # Remove prefix 'answer_' from node_id
+            modified_node_id = row.node_id.replace('answer_', '')
+            matching_node = next((node for node in graph_data['nodes'] if node['id'] == modified_node_id), None)
+
+            if matching_node:
+                # Add a new node for the answer
+                new_node = {
+                    'id': row.node_id,  # Use the node_id from the query
+                    'label': row.label
+                }
+                graph_data['nodes'].append(new_node)
+
+                # Add a new edge connecting the matching node to the new node
+                new_edge = {
+                    'from': matching_node['id'],
+                    'to': row.node_id  # Connect to the new node
+                }
+                graph_data['edges'].append(new_edge)
+
+        return graph_data
 
     def setup_routes(self):
         self.app.route('/')(self.index_call)
         self.app.route('/get-graph-data', methods=['POST'])(self.get_graph_data)
         self.app.route('/get-available-graphs', methods=['GET'])(self.get_available_graphs)
-        self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.return_gpt_agent_answer_to_graph)
+        self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.matrix_sudoku_approach)
         # self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.engine_room.main_tree_based_design_general)
         # self.app.route('/save-graph', methods=['POST'])(self.save_graph)
         self.app.route('/save-graph', methods=['POST'])(self.matrix_sudoku_approach)
-
-
 
     def run(self):
         self.app.run(debug=True)
