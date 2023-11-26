@@ -10,24 +10,35 @@ from google.oauth2 import service_account
 from google.cloud import bigquery
 import json
 import datetime
+import google.api_core.exceptions
 import requests
 
 load_dotenv()
 
-logging.basicConfig(level=logging.DEBUG)  # You can change the level as needed.
-logger = logging.getLogger(__name__)
+from logger.CustomLogger import CustomLogger
 
 
 class BigQueryHandler:
 
-    def __init__(self, dataset_id):
+    def __init__(self, key):
+        # timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        self.key = key
+        print(self.key)
+        self.log_file = f'{self.key}_bq_handler.log'
+        print(self.log_file)
+        self.log_dir = './temp_log'
+        print(self.log_dir)
+        self.log_level = logging.DEBUG
+        print(self.log_level)
+        self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
+
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.openai_base_url = "https://api.openai.com/v1/chat/completions"
         self.headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.openai_api_key}'
         }
-        self.dataset_id = dataset_id
+        # self.dataset_id = dataset_id
         bq_client_secrets = os.getenv('BQ_CLIENT_SECRETS')
 
         try:
@@ -35,41 +46,65 @@ class BigQueryHandler:
             self.bq_client_secrets = Credentials.from_service_account_info(bq_client_secrets_parsed)
             self.bigquery_client = bigquery.Client(credentials=self.bq_client_secrets,
                                                    project=self.bq_client_secrets.project_id)
-            logger.info("BigQuery client successfully initialized.")
+            self.logger.info("BigQuery client successfully initialized.")
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
+            self.logger.error(f"Failed to parse BQ_CLIENT_SECRETS environment variable: {e}")
             raise
         except Exception as e:
-            logger.error(f"An error occurred while initializing the BigQuery client: {e}")
+            self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    def create_dataset_if_not_exists(self):
-        dataset_ref = self.bigquery_client.dataset(self.dataset_id)
+    def create_view(self, dataset_id, view_id, view_query):
+        view_ref = self.bigquery_client.dataset(dataset_id).table(view_id)
+        view = bigquery.Table(view_ref)
+        view.view_query = view_query
+
+        try:
+            self.bigquery_client.get_table(view_ref)
+            print(f"View {dataset_id}.{view_id} already exists. Deleting it.")
+            self.bigquery_client.delete_table(view_ref)
+        except NotFound:
+            print(f"View {dataset_id}.{view_id} does not exist.")
+
+        try:
+            view = self.bigquery_client.create_table(view)
+            print(f"View {dataset_id}.{view_id} created.")
+        except google.api_core.exceptions.BadRequest as e:
+            print(f"Error creating the view: {str(e)}")
+            raise
+        except Exception as e:
+            print(f"Error creating the view: {str(e)}")
+            raise
+
+    def create_dataset_if_not_exists(self, dataset_id):
+        dataset_ref = self.bigquery_client.dataset(dataset_id)
         try:
             self.bigquery_client.get_dataset(dataset_ref)
-            logger.info(f"Dataset {self.dataset_id} already exists.")
+            self.logger.info(f"Dataset {dataset_id} already exists.")
         except Exception as e:
             try:
                 dataset = bigquery.Dataset(dataset_ref)
                 self.bigquery_client.create_dataset(dataset)
-                logger.info(f"Dataset {self.dataset_id} created.")
+                self.logger.info(f"Dataset {dataset_id} created.")
             except Exception as ex:
-                logger.error(f"Failed to create dataset {self.dataset_id}: {ex}")
+                self.logger.error(f"Failed to create dataset {dataset_id}: {ex}")
                 raise
 
-    def create_table_if_not_exists(self, table_id, schema):
-        table_ref = self.bigquery_client.dataset(self.dataset_id).table(table_id)
+
+    def create_table_if_not_exists(self, dataset_id, table_id, schema=None):
+        table_ref = self.bigquery_client.dataset(dataset_id).table(table_id)
+
         try:
             self.bigquery_client.get_table(table_ref)
-            logger.info(f"Table {table_id} already exists.")
+            self.logger.info(f"Table {table_id} already exists.")
         except Exception as e:
-            try:
+            if schema is not None:
                 table = bigquery.Table(table_ref, schema=schema)
-                self.bigquery_client.create_table(table)
-                logger.info(f"Table {table_id} created.")
-            except Exception as ex:
-                logger.error(f"Failed to create table {table_id}: {ex}")
-                raise
+            else:
+                table = bigquery.Table(table_ref)
+
+            self.bigquery_client.create_table(table)
+            self.logger.info(f"Table {table_id} has been created.")
 
     def get_node_schema(self):
         return [
@@ -100,7 +135,7 @@ class BigQueryHandler:
             for node in raw_nodes
         ]
 
-        logger.debug(f"nodes_for_bq: {nodes_for_bq}")
+        self.logger.debug(f"nodes_for_bq: {nodes_for_bq}")
 
         # Translate edges
         edges_for_bq = [
@@ -112,23 +147,23 @@ class BigQueryHandler:
             for edge in raw_edges
         ]
 
-        logger.debug(f"edges_for_bq: {edges_for_bq}")
+        self.logger.debug(f"edges_for_bq: {edges_for_bq}")
 
         return nodes_for_bq, edges_for_bq
 
-    def save_graph_data(self, graph_data, graph_id):
+    def save_graph_data(self, graph_data, graph_id, dataset_id, nodes_table, edges_table):
         try:
             # Check and create dataset if it doesn't exist
-            self.create_dataset_if_not_exists()
+            self.create_dataset_if_not_exists(dataset_id)
 
-            nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
-            edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
+            nodes_table_ref = self.bigquery_client.dataset(dataset_id).table({nodes_table})
+            edges_table_ref = self.bigquery_client.dataset(dataset_id).table({edges_table})
 
             # Check and create nodes table if it doesn't exist
-            self.create_table_if_not_exists("nodes_table", self.get_node_schema())
+            self.create_table_if_not_exists({nodes_table}, self.get_node_schema())
 
             # Check and create edges table if it doesn't exist
-            self.create_table_if_not_exists("edges_table", self.get_edge_schema())
+            self.create_table_if_not_exists({edges_table}, self.get_edge_schema())
 
             # Retrieve the tables and their schemas
             nodes_table = self.bigquery_client.get_table(nodes_table_ref)
@@ -138,20 +173,20 @@ class BigQueryHandler:
             nodes_for_bq, edges_for_bq = self.translate_graph_data_for_bigquery(graph_data, graph_id)
 
             # Log the transformed data for debugging
-            logger.debug(f"Transformed Nodes: {nodes_for_bq}")
-            logger.debug(f"Transformed Edges: {edges_for_bq}")
+            self.logger.debug(f"Transformed Nodes: {nodes_for_bq}")
+            self.logger.debug(f"Transformed Edges: {edges_for_bq}")
 
             # Insert nodes and pass in the schema explicitly
             errors_nodes = self.bigquery_client.insert_rows(nodes_table, nodes_for_bq,
                                                             selected_fields=nodes_table.schema)
             if errors_nodes:
-                logger.warning(f"Encountered errors while inserting nodes: {errors_nodes}")
+                self.logger.warning(f"Encountered errors while inserting nodes: {errors_nodes}")
 
             # Insert edges and pass in the schema explicitly
             errors_edges = self.bigquery_client.insert_rows(edges_table, edges_for_bq,
                                                             selected_fields=edges_table.schema)
             if errors_edges:
-                logger.warning(f"Encountered errors while inserting edges: {errors_edges}")
+                self.logger.warning(f"Encountered errors while inserting edges: {errors_edges}")
 
             # Compile all errors
             all_errors = {
@@ -159,8 +194,10 @@ class BigQueryHandler:
                 "edge_errors": errors_edges
             }
 
+            self.logger.debug(all_errors)
+
             if errors_nodes or errors_edges:
-                logger.error("Errors occurred during the saving of graph data.")
+                self.logger.error("Errors occurred during the saving of graph data.")
 
             # Save the transformed data as dictionaries for the workflow
             # This assumes that the data is already in a dictionary format suitable for the workflow
@@ -169,130 +206,76 @@ class BigQueryHandler:
                 "edges": edges_for_bq
             }
 
-            logger.debug(f"graph_data_as_dicts: {graph_data_as_dicts}")
+            self.logger.debug(f"graph_data_as_dicts: {graph_data_as_dicts}")
 
             # Return both BigQuery errors and processed data
-            return {
-                "bigquery_errors": all_errors,
-            }
+            # return {
+            #     "bigquery_errors": all_errors,
+            # }
+
+            return ({"status": "success", "savedGraph": graph_data_as_dicts})
 
         except Exception as e:
-            logger.exception("An unexpected error occurred during save_graph_data:")
+            self.logger.exception("An unexpected error occurred during save_graph_data:")
         raise
 
-    # A helper function to determine a node's type (user, system, or content)
-    # def get_node_type(self, node):
-    #     if 'user' in node['label'].lower():
-    #         return 'user'
-    #     elif 'system' in node['label'].lower():
-    #         return 'system'
-    #     else:
-    #         return 'content'
-
-    # def translate_graph_to_gpt_sequence(self, graph_data):
-    #     nodes = graph_data["nodes"]
-    #     edges = graph_data["edges"]
-    #
-    #     # Build a mapping of node IDs to nodes
-    #     node_mapping = {node['id']: node for node in nodes}
-    #
-    #     # Initialize the data structure
-    #     translated_data = {
-    #         "model": os.getenv("MODEL"),
-    #         "messages": []
-    #     }
-    #
-    #     # Define valid transitions
-    #     valid_transitions = {
-    #         'user': 'content',
-    #         'content': 'system',
-    #         'system': 'content'
-    #     }
-    #
-    #     # Start from 'user' nodes and follow the valid transitions
-    #     current_expected = 'user'
-    #
-    #     for edge in edges:
-    #         from_node = node_mapping[edge['from']]
-    #         to_node = node_mapping[edge['to']]
-    #
-    #         from_node_type = self.get_node_type(from_node)
-    #         to_node_type = self.get_node_type(to_node)
-    #
-    #         # Validate the transition
-    #         if from_node_type == current_expected and valid_transitions.get(from_node_type) == to_node_type:
-    #             # Append the content of the 'to' node if it's a 'content' node
-    #             if to_node_type == 'content':
-    #                 translated_data['messages'].append({
-    #                     "role": from_node_type,
-    #                     "content": to_node['label']
-    #                 })
-    #             # Update the expected type for the next node
-    #             current_expected = to_node_type
-    #
-    #         # Reset to 'user' after a 'system' to 'content' transition
-    #         if from_node_type == 'system' and to_node_type == 'content':
-    #             current_expected = 'user'
-    #
-    #     # Serialize data to json
-    #     json_data = json.dumps(translated_data, indent=4)
-    #     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    #     json_filename = f"processed_graph_{timestamp}.json"
-    #
-    #     with open(json_filename, "w") as json_file:
-    #         json_file.write(json_data)
-    #
-    #     return {
-    #         'bigquery_errors': {'node_errors': [], 'edge_errors': []},
-    #         'processed_data': translated_data
-    #     }
-
-    def load_graph_data_by_id(self, graph_id):
-        nodes_table_ref = self.bigquery_client.dataset(self.dataset_id).table("nodes_table")
-        edges_table_ref = self.bigquery_client.dataset(self.dataset_id).table("edges_table")
+    def load_graph_data_by_id(self, dataset_id, graph_id, nodes_table, edges_table):
+        nodes_table_ref = self.bigquery_client.dataset(dataset_id).table(nodes_table)
+        edges_table_ref = self.bigquery_client.dataset(dataset_id).table(edges_table)
 
         # Fetch nodes for given graph_id
-        nodes_query = f"SELECT * FROM `{self.dataset_id}.nodes_table` WHERE graph_id = '{graph_id}'"
+        nodes_query = f"SELECT * FROM `{dataset_id}.{nodes_table}` WHERE graph_id = '{graph_id}'"
         nodes_query_job = self.bigquery_client.query(nodes_query)
         nodes_results = nodes_query_job.result()
         nodes = [{"id": row['id'], "label": row['label']} for row in nodes_results]
 
-        logger.info(f"nodes loaded by graph id {nodes} already exists.")
+        self.logger.info(f"nodes loaded by graph id {nodes} already exists.")
 
         # Fetch edges for given graph_id
-        edges_query = f"SELECT * FROM `{self.dataset_id}.edges_table` WHERE graph_id = '{graph_id}'"
+        edges_query = f"SELECT * FROM `{dataset_id}.{edges_table}` WHERE graph_id = '{graph_id}'"
         edges_query_job = self.bigquery_client.query(edges_query)
         edges_results = edges_query_job.result()
         edges = [{"from": row['from'], "to": row['to']} for row in edges_results]
 
         return {"nodes": nodes, "edges": edges}
 
-    def get_available_graphs(self):
+    def get_available_graphs(self, dataset_id, nodes_table):
         # Query to get distinct graph_ids from the nodes_table
-        query = f"SELECT DISTINCT graph_id FROM `{self.dataset_id}.nodes_table`"
+        query = f"SELECT DISTINCT graph_id FROM `{dataset_id}.{nodes_table}`"
         query_job = self.bigquery_client.query(query)
         results = query_job.result()
 
         return [{"graph_id": row["graph_id"], "graph_name": row["graph_id"]} for row in results]
 
-    # def extract_and_send_to_gpt(self, processed_data):
-    #
-    #     # Prepare the data for the POST request
-    #     # Assuming 'processed_data' contains the necessary format for GPT-4 API
-    #     post_data = {
-    #         "model": os.getenv("MODEL"),
-    #         "messages": processed_data["messages"]
-    #     }
-    #
-    #     # Send POST request to GPT
-    #     response = requests.post(self.openai_base_url, headers=self.headers, json=post_data)
-    #
-    #     # Check if the request was successful and extract PUML content
-    #     if response.status_code == 200:
-    #         agent_content = response.json()["choices"][0]["message"]["content"]
-    #         return agent_content
-    #     else:
-    #         raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
+    def load_jsonl_to_bq(self, dataset_id, table_id, jsonl_file_path):
+        # Initialize the BigQuery client
+
+        # Create the table if it doesn't exist
+        self.create_table_if_not_exists(dataset_id, table_id)
+
+        # Define the job configuration with auto-detect schema
+        job_config = bigquery.LoadJobConfig(
+            source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+            autodetect=True,  # Automatically detect schema from JSONL
+        )
+
+        # Define the dataset and table
+        dataset_ref = self.bigquery_client.dataset(dataset_id)
+        table_ref = dataset_ref.table(table_id)
+
+        # with open("test.jsonl", "rb") as source_file:
+        #     print(source_file)
+
+        # Start the job to load data from JSONL file
+        with open(jsonl_file_path, "rb") as source_file:
+            job = self.bigquery_client.load_table_from_file(
+                source_file, table_ref, job_config=job_config
+            )
+
+        # Wait for the job to complete
+        job.result()
+
+        print(f"Loaded {job.output_rows} rows into {dataset_id}.{table_id}")
 
 # openai_api_key = os.getenv('OPEN_AI_KEY')
 # open_ai_url = "https://api.openai.com/v1/chat/completions"

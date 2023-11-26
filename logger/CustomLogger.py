@@ -1,67 +1,99 @@
 import logging
-import inspect
 import os
-from datetime import datetime
+# import boto3
+from dotenv import load_dotenv
+
+load_dotenv()
+
+import logging
+import os
+import inspect
 
 
-class CustomLogger:
-    def __init__(self, log_level=logging.INFO):
-        self.logger = logging.getLogger(__name__)
+class CustomLogger():
+    def __init__(self, log_file, log_level=logging.DEBUG, log_dir='temp_log'):
+        self.logger = logging.getLogger(self.get_caller_info())
         self.logger.setLevel(log_level)
-        formatter = logging.Formatter(
-            '%(asctime)s %(levelname)s %(pathname)s %(class)s %(method)s:%(lineno)d - %(message)s'
-        )
 
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
+        self.log_dir = log_dir
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
 
-    def log(self, log_level, message):
-        frame = inspect.currentframe().f_back
-        directory = os.path.dirname(os.path.abspath(__file__))
-        class_name = frame.f_globals['__name__']
-        method_name = frame.f_code.co_name
-        line_number = frame.f_lineno
+        self.log_file = os.path.join(log_dir, log_file)
 
-        log_message = message
-        extra_info = {
-            'directory': directory,
-            'class': class_name,
-            'method': method_name,
-            'line_number': line_number,
-        }
+        self.file_handler = logging.FileHandler(self.log_file)
+        self.file_handler.setLevel(log_level)
 
-        if log_level == 'DEBUG':
-            self.logger.debug(log_message, extra=extra_info)
-        elif log_level == 'INFO':
-            self.logger.info(log_message, extra=extra_info)
-        elif log_level == 'WARNING':
-            self.logger.warning(log_message, extra=extra_info)
-        elif log_level == 'ERROR':
-            self.logger.error(log_message, extra=extra_info)
-        elif log_level == 'CRITICAL':
-            self.logger.critical(log_message, extra=extra_info)
+        self.stream_handler = logging.StreamHandler()
+        self.stream_handler.setLevel(log_level)
+
+        # Add method, class, and line number to the log formatter
+        self.formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s - %(funcName)s:%(lineno)d - %(message)s')
+        self.file_handler.setFormatter(self.formatter)
+        self.stream_handler.setFormatter(self.formatter)
+
+        self.logger.addHandler(self.file_handler)
+        self.logger.addHandler(self.stream_handler)
+
+    # def get_caller_info(self):
+    #     stack = inspect.stack()
+    #
+    #     # Iterate over the stack in reverse to find the first caller outside of this logger
+    #     for frame_info in reversed(stack):
+    #         if frame_info.frame.f_globals['__name__'] != __name__:
+    #             module = inspect.getmodule(frame_info.frame)
+    #             module_name = module.__name__ if module else 'UnknownModule'
+    #
+    #             if 'self' in frame_info.frame.f_locals:
+    #                 # Instance method call
+    #                 class_name = frame_info.frame.f_locals['self'].__class__.__name__
+    #                 method_name = frame_info.function
+    #                 lineno = frame_info.lineno
+    #                 return f'{module_name}.{class_name}.{method_name}:{lineno}'
+    #             elif module_name != 'UnknownModule':
+    #                 # Function call in a module
+    #                 return f'{module_name}.{frame_info.function}:{frame_info.lineno}'
+    #
+    #     return 'UnknownCaller'
+
+    def get_caller_info(self):
+        stack = inspect.stack()
+
+        for frame_info in stack:
+            # Check if the frame is not part of the CustomLogger
+            if frame_info.frame.f_globals['__name__'] != __name__:
+                # Extract module, class, method, and line number
+                module = inspect.getmodule(frame_info.frame)
+                module_name = module.__name__ if module else 'UnknownModule'
+                class_name = None
+                if 'self' in frame_info.frame.f_locals:
+                    class_name = frame_info.frame.f_locals['self'].__class__.__name__
+                method_name = frame_info.function
+                lineno = frame_info.lineno
+
+                if class_name:
+                    return f'{module_name}.{class_name}.{method_name}:{lineno}'
+                else:
+                    return f'{module_name}.{method_name}:{lineno}'
+
+        return 'UnknownCaller'
 
     def debug(self, message):
-        self.log('DEBUG', message)
+        caller_info = self.get_caller_info()
+        self.logger.debug(f'{caller_info} - {message}')
 
     def info(self, message):
-        self.log('INFO', message)
+        caller_info = self.get_caller_info()
+        self.logger.info(f'{caller_info} - {message}')
 
     def warning(self, message):
-        self.log('WARNING', message)
+        caller_info = self.get_caller_info()
+        self.logger.warning(f'{caller_info} - {message}')
 
     def error(self, message):
-        self.log('ERROR', message)
+        caller_info = self.get_caller_info()
+        self.logger.error(f'{caller_info} - {message}')
 
     def critical(self, message):
-        self.log('CRITICAL', message)
-
-
-# if __name__ == "__main__":
-#     logger = CustomLogger()
-#     logger.debug("This is a debug message")
-#     logger.info("This is an info message")
-#     logger.warning("This is a warning message")
-#     logger.error("This is an error message")
-#     logger.critical("This is a critical message")
+        caller_info = self.get_caller_info()
+        self.logger.critical(f'{caller_info} - {message}')

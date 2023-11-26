@@ -1,0 +1,63 @@
+
+
+graph TD
+  subgraph Environment
+    a[YouTube]
+    b[Instagram]
+    c[X]
+    d[LinkedIn]
+  end
+
+  subgraph Agents
+    A(User A) --> a
+    B(User B) --> a
+    C(User C) --> b
+    D(User D) --> b
+    E(User E) --> c
+    F(User F) --> c
+    F(User F) --> d
+    A(User F) --> d
+  end
+
+  subgraph Algorithms & Incentives
+    a -->|Likes, Dislikes, Comments| L(Algorithm)
+    b -->|Likes, Dislikes, Comments| L(Algorithm)
+    c -->|Likes, Dislikes, Comments| L(Algorithm)
+    d -->|Likes, Dislikes, Comments| L(Algorithm)
+  end
+
+  subgraph Feedback Mechanism
+    L -->|Selective Feedback| SF(Selective Feedback)
+  end
+
+  subgraph Reward Functions
+    L --> |Likes| RL(Reward for Likes)
+    L --> |Dislikes| RD(Reward for Dislikes)
+    L --> |Comments| RC(Reward for Comments)
+    L --> |Short, Shallow Hype News| RN(Reward for Short, Shallow Hype News)
+    L --> |Formats| RF(Reward for Formats)
+  end
+
+  subgraph kojima'sTypology
+    A -->|Mules| M(Mules) --> |Consumers| RL
+    B -->|Mules| M(Mules) --> |Consumers| RL
+    C -->|Homo Demens| H(Homo Demens) --> |Addicted| RN -->  SF --> P5
+    D -->|Homo Demens| H(Homo Demens) --> |Addicted| RN -->  SF --> P5
+    E -->|Mules| M(Mules) --> |Consumers| RL --> SF --> P6
+    F -->|Homo Demens| H(Homo Demens) --> |Consumers| RN --> SF --> P6
+  end
+
+  subgraph Society's Problems
+    SF --> |Enhances| P1(Problem: Focus Hijacking)
+    SF --> |Enhances| P2(Problem: Distraction)
+    SF --> |Enhances| P3(Problem: Loss of Autonomy)
+    SF --> |Enhances| P4(Problem: Lack of Transparency)
+    SF --> |Enhances| P5(Problem: Rational Agent :: Adhere to reward function in real life)
+    SF --> |Enhances| P6(Problem: Optimal Agent :: Adhere to reward function online)
+    SF --> |Enhances| P7(Problem: Repetitive, Shallow Content)
+
+  end
+
+  subgraph Long Term Consequences
+    P1 -->|Reflects| Q(Barrier for for sustainable knowledge growth)
+  end
