@@ -29,7 +29,9 @@ class GraphUI {
             springConstant: 0.01,
             nodeDistance: 50,
             damping: 0.1,
-            solver: 'hierarchicalRepulsion'
+            solver: 'hierarchicalRepulsion',
+            // avoidOverlap: true // To prevent node overlap
+
         };
 
         // msg passing
@@ -40,6 +42,45 @@ class GraphUI {
         this.copiedData = null;
 
     }
+
+    // constructor() {
+    //     // Initialization of properties
+    //     this.nodes = new vis.DataSet();
+    //     this.edges = new vis.DataSet();
+    //     this.network = null;
+    //     this.copiedData = null;
+    //
+    //     // Bind class methods
+    //     this.bindMethods();
+    //     this.defaultPhysics = this.getDefaultPhysicsSettings();
+    // }
+    //
+    // bindMethods() {
+    //     const methods = [
+    //         'loadAvailableGraphs', 'loadGraphData', 'updateGraph', 'saveEntireGraphToJSON',
+    //         'setupNetwork', 'attachEventListeners', 'handleSelection', 'editNodeFunction',
+    //         'applyNodeChanges', 'cancelNodeChanges', 'saveGraphData', 'updatePhysics',
+    //         'updateGraphFromJSON', 'gptPostRequest', 'createMessagePassingDropdown',
+    //         'handleMessagePassingChange', 'copySelection', 'pasteSelection'
+    //     ];
+    //
+    //     methods.forEach(method => {
+    //         this[method] = this[method].bind(this);
+    //     });
+    // }
+    //
+    // // physics
+    //
+    // getDefaultPhysicsSettings() {
+    //     return {
+    //         centralGravity: 0.01,
+    //         springLength: 50,
+    //         springConstant: 0.01,
+    //         nodeDistance: 50,
+    //         damping: 0.1,
+    //         solver: 'hierarchicalRepulsion'
+    //     };
+    // }
 
     // add copy
     copySelection() {
@@ -307,23 +348,61 @@ class GraphUI {
                 body: JSON.stringify(graphData)
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const data = await response.json();
 
-            // if (data.status === 'success') {
-            this.updateGraph(data.updatedGraph);
-            //     } else {
-            //         console.error('Failed to process GPT request:', data);
-            //         alert('Failed to process GPT request.');
-            //     }
-            // } catch (error) {
-            //     console.error('Error in GPT request:', error);
-            //     alert('An error occurred while processing the GPT request.');
-            // }
+            console.log('Full response data received:', data);
+
+            if (data && Array.isArray(data.nodes) && Array.isArray(data.edges)) {
+                this.updateGraph(data); // Passing the whole data object since it already contains nodes and edges
+            } else {
+                console.error('Invalid or incomplete data received from backend:', data);
+                alert('Invalid or incomplete data received from backend.');
+            }
         } catch (error) {
-            console.error('Error performing GPT request:', error);
-            alert('An error occurred while processing the GPT request.');
+            console.error('Error in GPT request:', error);
+            alert(`An error occurred while processing the GPT request: ${error.message}`);
         }
     }
+
+
+    // async gptPostRequest() {
+    //     // try {
+    //     var graphData = {
+    //         nodes: this.nodes.get(),
+    //         edges: this.edges.get()
+    //     };
+    //
+    //     console.log('Graph data being sent to backend:', graphData);
+    //
+    //     const response = await fetch('/return-gpt-agent-answer-to-graph', {
+    //         method: 'POST',
+    //         headers: {
+    //             'Content-Type': 'application/json'
+    //         },
+    //         body: JSON.stringify(graphData)
+    //     });
+    //
+    //     const data = await response.json();
+    //
+    //     // if (data.status === 'success') {
+    //     this.updateGraph(data.updatedGraph);
+    //     //     } else {
+    //     //         console.error('Failed to process GPT request:', data);
+    //     //         alert('Failed to process GPT request.');
+    //     //     }
+    //     // } catch (error) {
+    //     //     console.error('Error in GPT request:', error);
+    //     //     alert('An error occurred while processing the GPT request.');
+    //     // }
+    //     // } catch (error) {
+    //     //     console.error('Error performing GPT request:', error);
+    //     //     alert('An error occurred while processing the GPT request.');
+    //     // }
+    // }
 
 
     handleSelection(params) {
@@ -405,7 +484,9 @@ class GraphUI {
                     springLength: springLength,
                     springConstant: springConstant,
                     nodeDistance: nodeDistance,
-                    damping: damping
+                    damping: damping,
+                    // avoidOverlap: true // To prevent node overlap
+
                 },
                 solver: solver
             }
