@@ -158,6 +158,12 @@ class GraphPatternProcessor(VariableConnectedComponentsProcessor):
     def save_gpt_calls_to_jsonl(self, graph_id):
         """Save GPT calls to a JSON Lines file with additional UUID and self.graph_id."""
 
+        dir_path = self.temp_checkpoints_gpt_calls
+
+        # Check if the directory exists, if not, create it
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
         file_path = f"{self.temp_checkpoints_gpt_calls}/{graph_id}.jsonl"
         self.logger.info(f"file_path: {file_path}")
 

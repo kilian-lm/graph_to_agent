@@ -68,6 +68,11 @@ class MatrixLayerOne:
         nodes = self.graph_data["nodes"]
         edges = self.graph_data["edges"]
 
+        dir_path = self.temp_multi_layered_matrix_dir
+        # Check if the directory exists, if not, create it
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
         # Open the .jsonl file for writing
         self.filename = f'{self.temp_multi_layered_matrix_dir}/{self.key}_multi_layered_matrix.jsonl'
         with open(self.filename, 'w') as jsonl_file:
