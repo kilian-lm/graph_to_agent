@@ -1,0 +1,24 @@
+@startuml
+partition One {
+:app;
+:save_graph_data;
+:gpt_agent_interactions = v2GptAgentInteractions(key, 'graph_to_agent')
+gpt_agent_interactions.save_graph_data(graph_data, key);
+:MatrixLayerOne;
+:upload_to_bigquery;
+:20231117163236_advanced_adjacency_matrix;
+:MatrixLayerTwo;
+:G;
+:GraphPatternProcessor;
+:graph_to_agent_chat_completions;
+:AnswerPatternProcessor;
+:dump_gpt_jsonl_to_bigquery;
+}
+partition Two {
+:app;
+:return_gpt_agent_answer_to_graph;
+:EngineRoom;
+:main_tree_based_design_general;
+
+}
+@enduml
