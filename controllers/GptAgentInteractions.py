@@ -27,7 +27,7 @@ load_dotenv()
 
 class GptAgentInteractions():
 
-    def __init__(self, key, dataset_id):
+    def __init__(self, key):
         self.key = key
         print(self.key)
         self.log_file = f'{self.key}_gpt_agent_interactions.log'
@@ -47,7 +47,7 @@ class GptAgentInteractions():
         # self.matrix_layer_one = MatrixLayerOne(self.key, self.graph_data, self.graph_to_agent_adjacency_matrices)
         self.bq_handler = BigQueryHandler(self.key)
 
-        self.dataset_id = dataset_id
+        self.dataset_id = os.getenv('GRAPH_DATASET_ID')
 
     def get_node_schema(self):
         return [
@@ -65,18 +65,20 @@ class GptAgentInteractions():
 
     def get_available_graphs(self):
         # Query to get distinct graph_ids from the nodes_table
-        query = f"SELECT DISTINCT graph_id FROM `{self.dataset_id}.{self.nodes_table}`"
+        query = f"SELECT DISTINCT graph_id FROM `{self.bq_handler.bigquery_client.project}.{self.dataset_id}.{self.nodes_table}`"
+        self.logger.info(query)
         query_job = self.bq_handler.bigquery_client.query(query)
         results = query_job.result()
 
         return [{"graph_id": row["graph_id"], "graph_name": row["graph_id"]} for row in results]
 
-    def load_graph_data_by_id(self):
+    def load_graph_data_by_id(self, graph_id):
         # nodes_table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table("nodes_table")
         # edges_table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table("edges_table")
 
         # Fetch nodes for given graph_id
-        nodes_query = f"SELECT * FROM `{self.dataset_id}.{self.nodes_table}` WHERE graph_id = '{self.key}'"
+        nodes_query = f"SELECT * FROM `{self.bq_handler.bigquery_client.project}.{self.dataset_id}.{self.nodes_table}` WHERE graph_id = '{graph_id}'"
+        self.logger.info(nodes_query)
         nodes_query_job = self.bq_handler.bigquery_client.query(nodes_query)
         nodes_results = nodes_query_job.result()
         nodes = [{"id": row['id'], "label": row['label']} for row in nodes_results]
@@ -84,7 +86,8 @@ class GptAgentInteractions():
         self.logger.info(f"nodes loaded by graph id {nodes} already exists.")
 
         # Fetch edges for given graph_id
-        edges_query = f"SELECT * FROM `{self.dataset_id}.{self.edges_table}` WHERE graph_id = '{self.key}'"
+        edges_query = f"SELECT * FROM `{self.bq_handler.bigquery_client.project}.{self.dataset_id}.{self.edges_table}` WHERE graph_id = '{graph_id}'"
+        self.logger.info(edges_query)
         edges_query_job = self.bq_handler.bigquery_client.query(edges_query)
         edges_results = edges_query_job.result()
         edges = [{"from": row['from'], "to": row['to']} for row in edges_results]
@@ -232,18 +235,18 @@ class GptAgentInteractions():
                 return node
         return None
 
-    def get_gpt_response(self, processed_data):
-        # post_data = {
-        #     # "model": os.getenv("MODEL"),
-        #     "model":processed_data["model"],
-        #     "messages": processed_data["messages"]
-        # }
-        self.logger.debug(processed_data)
-        response = requests.post(self.openai_base_url, headers=self.headers, json=processed_data)
-        if response.status_code == 200:
-            return response.json()["choices"][0]["message"]["content"]
-        else:
-            raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
+    # def get_gpt_response(self, processed_data):
+    #     # post_data = {
+    #     #     # "model": os.getenv("MODEL"),
+    #     #     "model":processed_data["model"],
+    #     #     "messages": processed_data["messages"]
+    #     # }
+    #     self.logger.debug(processed_data)
+    #     response = requests.post(self.openai_base_url, headers=self.headers, json=processed_data)
+    #     if response.status_code == 200:
+    #         return response.json()["choices"][0]["message"]["content"]
+    #     else:
+    #         raise Exception(f"Error in GPT request: {response.status_code}, {response.text}")
 
     def process_gpt_response_and_update_graph(self, gpt_response, graph_data):
         last_content_node = self.get_last_content_node(graph_data['edges'], graph_data['nodes'])
@@ -295,7 +298,7 @@ class GptAgentInteractions():
 
     def save_graph_data(self, graph_data, graph_id):
         try:
-            self.bq_handler.create_dataset_if_not_exists(os.getenv('GRAPH_DATASET_ID'))
+            self.bq_handler.create_dataset_if_not_exists(self.graph_dataset_id)
 
             # self.bq_handler.create_dataset_if_not_exists(os.getenv())
 
