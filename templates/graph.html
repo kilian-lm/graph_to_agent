@@ -33,6 +33,11 @@
 
 
 <div id="graph-container">
+    <div id="loadingIndicator" style="display:none;">
+        <img src="{{ url_for('static', filename='images/giphy.gif') }}" alt="Loading..."/>
+        <p>Please wait, processing...</p>
+    </div>
+
     <div id="graph"></div>
     <div id="graph-controls">
     </div>
