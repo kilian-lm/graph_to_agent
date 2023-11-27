@@ -38,7 +38,7 @@ class AppOrchestrator():
         # All custom classes
         self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
         self.engine_room = EngineRoom(self.key, os.getenv('GRAPH_DATASET_ID'))
-        self.gpt_agent_interactions = GptAgentInteractions(self.key, os.getenv('GRAPH_DATASET_ID'))
+        self.gpt_agent_interactions = GptAgentInteractions(self.key)
         self.bq_handler = BigQueryHandler(self.key)
 
         # All Checkpoints and Externalities
@@ -114,7 +114,7 @@ class AppOrchestrator():
 
         key = self.key
 
-        gpt_agent_interactions = GptAgentInteractions(key, os.getenv('GRAPH_DATASET_ID'))
+        gpt_agent_interactions = GptAgentInteractions(key)
 
         gpt_agent_interactions.save_graph_data(graph_data, key)
 
