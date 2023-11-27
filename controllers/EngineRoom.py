@@ -11,8 +11,10 @@ from google.cloud import bigquery
 import json
 import datetime
 import requests
-from logger.CustomLogger import CustomLogger
 import inspect
+
+from logger.CustomLogger import CustomLogger
+
 
 load_dotenv()
 

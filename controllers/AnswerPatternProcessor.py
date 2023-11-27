@@ -139,7 +139,32 @@ class AnswerPatternProcessor:
         return response_content
 
     def append_to_jsonl(self, response_content, uuid):
-        jsonl_filename = f'{self.temp_raw_chat_completions}/gpt_answer_{uuid}_{self.key}.jsonl'
+        """
+        Appends a JSON-formatted response to a .jsonl file specific to a given UUID.
+        This method checks if the directory for storing the file exists, creates it if not,
+        and then appends the response to the file.
+
+        The response content is enhanced with additional fields: 'graph_id', 'path_id',
+        and 'answer_node_id' extracted from the instance's data attribute based on the UUID.
+
+        Parameters:
+        - response_content (dict or str): The content to be written to the file.
+                                         Should be a dictionary or a JSON-formatted string.
+        - uuid (str): Unique identifier used to generate the filename and extract additional data.
+
+        Returns:
+        - str: The path to the .jsonl file where the content was appended.
+        """
+
+        # Construct the directory path
+        dir_path = self.temp_raw_chat_completions
+
+        # Check if the directory exists, if not, create it
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        # Construct the file path
+        jsonl_filename = f'{dir_path}/gpt_answer_{uuid}_{self.key}.jsonl'
 
         with open(jsonl_filename, 'a') as file:
             graph_id = str(self.data[self.data['uuid'] == uuid].iloc[0]['graph_id'])
