@@ -22,8 +22,8 @@ from google.cloud import bigquery
 from google.oauth2.credentials import Credentials
 import datetime
 
-from app.LoggerPublisher.MainPublisher import MainPublisher
-from app.LoggerPublisher.MainLogger import MainLogger
+from class_app.LoggerPublisher.MainPublisher import MainPublisher
+from class_app.LoggerPublisher.MainLogger import MainLogger
 
 from google.oauth2.service_account import Credentials
 
