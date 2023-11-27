@@ -24,16 +24,16 @@ if not os.path.exists('recorded_audio'):
     os.makedirs('recorded_audio')
 
 
-def get_openai_key():
-    # Step 1: Check if OPEN_AI_KEY exists in environment variables
-    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-    return OPENAI_API_KEY
+# def get_openai_key():
+#     # Step 1: Check if OPEN_AI_KEY exists in environment variables
+#     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+#     return True
 
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     # Retrieve OPENAI_API_KEY
-    OPENAI_API_KEY = get_openai_key()
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
     # Step 2: If not found, test if token is provided by the textfield
     if OPENAI_API_KEY is None and request.method == 'POST':
