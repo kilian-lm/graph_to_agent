@@ -27,6 +27,8 @@ class BigQueryHandler:
         self.log_file = f'{self.key}_bq_handler.log'
         print(self.log_file)
         self.log_dir = './temp_log'
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir)
         print(self.log_dir)
         self.log_level = logging.DEBUG
         print(self.log_level)
