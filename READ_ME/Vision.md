@@ -71,10 +71,12 @@ rather strolling in a considered manner the graph-edges.
 
 One immediate goal is to design a platform for knowledge graph generation based on the API layer of the above-mentioned
 existing 'social-networks' platforms. This platform will consist of modules for 'Time-Stamped Content Evolution Graphs'
-and 'Augmented Argumentation via Agent Interactions' (as described below). Additionally, we need to obtain a decisive
-overarching legal decision from the national authorities stating that users own the content they create and publish on
-the 'social-networks'. Furthermore Users must have the ability to export their content from the respective
-platform, following the REST standards.
+and 'Augmented Argumentation via Agent Interactions' (as described below). Additionally, Users must have the ability to
+export their content from the respective platform, following the REST standards. For all non-techies: That's like the
+infrastructure, the roads and the traffic lights in the WWW. Now we need those roads to be traversable and we need to
+get the green light in order to GET the goods into "Beacon of Git". This step means that we need to assess the
+respective 'social-network' APIs and if the users can't get their content without having partner status or paying for it
+etc. to push for a solution (needs to be assessed in depth).
 
 The parallel step would be to pull up the entire architecture and infrastructure for the knowledge libraries.
 
@@ -225,67 +227,68 @@ translate not only words but meaning), makes the time feel as right as it could 
 
 ```mermaid
 graph TD
-  subgraph Environment
-    a[YouTube]
-    b[Instagram]
-    c[X]
-    d[LinkedIn]
-  end
+    subgraph Environment
+        a[YouTube]
+        b[Instagram]
+        c[X]
+        d[LinkedIn]
+    end
 
-  subgraph Agents
-    A(User A) --> a
-    B(User B) --> a
-    C(User C) --> b
-    D(User D) --> b
-    E(User E) --> c
-    F(User F) --> c
-    F(User F) --> d
-    A(User F) --> d
-  end
+    subgraph Agents
+        A(User A) --> a
+        B(User B) --> a
+        C(User C) --> b
+        D(User D) --> b
+        E(User E) --> c
+        F(User F) --> c
+        F(User F) --> d
+        A(User F) --> d
+    end
 
-  subgraph Algorithms & Incentives
-    a -->|Likes, Dislikes, Comments| L(Algorithm)
-    b -->|Likes, Dislikes, Comments| L(Algorithm)
-    c -->|Likes, Dislikes, Comments| L(Algorithm)
-    d -->|Likes, Dislikes, Comments| L(Algorithm)
-  end
+subgraph Algorithms & Incentives
+a -->|Likes, Dislikes, Comments|L(Algorithm)
+b -->|Likes, Dislikes, Comments|L(Algorithm)
+c -->|Likes, Dislikes, Comments|L(Algorithm)
+d -->|Likes, Dislikes, Comments|L(Algorithm)
+end
 
-  subgraph Feedback Mechanism
-    L -->|Selective Feedback| SF(Selective Feedback)
-  end
+subgraph Feedback Mechanism
+L -->|Selective Feedback|SF(Selective Feedback)
+end
 
-  subgraph Reward Functions
-    L --> |Likes| RL(Reward for Likes)
-    L --> |Dislikes| RD(Reward for Dislikes)
-    L --> |Comments| RC(Reward for Comments)
-    L --> |Short, Shallow Hype News| RN(Reward for Short, Shallow Hype News)
-    L --> |Formats| RF(Reward for Formats)
-  end
+subgraph Reward Functions
+L -->|Likes|RL(Reward for Likes)
+L --> |Dislikes|RD(Reward for Dislikes)
+L -->|Comments|RC(Reward for Comments)
+L -->|Short, Shallow Hype News| RN(Reward for Short, Shallow Hype News)
+L -->|Formats|RF(Reward for Formats)
+end
 
-  subgraph kojima'sTypology
-    A -->|Mules| M(Mules) --> |Consumers| RL
-    B -->|Mules| M(Mules) --> |Consumers| RL
-    C -->|Homo Demens| H(Homo Demens) --> |Addicted| RN -->  SF --> P5
-    D -->|Homo Demens| H(Homo Demens) --> |Addicted| RN -->  SF --> P5
-    E -->|Mules| M(Mules) --> |Consumers| RL --> SF --> P6
-    F -->|Homo Demens| H(Homo Demens) --> |Consumers| RN --> SF --> P6
-  end
+subgraph kojima'sTypology
+A -->|Mules|M(Mules) -->|Consumers|RL
+B -->|Mules|M(Mules) -->|Consumers|RL
+C -->|Homo Demens|H(Homo Demens) --> |Addicted|RN --> SF --> P5
+D -->|Homo Demens|H(Homo Demens) -->|Addicted|RN --> SF --> P5
+E -->|Mules|M(Mules) --> |Consumers|RL --> SF --> P6
+F -->|Homo Demens|H(Homo Demens) -->|Consumers|RN --> SF --> P6
+end
 
-  subgraph Society's Problems
-    SF --> |Enhances| P1(Problem: Focus Hijacking)
-    SF --> |Enhances| P2(Problem: Distraction)
-    SF --> |Enhances| P3(Problem: Loss of Autonomy)
-    SF --> |Enhances| P4(Problem: Lack of Transparency)
-    SF --> |Enhances| P5(Problem: Rational Agent :: Adhere to reward function in real life)
-    SF --> |Enhances| P6(Problem: Optimal Agent :: Adhere to reward function online)
-    SF --> |Enhances| P7(Problem: Repetitive, Shallow Content)
+subgraph Society's Problems
+SF -->|Enhances|P1(Problem: Focus Hijacking)
+SF -->|Enhances|P2(Problem: Distraction)
+SF -->|Enhances|P3(Problem: Loss of Autonomy)
+SF -->|Enhances|P4(Problem: Lack of Transparency)
+SF -->|Enhances|P5(Problem: Rational Agent :: Adhere to reward function in real life)
+SF -->|Enhances|P6(Problem: Optimal Agent :: Adhere to reward function online)
+SF -->|Enhances|P7(Problem: Repetitive, Shallow Content)
 
-  end
+end
 
-  subgraph Long Term Consequences
-    P1 -->|Reflects| Q(Barrier for for sustainable knowledge growth)
-  end
+subgraph Long Term Consequences
+P1 -->|Reflects|Q(Barrier for for sustainable knowledge growth)
+end
 ```
+
 ## In Sum
 
 Our endeavor is not merely to refine the digital landscape (cheers to Chamath Palihapitiya, Social Capital) but to
@@ -306,7 +309,8 @@ knowledge-transfer, that we're indulging in at the moment.
 
 If you resonate with our vision, consider giving me constructive feedback or give me a "duplicated" (please refer the
 source in case there is already a solution as described above), forward this proposal, come up with an own approach,
-fork my repo, use the app to layer agents. If you want to know more about the "We"/ "Us", check [here](https://cv-gieklps3ea-uc.a.run.app/graph_to_agent_normative_approach).
+fork my repo, use the app to layer agents. If you want to know more about the "We"/ "Us",
+check [here](https://cv-gieklps3ea-uc.a.run.app/graph_to_agent_normative_approach).
 
 ## References
 
