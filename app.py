@@ -50,7 +50,9 @@ def matrix_sudoku_approach():
         orchestrator.logger.error(f"Error in matrix sudoku approach: {e}")
         return jsonify({"status": "error", "message": str(e)})
 
-# Add additional routes here as needed
+@app.route('/impressum', methods=['GET', 'POST'])
+def impressum():
+    return render_template('impressum.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

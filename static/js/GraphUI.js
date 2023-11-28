@@ -110,11 +110,88 @@ class GraphUI {
         console.log('Selected message-passing technique:', selectedTechnique);
     }
 
+    // resizeCanvas() {
+    //     const graphContainer = document.getElementById('graph-container');
+    //     const canvas = graphContainer.querySelector('canvas');
+    //
+    //     if (canvas) {
+    //         // Define the step increments for width and height
+    //         const maxWidthIncrement = graphContainer.offsetWidth / 3;
+    //         const maxHeightIncrement = graphContainer.offsetHeight / 3;
+    //
+    //         const resizeObserver = new ResizeObserver(() => {
+    //             // Calculate the new width and height based on the increments
+    //             let newWidth = Math.min(canvas.width + maxWidthIncrement, graphContainer.offsetWidth);
+    //             let newHeight = Math.min(canvas.height + maxHeightIncrement, graphContainer.offsetHeight);
+    //
+    //             // Set the canvas dimensions
+    //             canvas.width = newWidth;
+    //             canvas.height = newHeight;
+    //
+    //             // Redraw or resize the graph if necessary
+    //             if (this.network) {
+    //                 this.network.setSize(newWidth + 'px', newHeight + 'px');
+    //                 this.network.redraw();
+    //             }
+    //         });
+    //
+    //         resizeObserver.observe(graphContainer);
+    //     }
+    // }
+
+    // resizeCanvasToFit() {
+    //     const footerHeight = document.querySelector('footer').offsetHeight;
+    //     const viewportHeight = window.innerHeight;
+    //     const graphContainer = document.getElementById('graph-container');
+    //     const otherElementsHeight = /* Calculate the height of other elements if any */ 0;
+    //
+    //     // Calculate available height for the graph container
+    //     const availableHeight = viewportHeight - footerHeight - otherElementsHeight;
+    //
+    //     // Set the max-height of the graph container
+    //     graphContainer.style.maxHeight = `${availableHeight}px`;
+    // }
+
+    resizeCanvasExponential() {
+        const footerHeight = document.querySelector('footer').offsetHeight;
+        const viewportHeight = window.innerHeight;
+        const graphContainer = document.getElementById('graph-container');
+        const canvas = graphContainer.querySelector('canvas');
+        let currentHeight = canvas.offsetHeight;
+        const targetHeight = viewportHeight - footerHeight - graphContainer.offsetTop; // Subtract any additional offset if necessary
+
+        let growthRate = 1.2; // This is an example growth rate, adjust as necessary
+        let newHeight = currentHeight;
+
+        // Perform an "exponential" growth towards the target height
+        while (newHeight < targetHeight) {
+            newHeight = Math.floor(newHeight * growthRate);
+            if (newHeight > targetHeight) {
+                newHeight = targetHeight; // Clamp to the target height
+                break;
+            }
+        }
+
+        // Apply the calculated height to the canvas
+        canvas.style.height = `${newHeight}px`;
+
+        // Redraw or resize the graph if necessary
+        if (this.network) {
+            this.network.setSize(canvas.style.width, `${newHeight}px`);
+            this.network.redraw();
+        }
+    }
+
+
     init() {
         this.loadAvailableGraphs();
         this.setupNetwork();
         this.attachEventListeners();
         this.createMessagePassingDropdown();
+        this.resizeCanvasExponential();
+
+        // this.resizeCanvasToFit();
+        window.addEventListener('resize', () => this.resizeCanvasToFit());
     }
 
     // You'll also need to implement the resetJSON method

@@ -1,62 +1,80 @@
 {% extends "base_template.html" %}
 
 {% block content %}
-</head>
-<body>
+    <div class="content"> <!-- Use the 'content' class for flex layout -->
 
-<div>
+        <!-- Sidebar with controls -->
+        <div class="sidebar">
+            <button id="saveGraphButton">Save Graph</button>
+            <br>
+            <button id="triggerAgentsButton">Trigger Agents</button>
+            <br>
+            <label for="centralGravity">Central Gravity:</label>
+            <input id="centralGravity" type="range" min="0" max="1" step="0.01">
+            <br>
+            <label for="springLength">Spring Length:</label>
+            <input id="springLength" type="range" min="1" max="1000">
+            <br>
+            <label for="springConstant">Spring Constant:</label>
+            <input id="springConstant" type="range" min="0" max="1" step="0.01">
+            <br>
+            <label for="nodeDistance">Node Distance:</label>
+            <input id="nodeDistance" type="range" min="1" max="1000">
+            <br>
+            <label for="damping">Damping:</label>
+            <input id="damping" type="range" min="0" max="1" step="0.01">
+            <br>
+            <label for="physicsSolver">Solver:</label>
+            <select id="physicsSolver">
+                <option value="hierarchicalRepulsion">Hierarchical Repulsion</option>
+                <option value="barnesHut">Barnes-Hut</option>
+                <option value="repulsion">Repulsion</option>
+                <option value="forceAtlas2Based">Force Atlas 2 Based</option>
+            </select>
+            <br>
+            <label for="graphDropdown">DWH:</label>
+            <select id="graphDropdown">
+                <option value="">Select a Graph</option>
+                <!-- Options will be populated dynamically from BQ -->
+            </select>
+            <br>
+            <label for="messagePassingDropdown">Graph-Algo-Label:</label>
+            <select id="messagePassingDropdown">
+                <option value="">messagePassingDropdown</option>
+                <!-- Options will be populated dynamically from BQ -->
+            </select>
+             <div id="editPanel">
+                <h3>Edit Node</h3>
+                <textarea id="nodeTextLabel" rows="4" style="width:100%"></textarea>
+                <br>
+                <button id="applyNodeChangesButton">Apply</button>
+                <button id="cancelNodeChangesButton">Cancel</button>
+            </div>
 
-    <button id="saveGraphButton">Save Graph</button>
-    <br>
-    <button id="triggerAgentsButton">Trigger Agents</button>
-    <br>
-    Central Gravity: <input id="centralGravity" type="range" min="0" max="1" step="0.01"><br>
-    Spring Length: <input id="springLength" type="range" min="1" max="1000"><br>
-    Spring Constant: <input id="springConstant" type="range" min="0" max="1" step="0.01"><br>
-    Node Distance: <input id="nodeDistance" type="range" min="1" max="1000"><br>
-    Damping: <input id="damping" type="range" min="0" max="1" step="0.01"><br>
-    Solver: <select id="physicsSolver">
-    <option value="hierarchicalRepulsion">Hierarchical Repulsion</option>
-    <option value="barnesHut">Barnes-Hut</option>
-    <option value="repulsion">Repulsion</option>
-    <option value="forceAtlas2Based">Force Atlas 2 Based</option>
-</select><br>
-    DWH: <select id="graphDropdown">
-    <option value="">Select a Graph</option>
-    <!-- Options will be populated dynamically from BQ -->
-</select><br>
-    Graph-Algo-Label: <select id="messagePassingDropdown">
-    <option value="">messagePassingDropdown</option>
-    <!-- Options will be populated dynamically from BQ -->
-</select>
-</div>
+            <div id="jsonDataPanel">
+                <h3>JSON Data</h3>
+                <textarea id="jsonData" rows="10" style="width:100%"></textarea>
+                <br>
+                <button id="updateFromJsonButton">Update Graph from JSON</button>
+                <button id="resetJsonButton">Get JSON</button>
+            </div>
+        </div>
 
+        <!-- Main Graph Area -->
+        <div id="graph-container">
+            <div id="loadingIndicator" style="display:none;">
+                <img src="{{ url_for('static', filename='images/giphy.gif') }}" alt="Loading..." width="300"
+                     height="1000"/>
+                <p>Please wait, processing...</p>
+            </div>
 
-<div id="graph-container">
-    <div id="loadingIndicator" style="display:none;">
-        <img src="{{ url_for('static', filename='images/giphy.gif') }}" alt="Loading..." width="300" height="300"/>
-        <p>Please wait, processing...</p>
+            <div id="graph"></div>
+            <div id="graph-controls">
+                <!-- Graph controls if any -->
+            </div>
+        </div>
+
     </div>
-
-    <div id="graph"></div>
-    <div id="graph-controls">
-    </div>
-    <div id="editPanel">
-        <h3>Edit Node</h3>
-        <textarea id="nodeTextLabel" rows="4" style="width:100%"></textarea>
-        <br>
-        <button id="applyNodeChangesButton">Apply</button>
-        <button id="cancelNodeChangesButton">Cancel</button>
-    </div>
-
-    <div id="jsonDataPanel">
-        <h3>JSON Data</h3>
-        <textarea id="jsonData" rows="10" style="width:100%"></textarea>
-        <br>
-        <button id="updateFromJsonButton">Update Graph from JSON</button>
-        <button id="resetJsonButton">Reset JSON</button>
-    </div>
-
     <script src="{{ url_for('static', filename='js/GraphUI.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
@@ -64,8 +82,4 @@
             graphUI.init();
         });
     </script>
-</div>
-
-</body>
-</html>
 {% endblock %}
