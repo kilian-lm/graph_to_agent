@@ -42,11 +42,13 @@ For Vision-Statement see: [Vision.md](READ_ME%2FVision.md)
 
 # Configs
 NUM_STEPS=10 (todo :: UI :: DFS search of user input)
+
 MODEL=gpt-3.5-turbo-16k-0613 (todo :: UI :: Dropdown of models)
 
 
 # Credentials
 BQ_CLIENT_SECRETS={*****}
+
 OPENAI_API_KEY=****
 
 # Endpoints
