@@ -87,7 +87,12 @@ LOG_DIR_LOCAL=./temp_log
        gravity of a node
     2. conways game of life
     3. llama-index --> language corpus via edges
-10. explain different dimensions if somebody uses a pre-trained/ fine tuned model 
+8. explain different dimensions if somebody uses a pre-trained/ fine tuned model 
+9. Explain the sheer infinite statistical possibilities, starting with the two layers
+   1. explain the difference between the two layers
+   2. distance matrix
+   3. social interaction simulation by msg. protocols
+   4. Agent behaviour with dynamic environment
 
 
 
