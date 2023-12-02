@@ -7,9 +7,29 @@ app = Flask(__name__)
 # Initialize AppOrchestrator
 orchestrator = AppOrchestrator()
 
-@app.route('/')
-def index_call():
-    return render_template('graph.html')
+# @app.route('/')
+# def index_call():
+#     return render_template('graph.html')
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    eula_o_k = os.environ.get('EULA_O_K')
+
+    if request.method == 'POST':
+        if 'agree' in request.form:
+            os.environ['EULA_O_K'] = 'TRUE'
+            return render_template('graph.html')
+        else:
+            # Handle disagreement or navigation away from EULA
+            return render_template('disagreement_page.html')
+
+    if eula_o_k != 'TRUE':
+        return render_template('eula_agreement.html')
+    else:
+        return render_template('graph.html')
+
+
+
 
 @app.route('/get-graph-data', methods=['POST'])
 def get_graph_data():
