@@ -177,3 +177,40 @@ button:disabled {
 .eula-buttons button.disagree:hover {
     background-color: #e53935;
 }
+
+
+
+/* Acceptance and Disagreement Page Styles */
+.info-page-container {
+    background-color: #fff;
+    margin: 2% auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    text-align: center;
+}
+
+.info-page-container h1 {
+    color: #333;
+}
+
+.info-page-container p {
+    color: #666;
+    margin-top: 20px;
+}
+
+.return-home {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 20px;
+    text-decoration: none;
+}
+
+.return-home:hover {
+    background-color: #45a049;
+}
