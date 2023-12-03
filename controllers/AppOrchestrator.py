@@ -102,6 +102,9 @@ class AppOrchestrator():
             # return jsonify({"status": "error", "message": str(e)})
 
     def matrix_sudoku_approach(self, graph_data, openai_api_key):
+
+        self.logger.info(f"matrix_sudoku_approach_openai_api_key: {openai_api_key}")
+
         # import json
 
         # timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
