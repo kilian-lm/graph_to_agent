@@ -36,7 +36,7 @@ load_dotenv()
 
 
 class AnswerPatternProcessor:
-    def __init__(self, key, open_ai_key):
+    def __init__(self, key, openai_api_key):
         self.key = key
         print(self.key)
         self.log_file = f'{self.key}_answer_pattern_processor.log'
@@ -49,8 +49,9 @@ class AnswerPatternProcessor:
 
         # self.openai_api_key = os.getenv('OPENAI_API_KEY')
 
-        openai.api_key = open_ai_key
-        self.openai_api_key = openai.api_key
+        self.openai_api_key = openai_api_key
+
+        self.logger.info(f"AnswerPatternProcessor : {self.openai_api_key}")
         self.openai_base_url = "https://api.openai.com/v1/chat/completions"
         self.headers = {
             'Content-Type': 'application/json',
