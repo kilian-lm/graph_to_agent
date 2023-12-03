@@ -110,11 +110,15 @@ class GraphUI {
         console.log('Selected message-passing technique:', selectedTechnique);
     }
 
+
     init() {
         this.loadAvailableGraphs();
         this.setupNetwork();
         this.attachEventListeners();
         this.createMessagePassingDropdown();
+        this.loadOpenAIModels();
+
+
     }
 
     // You'll also need to implement the resetJSON method
@@ -122,11 +126,6 @@ class GraphUI {
         this.saveEntireGraphToJSON();
         console.log('JSON reset to current graph state.');
     }
-
-    // triggerAgents() {
-    //     // Logic to trigger agents would go here
-    //     console.log('Agents triggered.');
-    // }
 
 
     async loadAvailableGraphs() {
@@ -293,43 +292,22 @@ class GraphUI {
     }
 
 
-    // async gptPostRequest() {
-    //     try {
-    //         var graphData = {
-    //             nodes: this.nodes.get(),
-    //             edges: this.edges.get()
-    //         };
-    //
-    //         console.log('Graph data being sent to backend:', graphData);
-    //
-    //         const response = await fetch('/return-gpt-agent-answer-to-graph', {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json'
-    //             },
-    //             body: JSON.stringify(graphData)
-    //         });
-    //
-    //         if (!response.ok) {
-    //             throw new Error(`HTTP error! status: ${response.status}`);
-    //         }
-    //
-    //         const data = await response.json();
-    //
-    //         console.log('Full response data received:', data);
-    //
-    //         if (data && Array.isArray(data.nodes) && Array.isArray(data.edges)) {
-    //             this.updateGraph(data); // Passing the whole data object since it already contains nodes and edges
-    //         } else {
-    //             console.error('Invalid or incomplete data received from backend:', data);
-    //             alert('Invalid or incomplete data received from backend.');
-    //         }
-    //     } catch (error) {
-    //         console.error('Error in GPT request:', error);
-    //         alert(`An error occurred while processing the GPT request: ${error.message}`);
-    //     }
-    // }
-
+    async loadOpenAIModels() {
+        try {
+            const response = await fetch('/get-openai-models');
+            const models = await response.json();
+            const dropdown = document.getElementById('openaiModelDropdown');
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.value;
+                option.textContent = model.label;
+                dropdown.appendChild(option);
+            });
+            console.log('OpenAI models loaded:', models);
+        } catch (error) {
+            console.error('Error loading OpenAI models:', error);
+        }
+    }
 
     async gptPostRequest() {
         // Show the loading indicator

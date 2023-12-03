@@ -1,0 +1,55 @@
+{% extends "base_template.html" %}
+
+{% block content %}
+<div class="eula-container">
+    <h1>End User License Agreement (EULA)</h1>
+    <div class="eula-content">
+        <h2>Acceptance of Terms</h2>
+        <p>By accessing and using this application (hereinafter referred to as "App"), you acknowledge that you have
+            read, understood, and agree to be bound by the following terms and conditions. If you do not agree to these
+            terms, you must not use the App.</p>
+
+        <h2>Non-Commercial Use</h2>
+        <p>This App is provided for demonstration purposes only and is not intended for commercial use at this time.</p>
+
+        <h2>Data Collection and Use</h2>
+        <p>The App does not employ cookies or third-party tools to collect personal data. However, information is stored
+            related to the "agents" that you create within the App. By using this App, you consent to the sharing of
+            your agents and their responses with other users of the App.</p>
+
+        <h2>Security and Risks</h2>
+        <p>As a demo version, the App does not include enhanced security measures against risks such as cross-site
+            request forgery and other web security threats. You acknowledge the inherent security risks in using the App
+            and agree to handle the OpenAI token and any data you input into the App with a high degree of caution.</p>
+
+        <h2>Liability Disclaimer</h2>
+        <p>The creators of the App disclaim any liability for any harm or damage that may occur as a result of using the
+            App. You agree to use the App at your own risk.</p>
+
+        <h2>Changes to Terms</h2>
+        <p>The terms of this agreement are subject to change at any time, and your continued use of the App after such
+            changes signifies your agreement to be bound by the updated terms.</p>
+
+        <h2>Governing Law</h2>
+        <p>This agreement shall be governed by the laws of the jurisdiction in which the App provider is based, without
+            regard to its conflict of law provisions.</p>
+
+        <h2>Contact Information</h2>
+        <p>For any inquiries or notifications, please contact [Insert Contact Information].</p>
+    </div>
+    <div class="eula-buttons">
+        <form method="POST">
+            <div class="api-key-input">
+                <label for="openai_api_key">OpenAI API Key:</label>
+                <input type="text" id="openai_api_key" name="openai_api_key" required>
+                {% if error %}
+                <p class="error">{{ error }}</p>
+                {% endif %}
+            </div>
+            <div class="eula-buttons">
+                <button type="submit" name="agree">Agree</button>
+                <button type="submit" name="disagree" class="disagree">Disagree</button>
+            </div>
+        </form>
+    </div>
+    {% endblock %}

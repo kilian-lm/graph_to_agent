@@ -5,11 +5,23 @@
     <title>Speak, Transcribe, Translate, Connect</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"> <!-- Link to local styles.css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="https://unpkg.com/vis-network@7.10.2/standalone/umd/vis-network.min.js"></script>
 </head>
-<body>
-    {% block content %}
-    {% endblock %}
+<body style="display: flex; flex-direction: column; min-height: 100vh;">
+    <div style="flex: 1;">
+        {% block content %}
+        <!-- This is where the individual page content will be inserted. -->
+        {% endblock %}
+    </div>
+    <footer class="footer">
+        <p>Beacon of Git</p>
+        <a href="{{ url_for('impressum') }}">Impressum</a>
+        <div class="social-icons">
+            <a href="https://www.linkedin.com/in/kilian-lehn-11043a20b/" target="_blank"><i class="fa fa-linkedin"></i></a>
+            <a href="https://github.com/kilian-lm" target="_blank"><i class="fa fa-github"></i></a>
+            <a href="https://cv-api-caller-dacqlspr3a-uc.a.run.app/" target="_blank"><i class="fa fa-user"></i></a>
+        </div>
+    </footer>
 </body>
 </html>
