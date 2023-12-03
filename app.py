@@ -98,8 +98,11 @@ def save_graph():
 @app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])
 def matrix_sudoku_approach():
     try:
+        openai.api_key = os.environ.get('OPENAI_API_KEY')
+        print(f"openai.api_key: {openai.api_key}")
+
         graph_data = request.json
-        updated_graph = orchestrator.matrix_sudoku_approach(graph_data)
+        updated_graph = orchestrator.matrix_sudoku_approach(graph_data, openai.api_key)
         return jsonify(updated_graph)
     except Exception as e:
         orchestrator.logger.error(f"Error in matrix sudoku approach: {e}")

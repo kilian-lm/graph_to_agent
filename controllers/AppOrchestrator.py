@@ -16,6 +16,8 @@ from controllers.GraphPatternProcessor import GraphPatternProcessor
 
 from dotenv import load_dotenv
 
+import openai
+
 load_dotenv()
 
 # app = Flask(__name__)
@@ -23,6 +25,8 @@ load_dotenv()
 
 class AppOrchestrator():
     def __init__(self):
+
+
         # Basics
         self.timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         self.general_uuid = str(uuid.uuid4())
@@ -97,7 +101,7 @@ class AppOrchestrator():
             self.logger.error(f"Error saving graph: {e}")
             # return jsonify({"status": "error", "message": str(e)})
 
-    def matrix_sudoku_approach(self, graph_data):
+    def matrix_sudoku_approach(self, graph_data, openai_api_key):
         # import json
 
         # timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
@@ -121,7 +125,6 @@ class AppOrchestrator():
         matrix_layer_one = MatrixLayerOne(key, graph_data, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
 
         filename = matrix_layer_one.create_advanced_adjacency_matrix()
-        filename
 
         matrix_layer_one.multi_layered_matrix_upload_jsonl_to_bigquery(filename,
                                                                        os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
@@ -133,7 +136,7 @@ class AppOrchestrator():
 
         graph_processor.dump_to_bigquery(key, os.getenv('CURATED_CHAT_COMPLETIONS'))
 
-        answer_pat_pro = AnswerPatternProcessor(key)
+        answer_pat_pro = AnswerPatternProcessor(key,openai_api_key)
         answer_pat_pro.dump_gpt_jsonl_to_bigquery(key)
         answer_pat_pro.run()
 
