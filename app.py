@@ -4,22 +4,21 @@ from controllers.AppOrchestrator import AppOrchestrator
 import os
 import openai
 from dotenv import load_dotenv
+from flask import session
+import secrets
+secret_key = secrets.token_urlsafe(16)  # You can increase the number for a longer key
+print(secret_key)
+
 
 load_dotenv()
 
 
 app = Flask(__name__)
+app.secret_key = secret_key
 
 # Initialize AppOrchestrator
 orchestrator = AppOrchestrator()
 
-print(os.environ.get("OPENAI_BASE_URL"))
-print(f"OPENAI_API_KEY: {os.environ.get('OPENAI_API_KEY')}")
-print(f"EULA_O_K: {os.environ.get('EULA_O_K')}")
-
-# @app.route('/')
-# def index_call():
-#     return render_template('graph.html')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -32,6 +31,8 @@ def index():
             openai_api_key = request.form.get('openai_api_key')
             if openai_api_key:
                 os.environ['OPENAI_API_KEY'] = openai_api_key
+                session['OPENAI_API_KEY'] = openai_api_key
+
                 print(f"OPENAI_API_KEY: {os.environ.get('OPENAI_API_KEY')}")
                 os.environ['EULA_O_K'] = eula_o_k
                 return render_template('graph.html')
@@ -98,11 +99,20 @@ def save_graph():
 @app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])
 def matrix_sudoku_approach():
     try:
+        # openai.api_key = os.environ.get('OPENAI_API_KEY')
+        # print(f"matrix_sudoku_approach openai.api_key: {openai.api_key}")
+
+        print(f"matrix_sudoku_approach : OPENAI_API_KEY: {os.environ.get('OPENAI_API_KEY')}")
+
         openai.api_key = os.environ.get('OPENAI_API_KEY')
-        print(f"openai.api_key: {openai.api_key}")
+        print(f"matrix_sudoku_approach : openai.api_key: {openai.api_key}")
+        openai_api_key = session.get('OPENAI_API_KEY')
+        print(f"session : openai.api_key: {openai_api_key}")
+
+        # breakpoint()
 
         graph_data = request.json
-        updated_graph = orchestrator.matrix_sudoku_approach(graph_data, openai.api_key)
+        updated_graph = orchestrator.matrix_sudoku_approach(graph_data, openai_api_key)
         return jsonify(updated_graph)
     except Exception as e:
         orchestrator.logger.error(f"Error in matrix sudoku approach: {e}")
