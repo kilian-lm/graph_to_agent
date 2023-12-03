@@ -114,6 +114,36 @@ button:disabled {
 }
 
 /* Modal styles */
+.eula-content {
+    margin-top: 20px;
+    text-align: justify;
+    color: #666;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.eula-container h1 {
+    color: #333;
+    text-align: center;
+}
+
+
+.eula-content h2 {
+    color: #4CAF50;
+    margin-top: 20px;
+}
+
+.eula-content h3 {
+    color: #333;
+    margin-top: 15px;
+}
+
+.eula-content p {
+    margin-top: 10px;
+    text-indent: 20px;
+}
+
+
 #user-message-modal .modal-content {
     background-color: #fff;
     margin: 15% auto;
@@ -137,17 +167,6 @@ button:disabled {
     max-width: 800px;
 }
 
-.eula-container h1 {
-    color: #333;
-    text-align: center;
-}
-
-.eula-content {
-    margin-top: 20px;
-    text-align: justify;
-    color: #666;
-    line-height: 1.6;
-}
 
 .eula-buttons {
     display: flex;
@@ -177,7 +196,6 @@ button:disabled {
 .eula-buttons button.disagree:hover {
     background-color: #e53935;
 }
-
 
 
 /* Acceptance and Disagreement Page Styles */
@@ -214,3 +232,33 @@ button:disabled {
 .return-home:hover {
     background-color: #45a049;
 }
+
+
+.api-key-input {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.api-key-input label {
+    margin-right: 10px;
+}
+
+.api-key-input input {
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.error {
+    color: red;
+    margin-top: 10px;
+}
+
+
+.options {
+    text-align: center;
+    margin-top: 20px;
+}
+
+
+
