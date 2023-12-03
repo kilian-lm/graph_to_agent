@@ -3,12 +3,19 @@ from flask import Flask, render_template, jsonify, request
 from controllers.AppOrchestrator import AppOrchestrator
 import os
 import openai
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 app = Flask(__name__)
 
 # Initialize AppOrchestrator
 orchestrator = AppOrchestrator()
 
+print(os.environ.get("OPENAI_BASE_URL"))
+print(f"OPENAI_API_KEY: {os.environ.get('OPENAI_API_KEY')}")
+print(f"EULA_O_K: {os.environ.get('EULA_O_K')}")
 
 # @app.route('/')
 # def index_call():
@@ -25,6 +32,7 @@ def index():
             openai_api_key = request.form.get('openai_api_key')
             if openai_api_key:
                 os.environ['OPENAI_API_KEY'] = openai_api_key
+                print(f"OPENAI_API_KEY: {os.environ.get('OPENAI_API_KEY')}")
                 os.environ['EULA_O_K'] = eula_o_k
                 return render_template('graph.html')
             else:
@@ -41,9 +49,15 @@ def index():
 @app.route('/get-openai-models', methods=['GET'])
 def get_openai_models():
     try:
-        openai.api_key = os.getenv('OPENAI_API_KEY')
+        # openai.api_key = os.getenv('OPENAI_API_KEY')
+        print(f"OPENAI_API_KEY: {os.environ.get('OPENAI_API_KEY')}")
+
+        openai.api_key = os.environ.get('OPENAI_API_KEY')
+        print(f"openai.api_key: {openai.api_key}")
+
         models = openai.Model.list()
-        model_options = [{'label': model['id'], 'value': model['id']} for model in models['data'] if 'annalect' not in model['id']]
+        model_options = [{'label': model['id'], 'value': model['id']} for model in models['data']]
+        print(f"model_options: {model_options}")
         return jsonify(model_options)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})

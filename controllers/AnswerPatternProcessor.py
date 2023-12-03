@@ -28,6 +28,8 @@ from sql_queries.edges_query import EDGES_QUERY
 from sql_queries.nodes_query import NODES_QUERY
 from sql_queries.layer_find_variable import LAYER_FIND_VARIABLE
 
+import openai
+
 from sql_queries.gpt_call_blueprint import GPT_CALL_BLUEPRINT
 
 load_dotenv()
@@ -45,7 +47,10 @@ class AnswerPatternProcessor:
         print(self.log_level)
         self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
-        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        # self.openai_api_key = os.getenv('OPENAI_API_KEY')
+
+        openai.api_key = os.environ.get('OPEN_AI_KEY')
+        self.openai_api_key = openai.api_key
         self.openai_base_url = "https://api.openai.com/v1/chat/completions"
         self.headers = {
             'Content-Type': 'application/json',
