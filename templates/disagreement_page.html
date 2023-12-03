@@ -1,17 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <!-- Head elements -->
-</head>
-<body>
-    <div class="info-page-container">
-        <h1>Agreement Not Accepted</h1>
-        <p>You have chosen not to agree to the EULA. As a result, you cannot use the App at this time.</p>
-        <div class="options">
-            <a href="/" class="return-home">Return to EULA Agreement</a>
-            <!-- Uncomment below line if you have a home page -->
-            <!-- <a href="/home" class="return-home">Return to Home</a> -->
-        </div>
+{% extends "base_template.html" %}
+
+{% block content %}
+<div class="info-page-container">
+    <h1>Agreement Not Accepted</h1>
+    <p>You have chosen not to agree to the EULA. As a result, you cannot use the App at this time.</p>
+    <div class="options">
+        <a href="/" class="return-home">Return to EULA Agreement</a>
+        <!-- <a href="/home" class="return-home">Return to Home</a> -->
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
