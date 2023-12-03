@@ -29,6 +29,8 @@ def index():
         if 'agree' in request.form:
             eula_o_k = 'TRUE'
             openai_api_key = request.form.get('openai_api_key')
+            print(f"openai_api_key: {openai_api_key}")
+            breakpoint()
             if openai_api_key:
                 os.environ['OPENAI_API_KEY'] = openai_api_key
                 session['OPENAI_API_KEY'] = openai_api_key
