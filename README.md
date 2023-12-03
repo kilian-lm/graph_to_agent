@@ -7,7 +7,7 @@ For Vision-Statement see: [Vision.md](READ_ME%2FVision.md)
 1. **Understand the motivation**
     - [Vision.md](READ_ME%2FVision.md)
     - [V](https://cv-gieklps3ea-uc.a.run.app/graph_to_agent_normative_approach)
-    - [linkedin](https://www.linkedin.com/...)
+    - [linkedin_article](https://www.linkedin.com/...)
 
 ## Git Workflow Rules
 
