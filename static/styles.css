@@ -1,4 +1,63 @@
+/* Reset and Global Styles */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #e6e6e6; /* Background color for the entire body */
+}
 
+/* Flexbox Container */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Use viewport height to ensure full page coverage */
+}
+
+/* Main Content */
+.content {
+    display: flex;
+    flex-direction: row;
+    flex: 1; /* Flex 1 will ensure that content takes all available space */
+}
+
+/* Sidebar Styles */
+.sidebar {
+    flex: 1; /* Takes up 1 part of the space */
+    padding: 20px;
+    background-color: #f3f3f3;
+    border-right: 1px solid #ccc;
+}
+
+/* Graph Container Styles */
+#graph-container {
+    flex: 2; /* This will take twice the space as the sidebar */
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow: hidden; /* Adjust based on your design */
+}
+
+#graph-container > #graph {
+    flex-grow: 1; /* This will make sure the canvas grows to the available space */
+}
+
+#graph-container canvas {
+    flex-grow: 1; /* Allow canvas to fill the space in the container */
+    width: 100%; /* Full width of its container */
+    height: 100%; /* Full height of its container */
+    /* Note: Height 100% works if the parent has a defined height which we set above */
+}
+
+/* Footer */
+footer {
+    background: #333;
+    color: #fff;
+    text-align: center;
+    padding: 10px;
+}
+
+/* Loading Indicator */
 #loadingIndicator {
     position: fixed;
     top: 50%;
@@ -8,141 +67,6 @@
     z-index: 1000; /* Ensures it appears above other content */
 }
 
-
-/* Global Styles */
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 0;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-/* Header */
-header {
-    background: #333;
-    color: #fff;
-    padding: 10px 0;
-    text-align: center;
-}
-
-header h1 {
-    margin: 0;
-    padding: 0;
-}
-
-
-.sidebar {
-    width: 200px;
-    padding: 20px;
-    float: left;
-    background-color: #f3f3f3;
-    border-right: 1px solid #ccc;
-}
-
-.slider-container label {
-    display: block;
-    margin: 10px 0;
-}
-
-.slider-container input[type="range"] {
-    width: 100%;
-}
-
-/* User Message Modal */
-#user-message-modal {
-    display: none;
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-#user-message-modal .modal-content {
-    background-color: #fff;
-    margin: 15% auto;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-#user-message-modal .close-button {
-    cursor: pointer;
-    float: right;
-}
-
-/* Graph Container */
-#graph-container {
-    width: 100%;
-    height: 70vh; /* Making the graph container large */
-}
-
-#graph {
-    width: 100%;
-    height: 100%;
-}
-
-/* Footer */
-footer {
-    background: #333;
-    color: #fff;
-    text-align: center;
-    padding: 10px;
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-}
-
-
-.prompt-container {
-    margin: 15px 0;
-    width: 100%;
-}
-
-.prompt-container label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-#translation-prompt {
-    width: 100%;
-    height: 60px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-    resize: vertical; /* Allows the user to resize the textarea vertically */
-}
-
-#translation-prompt:focus {
-    outline: none;
-    border-color: #66afe9;
-}
-
-/* Responsive adjustments */
-@media only screen and (max-width: 768px) {
-    #graph-container {
-        height: 50vh;
-    }
-}
-
-@media only screen and (max-width: 480px) {
-    header, footer {
-        padding: 5px;
-    }
-
-    #user-message-modal .modal-content {
-        width: 90%;
-    }
-}
 
 /* Button Styles */
 button {
@@ -170,59 +94,171 @@ button:disabled {
     cursor: not-allowed;
 }
 
-/* Frame around the whole app */
-body > .container {
-    border: 2px solid #ccc;
+/* Responsive adjustments */
+@media only screen and (max-width: 768px) {
+    .content {
+        flex-direction: column; /* Stack sidebar and graph on top of each other on smaller screens */
+    }
+
+    .sidebar,
+    #graph-container {
+        flex: none;
+        width: 100%; /* Full width on smaller screens */
+    }
+}
+
+@media only screen and (max-width: 480px) {
+    footer {
+        padding: 5px;
+    }
+}
+
+/* Modal styles */
+.eula-content {
+    margin-top: 20px;
+    text-align: justify;
+    color: #666;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.eula-container h1 {
+    color: #333;
+    text-align: center;
+}
+
+
+.eula-content h2 {
+    color: #4CAF50;
+    margin-top: 20px;
+}
+
+.eula-content h3 {
+    color: #333;
+    margin-top: 15px;
+}
+
+.eula-content p {
+    margin-top: 10px;
+    text-indent: 20px;
+}
+
+
+#user-message-modal .modal-content {
+    background-color: #fff;
+    margin: 15% auto;
     padding: 20px;
-    border-radius: 10px;
+    text-align: center;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Aligning buttons horizontally */
-button {
-    display: inline-block; /* Aligning buttons horizontally */
+#user-message-modal .close-button {
+    cursor: pointer;
 }
 
-.token-form-container {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 300px; /* You can adjust the width as needed */
+
+/* EULA Agreement Page Styles */
+.eula-container {
+    background-color: #fff;
+    margin: 2% auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
 }
 
-.token-form .token-container {
+
+.eula-buttons {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    justify-content: center;
+    margin-top: 20px;
 }
 
-.token-form label,
-.token-form input {
-    margin-bottom: 10px;
+.eula-buttons button {
+    margin: 0 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
-.token-form button {
-    width: 80px; /* You can adjust the width as needed */
-    height: 30px; /* You can adjust the height as needed */
-    margin-bottom: 10px;
-    font-size: 10px;
+.eula-buttons button:hover {
+    background-color: #45a049;
+}
+
+.eula-buttons button.disagree {
+    background-color: #f44336;
+}
+
+.eula-buttons button.disagree:hover {
+    background-color: #e53935;
 }
 
 
-/* Colored padding around the whole app */
-body {
-    margin: 0;
-    padding: 0;
-    background-color: #e6e6e6; /* Background color for the entire body */
+/* Acceptance and Disagreement Page Styles */
+.info-page-container {
+    background-color: #fff;
+    margin: 2% auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    text-align: center;
 }
 
-.wrapper {
-    padding: 20px; /* Colored padding around the main content */
+.info-page-container h1 {
+    color: #333;
 }
 
-.container {
-    background-color: #ffffff; /* White background for the main content */
-    border: 2px solid #ccc;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.info-page-container p {
+    color: #666;
+    margin-top: 20px;
 }
+
+.return-home {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 20px;
+    text-decoration: none;
+}
+
+.return-home:hover {
+    background-color: #45a049;
+}
+
+
+.api-key-input {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.api-key-input label {
+    margin-right: 10px;
+}
+
+.api-key-input input {
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.error {
+    color: red;
+    margin-top: 10px;
+}
+
+
+.options {
+    text-align: center;
+    margin-top: 20px;
+}
+
+
+
