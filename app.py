@@ -1,10 +1,34 @@
 import datetime
 from flask import Flask, render_template, jsonify, request
 from controllers.AppOrchestrator import AppOrchestrator
+from controllers.config import Config
 import os
 import openai
-
+import  json
 app = Flask(__name__)
+
+
+
+CACHE_DIRECTORY = '/cache'  # Directory where the API key will be stored
+
+def save_api_key(api_key):
+    # Create the /cache directory if it doesn't exist
+    if not os.path.exists(CACHE_DIRECTORY):
+        os.makedirs(CACHE_DIRECTORY)
+
+    # Write the API key to a JSON file in /cache
+    with open(os.path.join(CACHE_DIRECTORY, 'api_key.json'), 'w') as file:
+        json.dump({'api_key': api_key}, file)
+
+def get_api_key():
+    # Read the API key from the JSON file in /cache
+    api_key_file = os.path.join(CACHE_DIRECTORY, 'api_key.json')
+    if os.path.exists(api_key_file):
+        with open(api_key_file, 'r') as file:
+            data = json.load(file)
+            return data.get('api_key')
+    return None
+
 
 # Initialize AppOrchestrator
 orchestrator = AppOrchestrator()
@@ -24,7 +48,7 @@ def index():
             eula_o_k = 'TRUE'
             openai_api_key = request.form.get('openai_api_key')
             if openai_api_key:
-                os.environ['OPENAI_API_KEY'] = openai_api_key
+                save_api_key(openai_api_key)
                 os.environ['EULA_O_K'] = eula_o_k
                 return render_template('graph.html')
             else:
@@ -41,7 +65,8 @@ def index():
 @app.route('/get-openai-models', methods=['GET'])
 def get_openai_models():
     try:
-        openai.api_key = os.getenv('OPENAI_API_KEY')
+        # openai.api_key = os.getenv('OPENAI_API_KEY')
+        openai.api_key = get_api_key()
         models = openai.Model.list()
         model_options = [{'label': model['id'], 'value': model['id']} for model in models['data'] if 'annalect' not in model['id']]
         return jsonify(model_options)

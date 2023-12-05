@@ -121,7 +121,7 @@ class AppOrchestrator():
         matrix_layer_one = MatrixLayerOne(key, graph_data, os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
 
         filename = matrix_layer_one.create_advanced_adjacency_matrix()
-        filename
+        # filename
 
         matrix_layer_one.multi_layered_matrix_upload_jsonl_to_bigquery(filename,
                                                                        os.getenv('MULTI_LAYERED_MATRIX_DATASET_ID'))
