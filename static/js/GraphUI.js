@@ -149,6 +149,24 @@ class GraphUI {
     }
 
 
+    // async loadAvailableGraphs() {
+    //     try {
+    //         const response = await fetch('/get-available-graphs');
+    //         const graphs = await response.json();
+    //         const dropdown = document.getElementById('graphDropdown');
+    //         dropdown.innerHTML = '';
+    //         graphs.forEach(graph => {
+    //             const option = document.createElement('option');
+    //             option.value = graph.graph_id;
+    //             option.textContent = graph.graph_name;
+    //             dropdown.appendChild(option);
+    //         });
+    //         console.log('Available graphs loaded:', graphs);
+    //     } catch (error) {
+    //         console.error('Error loading available graphs:', error);
+    //     }
+    // }
+
     async loadAvailableGraphs() {
         try {
             const response = await fetch('/get-available-graphs');
@@ -157,8 +175,8 @@ class GraphUI {
             dropdown.innerHTML = '';
             graphs.forEach(graph => {
                 const option = document.createElement('option');
-                option.value = graph.graph_id;
-                option.textContent = graph.graph_name;
+                option.value = graph.graph_id;  // Use graph_id as the value
+                option.textContent = graph.graph_name;  // Display the user-friendly string
                 dropdown.appendChild(option);
             });
             console.log('Available graphs loaded:', graphs);
