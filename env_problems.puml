@@ -1,6 +1,0 @@
-@startuml
-start
-:check how it worked it in audio app;
-:transfer and test;
-end
-@enduml
