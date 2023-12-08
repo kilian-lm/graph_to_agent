@@ -56,6 +56,37 @@ class BigQueryHandler:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
+    def save_selected_answer(self, graph_id, answer):
+        dataset_id = 'random_string_look_up'  # Replace with your dataset ID
+        table_id = 'selected_answers'  # Table to store selected answers
+
+        # Define the schema for the new table
+        schema = [
+            bigquery.SchemaField("graph_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("selected_answer", "STRING", mode="REQUIRED")
+        ]
+
+        # Ensure the dataset and table exist
+        self.create_dataset_if_not_exists(dataset_id)
+        self.create_table_if_not_exists(dataset_id, table_id, schema=schema)
+
+        # Prepare the data to be inserted
+        row_to_insert = [{
+            "graph_id": graph_id,
+            "selected_answer": answer
+        }]
+
+        # Insert the data
+        table_ref = self.bigquery_client.dataset(dataset_id).table(table_id)
+        table = self.bigquery_client.get_table(table_ref)
+
+        errors = self.bigquery_client.insert_rows_json(table, row_to_insert)
+        if errors:
+            self.logger.error(f"Encountered errors while inserting the selected answer: {errors}")
+            return {"status": "error", "message": "Failed to save the selected answer"}
+
+        return {"status": "success", "message": "Selected answer saved successfully"}
+
     def create_view(self, dataset_id, view_id, view_query):
         view_ref = self.bigquery_client.dataset(dataset_id).table(view_id)
         view = bigquery.Table(view_ref)
@@ -91,7 +122,6 @@ class BigQueryHandler:
             except Exception as ex:
                 self.logger.error(f"Failed to create dataset {dataset_id}: {ex}")
                 raise
-
 
     def create_table_if_not_exists(self, dataset_id, table_id, schema=None):
         table_ref = self.bigquery_client.dataset(dataset_id).table(table_id)

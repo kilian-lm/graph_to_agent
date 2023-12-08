@@ -43,6 +43,27 @@ class GraphUI {
 
     }
 
+    startCountdown(duration) {
+        let timer = duration, minutes, seconds, milliseconds;
+        const countdownElement = document.getElementById('countdownTimer');
+        const interval = setInterval(function () {
+            minutes = parseInt(timer / 60, 10);
+            seconds = parseInt(timer % 60, 10);
+            milliseconds = parseInt((timer - Math.floor(timer)) * 100, 10);
+
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+            milliseconds = milliseconds < 10 ? "0" + milliseconds : milliseconds;
+
+            countdownElement.textContent = minutes + ":" + seconds + ":" + milliseconds;
+
+            if ((timer -= 0.01) <= 0) {
+                clearInterval(interval);
+                countdownElement.textContent = 'Sending Graph-Data back to UI, get ready to get blown!';
+            }
+        }, 10); // Update every 10ms for smooth countdown
+    }
+
 
     // add copy
     copySelection() {
@@ -128,6 +149,24 @@ class GraphUI {
     }
 
 
+    // async loadAvailableGraphs() {
+    //     try {
+    //         const response = await fetch('/get-available-graphs');
+    //         const graphs = await response.json();
+    //         const dropdown = document.getElementById('graphDropdown');
+    //         dropdown.innerHTML = '';
+    //         graphs.forEach(graph => {
+    //             const option = document.createElement('option');
+    //             option.value = graph.graph_id;
+    //             option.textContent = graph.graph_name;
+    //             dropdown.appendChild(option);
+    //         });
+    //         console.log('Available graphs loaded:', graphs);
+    //     } catch (error) {
+    //         console.error('Error loading available graphs:', error);
+    //     }
+    // }
+
     async loadAvailableGraphs() {
         try {
             const response = await fetch('/get-available-graphs');
@@ -136,8 +175,8 @@ class GraphUI {
             dropdown.innerHTML = '';
             graphs.forEach(graph => {
                 const option = document.createElement('option');
-                option.value = graph.graph_id;
-                option.textContent = graph.graph_name;
+                option.value = graph.graph_id;  // Use graph_id as the value
+                option.textContent = graph.graph_name;  // Display the user-friendly string
                 dropdown.appendChild(option);
             });
             console.log('Available graphs loaded:', graphs);
@@ -280,7 +319,7 @@ class GraphUI {
         // Event listeners for other buttons and inputs
         document.getElementById('applyNodeChangesButton').addEventListener('click', this.applyNodeChanges.bind(this));
         document.getElementById('cancelNodeChangesButton').addEventListener('click', this.cancelNodeChanges.bind(this));
-        document.getElementById('saveGraphButton').addEventListener('click', this.saveGraphData.bind(this));
+        // document.getElementById('saveGraphButton').addEventListener('click', this.saveGraphData.bind(this));
         document.getElementById('centralGravity').addEventListener('change', this.updatePhysics.bind(this));
         document.getElementById('springLength').addEventListener('change', this.updatePhysics.bind(this));
         document.getElementById('springConstant').addEventListener('change', this.updatePhysics.bind(this));
@@ -311,6 +350,8 @@ class GraphUI {
 
     async gptPostRequest() {
         // Show the loading indicator
+        this.startCountdown(130); // Start a 60-second countdown
+
         document.getElementById('loadingIndicator').style.display = 'block';
 
         try {
