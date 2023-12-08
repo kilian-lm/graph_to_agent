@@ -30,6 +30,7 @@ from sql_queries.layer_find_variable import LAYER_FIND_VARIABLE
 
 from sql_queries.gpt_call_blueprint import GPT_CALL_BLUEPRINT
 
+from controllers.CloudRunSpecificInMemoryOpenAiKeyHandling import CloudRunSpecificInMemoryOpenAiKeyHandling
 
 from controllers.config import Config
 
@@ -69,7 +70,8 @@ class AnswerPatternProcessor:
         self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
         # self.openai_api_key = os.getenv('OPENAI_API_KEY')
-        self.openai_api_key = get_api_key()
+        cloud_run_spec = CloudRunSpecificInMemoryOpenAiKeyHandling()
+        self.openai_api_key = cloud_run_spec.get_api_key()
         self.openai_base_url = "https://api.openai.com/v1/chat/completions"
         self.headers = {
             'Content-Type': 'application/json',
