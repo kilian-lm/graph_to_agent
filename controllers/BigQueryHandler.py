@@ -56,13 +56,13 @@ class BigQueryHandler:
             self.logger.error(f"An error occurred while initializing the BigQuery client: {e}")
             raise
 
-    def save_selected_answer(self, key, answer):
+    def save_selected_answer(self, graph_id, answer):
         dataset_id = 'random_string_look_up'  # Replace with your dataset ID
         table_id = 'selected_answers'  # Table to store selected answers
 
         # Define the schema for the new table
         schema = [
-            bigquery.SchemaField("key", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("graph_id", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("selected_answer", "STRING", mode="REQUIRED")
         ]
 
@@ -72,7 +72,7 @@ class BigQueryHandler:
 
         # Prepare the data to be inserted
         row_to_insert = [{
-            "key": key,
+            "graph_id": graph_id,
             "selected_answer": answer
         }]
 
