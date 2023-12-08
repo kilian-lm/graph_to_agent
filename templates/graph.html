@@ -5,8 +5,8 @@
 
         <!-- Sidebar with controls -->
         <div class="sidebar">
-            <button id="saveGraphButton">Save Graph</button>
-            <br>
+            {#            <button id="saveGraphButton">Save Graph</button>#}
+            {#            <br>#}
             <button id="triggerAgentsButton">Trigger Agents</button>
             <br>
             <label for="openaiModelDropdown">Select OpenAI Model:</label>
@@ -68,11 +68,21 @@
 
         <!-- Main Graph Area -->
         <div id="graph-container">
+{#            <div id="loadingIndicator" style="display:none;">#}
+{#                <img src="{{ url_for('static', filename='images/giphy.gif') }}"#}
+{#                     alt="Operation takes on avg 60 sec ... loading..." width="500"#}
+{#                     height="300" style="font-size: 50px; font-weight: bold; text-align: center; color: #333;"/>#}
+{#                <p>Please wait, processing...</p>#}
+{#            </div>#}
+
+
             <div id="loadingIndicator" style="display:none;">
-                <img src="{{ url_for('static', filename='images/giphy.gif') }}" alt="Loading..." width="500"
-                     height="300" style="font-size: 24px; font-weight: bold; text-align: center; color: #333;"/>
-                <p>Please wait, processing...</p>
+                <img src="{{ url_for('static', filename='images/giphy.gif') }}"/>
+                <p>Operation takes on avg 130 sec ... loading...go and get a coffee or improve my ETL code or just complain to my superior ;P</p>
+                <!-- Countdown Timer -->
+                <div id="countdownTimer" style="font-size: 30px; font-weight: bold; color: #333;"></div>
             </div>
+
 
             <div id="graph"></div>
             <div id="graph-controls">

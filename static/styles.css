@@ -262,3 +262,13 @@ button:disabled {
 
 
 
+/*timer*/
+
+/* Countdown Timer Styles */
+#countdownTimer {
+    margin-top: 10px;
+    color: #333;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+}
