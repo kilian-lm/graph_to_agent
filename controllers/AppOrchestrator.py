@@ -4,6 +4,8 @@ import datetime
 import uuid
 import logging
 import json
+import random
+import re
 
 # All custom classes
 from controllers.MatrixLayerOne import MatrixLayerOne
@@ -17,6 +19,7 @@ from controllers.GraphPatternProcessor import GraphPatternProcessor
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 # app = Flask(__name__)
 
@@ -77,7 +80,6 @@ class AppOrchestrator():
             self.logger.error(f"Error loading available graphs: {e}")
             # return jsonify({"status": "error", "message": str(e)})
 
-
     def save_graph(self, graph_data):
         try:
             # graph_data = request.json
@@ -98,16 +100,6 @@ class AppOrchestrator():
             # return jsonify({"status": "error", "message": str(e)})
 
     def matrix_sudoku_approach(self, graph_data):
-        # import json
-
-        # timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        # general_uuid = str(uuid.uuid4())
-        # key = f"{timestamp}_{general_uuid}"
-        #
-        # json_file_path = "./logics/simple_va_inheritance_20231117.json"
-        #
-        # with open(json_file_path, 'r') as json_file:
-        #     graph_data = json.load(json_file)
 
         # graph_data = request.json
         self.logger.info(f"save_graph, graph_data: {graph_data}")
@@ -140,7 +132,6 @@ class AppOrchestrator():
         graph_data = self.return_gpt_agent_answer_to_graph(graph_data)
 
         return graph_data
-
 
     def return_gpt_agent_answer_to_graph(self, graph_data):
         node_answers_tbl_id = f"{self.bq_handler.bigquery_client.project}.{os.getenv('ANSWER_CURATED_CHAT_COMPLETIONS')}.{self.key}"
@@ -177,7 +168,43 @@ class AppOrchestrator():
                 }
                 graph_data['edges'].append(new_edge)
 
+        # Select a random answer node and save it
+        random_answer = self.select_random_answer_nodes(graph_data)
+        self.bq_handler.save_selected_answer(self.key, random_answer)
+
         return graph_data
+
+    # def select_random_answer_nodes(self, graph_data):
+    #     answer_nodes = [node for node in graph_data['nodes'] if node['id'].startswith('answer_')]
+    #     if not answer_nodes:
+    #         return "No answer nodes available"
+    #
+    #     selected_node = random.choice(answer_nodes)
+    #     return selected_node['label']
+
+    def clean_word(self, word):
+        """Remove special characters and return the cleaned word."""
+        return re.sub(r'\W+', '', word)
+
+    def select_random_answer_nodes(self, graph_data):
+        answer_nodes = [node for node in graph_data['nodes'] if node['id'].startswith('answer_')]
+        num_nodes = min(len(answer_nodes), 5)  # Select up to 5 nodes
+
+        selected_nodes = random.sample(answer_nodes, num_nodes)  # Select unique nodes
+
+        common_fill_words = set(["to", "the", "a", "an", "and", "or", "but", "is", "of", "on", "in", "for"])
+        used_words = set()
+        words = []
+        for node in selected_nodes:
+            node_words = [self.clean_word(word) for word in node['label'].split() if
+                          word.lower() not in common_fill_words]
+            for word in node_words:
+                if word not in used_words:
+                    used_words.add(word)
+                    words.append(word)
+                    break  # Break after adding the first unique suitable word from this node
+
+        return '_'.join(words)
 
     # def setup_routes(self):
     #     self.app.route('/')(self.index_call)
