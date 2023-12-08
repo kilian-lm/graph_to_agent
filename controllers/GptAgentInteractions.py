@@ -63,14 +63,33 @@ class GptAgentInteractions():
             bigquery.SchemaField("to", "STRING", mode="REQUIRED")
         ]
 
+    # def get_available_graphs(self):
+    #     # Query to get distinct graph_ids from the nodes_table
+    #     # query = f"SELECT DISTINCT graph_id FROM `{self.bq_handler.bigquery_client.project}.{self.dataset_id}.{self.nodes_table}`"
+    #     query = f"SELECT DISTINCT selected_answer FROM `enter-universes.random_string_look_up.selected_answers` "
+    #     self.logger.info(query)
+    #     query_job = self.bq_handler.bigquery_client.query(query)
+    #     results = query_job.result()
+    #
+    #     # return [{"graph_id": row["graph_id"], "graph_name": row["graph_id"]} for row in results]
+    #     return [{"selected_answer": row["selected_answer"], "graph_name": row["selected_answer"]} for row in results]
+
     def get_available_graphs(self):
-        # Query to get distinct graph_ids from the nodes_table
-        query = f"SELECT DISTINCT graph_id FROM `{self.bq_handler.bigquery_client.project}.{self.dataset_id}.{self.nodes_table}`"
+        # Query to get distinct selected_answers and their corresponding graph_ids
+        query = f"-- SELECT DISTINCT selected_answer, graph_id FROM `enter-universes.random_string_look_up.selected_answers` limit 1"
+
+        query = f"""
+        SELECT ANY_VALUE(selected_answer) as selected_answer, graph_id
+        FROM `enter-universes.random_string_look_up.selected_answers`
+        GROUP BY graph_id
+        """
+
         self.logger.info(query)
         query_job = self.bq_handler.bigquery_client.query(query)
         results = query_job.result()
 
-        return [{"graph_id": row["graph_id"], "graph_name": row["graph_id"]} for row in results]
+        return [{"selected_answer": row["selected_answer"], "graph_id": row["graph_id"],
+                 "graph_name": row["selected_answer"]} for row in results]
 
     def load_graph_data_by_id(self, graph_id):
         # nodes_table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table("nodes_table")
