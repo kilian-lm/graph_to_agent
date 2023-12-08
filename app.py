@@ -1,18 +1,20 @@
 import datetime
 from flask import Flask, render_template, jsonify, request
-from controllers.AppOrchestrator import AppOrchestrator
 import os
 import openai
+import json
 
+from controllers.AppOrchestrator import AppOrchestrator
+
+from controllers.CloudRunSpecificInMemoryOpenAiKeyHandling import CloudRunSpecificInMemoryOpenAiKeyHandling
+
+cloud_run_spec = CloudRunSpecificInMemoryOpenAiKeyHandling()
 app = Flask(__name__)
 
 # Initialize AppOrchestrator
 orchestrator = AppOrchestrator()
 
 
-# @app.route('/')
-# def index_call():
-#     return render_template('graph.html')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -24,7 +26,7 @@ def index():
             eula_o_k = 'TRUE'
             openai_api_key = request.form.get('openai_api_key')
             if openai_api_key:
-                os.environ['OPENAI_API_KEY'] = openai_api_key
+                cloud_run_spec.save_api_key(openai_api_key)
                 os.environ['EULA_O_K'] = eula_o_k
                 return render_template('graph.html')
             else:
@@ -41,9 +43,11 @@ def index():
 @app.route('/get-openai-models', methods=['GET'])
 def get_openai_models():
     try:
-        openai.api_key = os.getenv('OPENAI_API_KEY')
+        # openai.api_key = os.getenv('OPENAI_API_KEY')
+        openai.api_key = cloud_run_spec.get_api_key()
         models = openai.Model.list()
-        model_options = [{'label': model['id'], 'value': model['id']} for model in models['data'] if 'annalect' not in model['id']]
+        model_options = [{'label': model['id'], 'value': model['id']} for model in models['data'] if
+                         'annalect' not in model['id']]
         return jsonify(model_options)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
