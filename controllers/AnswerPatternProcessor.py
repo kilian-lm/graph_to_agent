@@ -30,7 +30,31 @@ from sql_queries.layer_find_variable import LAYER_FIND_VARIABLE
 
 from sql_queries.gpt_call_blueprint import GPT_CALL_BLUEPRINT
 
+from controllers.CloudRunSpecificInMemoryOpenAiKeyHandling import CloudRunSpecificInMemoryOpenAiKeyHandling
+
+from controllers.config import Config
+
 load_dotenv()
+
+# CACHE_DIRECTORY = '/cache'  # Directory where the API key will be stored
+#
+# def save_api_key(api_key):
+#     # Create the /cache directory if it doesn't exist
+#     if not os.path.exists(CACHE_DIRECTORY):
+#         os.makedirs(CACHE_DIRECTORY)
+#
+#     # Write the API key to a JSON file in /cache
+#     with open(os.path.join(CACHE_DIRECTORY, 'api_key.json'), 'w') as file:
+#         json.dump({'api_key': api_key}, file)
+#
+# def get_api_key():
+#     # Read the API key from the JSON file in /cache
+#     api_key_file = os.path.join(CACHE_DIRECTORY, 'api_key.json')
+#     if os.path.exists(api_key_file):
+#         with open(api_key_file, 'r') as file:
+#             data = json.load(file)
+#             return data.get('api_key')
+#     return None
 
 
 class AnswerPatternProcessor:
@@ -45,7 +69,9 @@ class AnswerPatternProcessor:
         print(self.log_level)
         self.logger = CustomLogger(self.log_file, self.log_level, self.log_dir)
 
-        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        # self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        cloud_run_spec = CloudRunSpecificInMemoryOpenAiKeyHandling()
+        self.openai_api_key = cloud_run_spec.get_api_key()
         self.openai_base_url = "https://api.openai.com/v1/chat/completions"
         self.headers = {
             'Content-Type': 'application/json',
