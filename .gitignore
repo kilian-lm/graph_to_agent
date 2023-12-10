@@ -1,5 +1,8 @@
-# kl-dev
 
+
+# kl-dev
+privat_chat_hist
+chat.html
 *.xml
 *.env
 *.jsonl
