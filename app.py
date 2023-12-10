@@ -90,10 +90,12 @@ def matrix_sudoku_approach():
     try:
         graph_data = request.json
         updated_graph = orchestrator.matrix_sudoku_approach(graph_data)
-        return jsonify(updated_graph)
+        random_answer = orchestrator.select_random_answer_nodes(graph_data)  # Get the random answer
+        return jsonify({"updated_graph": updated_graph, "saved_name": random_answer})  # Include it in the response
     except Exception as e:
         orchestrator.logger.error(f"Error in matrix sudoku approach: {e}")
         return jsonify({"status": "error", "message": str(e)})
+
 
 
 @app.route('/impressum', methods=['GET', 'POST'])

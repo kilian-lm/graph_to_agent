@@ -21,7 +21,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# app = Flask(__name__)
 
 
 class AppOrchestrator():
@@ -64,7 +63,7 @@ class AppOrchestrator():
     def get_graph_data(self, graph_id):
         try:
             # graph_id = request.json['graph_id']
-            graph_data = self.gpt_agent_interactions.load_graph_data_by_id(graph_id)
+            graph_data = self.gpt_agent_interactions.load_graph_data_by_id(self.graph_dataset_id,graph_id, self.nodes_table,self.edges_table, os.getenv('ANSWER_CURATED_CHAT_COMPLETIONS') )
             # return jsonify(graph_data)
             return graph_data
         except Exception as e:
@@ -174,13 +173,6 @@ class AppOrchestrator():
 
         return graph_data
 
-    # def select_random_answer_nodes(self, graph_data):
-    #     answer_nodes = [node for node in graph_data['nodes'] if node['id'].startswith('answer_')]
-    #     if not answer_nodes:
-    #         return "No answer nodes available"
-    #
-    #     selected_node = random.choice(answer_nodes)
-    #     return selected_node['label']
 
     def clean_word(self, word):
         """Remove special characters and return the cleaned word."""
@@ -188,37 +180,33 @@ class AppOrchestrator():
 
     def select_random_answer_nodes(self, graph_data):
         answer_nodes = [node for node in graph_data['nodes'] if node['id'].startswith('answer_')]
-        num_nodes = min(len(answer_nodes), 5)  # Select up to 5 nodes
 
-        selected_nodes = random.sample(answer_nodes, num_nodes)  # Select unique nodes
+        # Randomly shuffle the answer nodes to get a varied selection each time
+        random.shuffle(answer_nodes)
 
         common_fill_words = set(["to", "the", "a", "an", "and", "or", "but", "is", "of", "on", "in", "for"])
         used_words = set()
         words = []
-        for node in selected_nodes:
+
+        for node in answer_nodes:
             node_words = [self.clean_word(word) for word in node['label'].split() if
                           word.lower() not in common_fill_words]
+            added_words = 0
             for word in node_words:
                 if word not in used_words:
                     used_words.add(word)
                     words.append(word)
-                    break  # Break after adding the first unique suitable word from this node
+                    added_words += 1
+                    if added_words >= 3:
+                        break  # Break after adding at least 3 unique suitable words from this node
 
-        return '_'.join(words)
+        # Concatenate words, ensuring the length does not exceed 70 characters
+        random_answer = ''
+        for word in words:
+            if len(random_answer) + len(word) + 1 <= 70:  # +1 for the underscore
+                random_answer += (word + '_')
+            else:
+                break
 
-    # def setup_routes(self):
-    #     self.app.route('/')(self.index_call)
-    #     self.app.route('/get-graph-data', methods=['POST'])(self.get_graph_data)
-    #     self.app.route('/get-available-graphs', methods=['GET'])(self.get_available_graphs)
-    #     self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.matrix_sudoku_approach)
-    #     # self.app.route('/return-gpt-agent-answer-to-graph', methods=['POST'])(self.engine_room.main_tree_based_design_general)
-    #     # self.app.route('/save-graph', methods=['POST'])(self.save_graph)
-    #     self.app.route('/save-graph', methods=['POST'])(self.matrix_sudoku_approach)
+        return random_answer.strip('_')  # Remove trailing underscore
 
-#     def run(self):
-#         self.app.run(debug=True)
-#
-#
-# if __name__ == '__main__':
-#     server = App()
-#     server.run()
