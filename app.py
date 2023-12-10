@@ -15,7 +15,6 @@ app = Flask(__name__)
 orchestrator = AppOrchestrator()
 
 
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
     eula_o_k = os.environ.get('EULA_O_K')
@@ -96,6 +95,28 @@ def matrix_sudoku_approach():
         orchestrator.logger.error(f"Error in matrix sudoku approach: {e}")
         return jsonify({"status": "error", "message": str(e)})
 
+
+@app.route('/get-json-files', methods=['GET'])
+def get_json_files():
+    json_dir = 'json_blueprints'  # Directory where JSON files are stored
+    try:
+        json_files = [f for f in os.listdir(json_dir) if f.endswith('.json')]
+        return jsonify(json_files)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+@app.route('/load-json-file', methods=['POST'])
+def load_json_file():
+    data = request.json
+    filename = data.get('filename')
+    json_dir = 'json_blueprints'  # Directory where JSON files are stored
+    try:
+        with open(os.path.join(json_dir, filename), 'r') as file:
+            graph_data = json.load(file)
+            return jsonify(graph_data)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 
 @app.route('/impressum', methods=['GET', 'POST'])
