@@ -1,0 +1,16 @@
+```mermaid
+graph TD
+
+A[Hypothesis 1: Climate change is caused by human activities] --> B[Hypothesis 2: Climate change causes rising global temperatures]
+B --> C[Hypothesis 3: Rising global temperatures contribute to extreme weather events, loss of biodiversity, and rising sea levels]
+C --> D[Hypothesis 4: Extreme weather events, loss of biodiversity, and rising sea levels pose threats]
+
+D -->|Modus Ponens| E[Conclusion: Burning fossil fuels, deforestation, and industrial processes contribute to rising temperatures]
+D -->|Modus Ponens| F[Conclusion: Climate change contributes to extreme weather events, loss of biodiversity, and rising sea levels]
+C -->|Modus Tollens| G[Conclusion: If extreme weather events, loss of biodiversity, and rising sea levels are not observed, climate change is not occurring]
+A -->|Hypothetical Syllogism| F
+B -->|Hypothetical Syllogism| F
+E -->|Hypothetical Syllogism| F
+C -->|Disjunctive Syllogism| D
+```
+```

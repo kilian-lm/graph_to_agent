@@ -1,6 +1,9 @@
-*.json
 *.env
 *.csv
 *.wav
 *.mp3
 venv
+out
+proposal
+data_science
+logics
