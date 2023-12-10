@@ -59,6 +59,12 @@
 
             <div id="jsonDataPanel">
                 <h3>JSON Data</h3>
+                <label for="jsonFileDropdown">Select blueprint</label>
+                <select id="jsonFileDropdown">
+                    <option value="">Select blueprint</option>
+                    <!-- Options will be populated dynamically -->
+                </select>
+                <br>
                 <textarea id="jsonData" rows="10" style="width:100%"></textarea>
                 <br>
                 <button id="updateFromJsonButton">Update Graph from JSON</button>
@@ -72,7 +78,8 @@
 
             <div id="loadingIndicator" style="display:none;">
                 <img src="{{ url_for('static', filename='images/giphy.gif') }}"/>
-                <p>Operation takes on avg 130 sec ... loading...go and get a coffee or improve my ETL code or just complain to my superior ;P</p>
+                <p>Operation takes on avg 130 sec ... loading...go and get a coffee or improve my code or just
+                    complain to my superior ;P</p>
                 <!-- Countdown Timer -->
                 <div id="countdownTimer" style="font-size: 30px; font-weight: bold; color: #333;"></div>
             </div>

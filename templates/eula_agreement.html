@@ -1,7 +1,7 @@
 {% extends "base_template.html" %}
 
 {% block content %}
-<div class="eula-container">
+    <div class="eula-container">
     <h1>End User License Agreement (EULA)</h1>
     <div class="eula-content">
         <h2>Acceptance of Terms</h2>
@@ -35,7 +35,8 @@
             regard to its conflict of law provisions.</p>
 
         <h2>Contact Information</h2>
-        <p>For any inquiries or notifications, please contact [Insert Contact Information].</p>
+        <p>For any inquiries or notifications, please contact <a href="mailto:kilian@familylehn.com">kilian@familylehn.com</a>.
+        </p>
     </div>
     <div class="eula-buttons">
         <form method="POST">
@@ -43,7 +44,7 @@
                 <label for="openai_api_key">OpenAI API Key:</label>
                 <input type="text" id="openai_api_key" name="openai_api_key" required>
                 {% if error %}
-                <p class="error">{{ error }}</p>
+                    <p class="error">{{ error }}</p>
                 {% endif %}
             </div>
             <div class="eula-buttons">
@@ -52,4 +53,4 @@
             </div>
         </form>
     </div>
-    {% endblock %}
+{% endblock %}
