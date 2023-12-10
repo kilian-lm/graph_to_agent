@@ -76,7 +76,7 @@ class GptAgentInteractions():
 
     def get_available_graphs(self):
         # Query to get distinct selected_answers and their corresponding graph_ids
-        query = f"-- SELECT DISTINCT selected_answer, graph_id FROM `enter-universes.random_string_look_up.selected_answers` limit 1"
+        # query = f"-- SELECT DISTINCT selected_answer, graph_id FROM `enter-universes.random_string_look_up.selected_answers`"
 
         query = f"""
         SELECT ANY_VALUE(selected_answer) as selected_answer, graph_id
@@ -91,49 +91,143 @@ class GptAgentInteractions():
         return [{"selected_answer": row["selected_answer"], "graph_id": row["graph_id"],
                  "graph_name": row["selected_answer"]} for row in results]
 
-    def load_graph_data_by_id(self, graph_id):
-        # nodes_table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table("nodes_table")
-        # edges_table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table("edges_table")
+    def load_graph_data_by_id(self, dataset_id, graph_id, nodes_table, edges_table, answers_table):
+        try:
+            # Initialize BigQuery client
+            client = self.bq_handler.bigquery_client
 
-        # Fetch nodes for given graph_id
-        nodes_query = f"SELECT * FROM `{self.bq_handler.bigquery_client.project}.{self.dataset_id}.{self.nodes_table}` WHERE graph_id = '{graph_id}'"
-        self.logger.info(nodes_query)
-        nodes_query_job = self.bq_handler.bigquery_client.query(nodes_query)
-        nodes_results = nodes_query_job.result()
-        nodes = [{"id": row['id'], "label": row['label']} for row in nodes_results]
+            # Fetch nodes and edges for the given graph_id
+            nodes = self.fetch_data(client, dataset_id, nodes_table, graph_id, 'nodes')
+            original_edges = self.fetch_data(client, dataset_id, edges_table, graph_id, 'edges')
+            self.logger.info(f"Nodes and edges loaded for graph id {graph_id}.")
 
-        self.logger.info(f"nodes loaded by graph id {nodes} already exists.")
+            # Fetch answer nodes
+            answers = self.fetch_data(client, os.getenv('ANSWER_CURATED_CHAT_COMPLETIONS'), answers_table, graph_id,
+                                      'answers', is_answers=True)
+            self.logger.info(f"Answers loaded for graph id {graph_id}.")
 
-        # Fetch edges for given graph_id
-        edges_query = f"SELECT * FROM `{self.bq_handler.bigquery_client.project}.{self.dataset_id}.{self.edges_table}` WHERE graph_id = '{graph_id}'"
-        self.logger.info(edges_query)
-        edges_query_job = self.bq_handler.bigquery_client.query(edges_query)
-        edges_results = edges_query_job.result()
-        edges = [{"from": row['from'], "to": row['to']} for row in edges_results]
+            # Combine nodes and answers
+            nodes.extend(answers)
 
-        return {"nodes": nodes, "edges": edges}
+            # Initialize a set to track existing edges and avoid duplicates
+            existing_edges = set()
 
-    # def build_tree_structure(self, nodes, edges):
-    #     # graph_data = json.loads(graph_data)
-    #     # nodes = graph_data['nodes']
-    #     # edges = graph_data['edges']
+            # Add original edges to the set and the final edge list, checking for duplicates
+            edges = []
+            for edge in original_edges:
+                edge_pair = (edge['from'], edge['to'])
+                if edge_pair not in existing_edges:
+                    edges.append(edge)
+                    existing_edges.add(edge_pair)
+
+            # Create edges to connect answer nodes to their corresponding original nodes
+            for answer in answers:
+                if answer['id'].startswith('answer_'):
+                    origin_node_id = answer['id'].replace('answer_', '')
+                    edge_pair = (origin_node_id, answer['id'])
+
+                    # Only add a new edge if it does not exist already
+                    if edge_pair not in existing_edges:
+                        new_edge = {
+                            'from': origin_node_id,
+                            'to': answer['id']
+                        }
+                        edges.append(new_edge)
+                        existing_edges.add(edge_pair)  # Add this new edge to the set of existing edges
+
+            return {"nodes": nodes, "edges": edges}
+        except NotFound as e:
+            self.logger.error(f"Table not found in specified location: {e}")
+            # Handle the error appropriately
+        except Exception as e:
+            self.logger.error(f"Error fetching graph data: {e}")
+            # Handle other exceptions
+
+    def fetch_data(self, client, dataset_id, table_id, graph_id, data_type, is_answers=False):
+        if is_answers:
+            # For answer nodes, extract node_id and label from the answer_node record
+            query = f"""
+            SELECT answer_node.node_id as id, answer_node.label 
+            FROM `{self.bq_handler.bigquery_client.project}.{table_id}.{graph_id}` 
+            WHERE graph_id = '{graph_id}'
+            """
+            self.logger.info(query)
+        else:
+            # Regular query for nodes or edges
+            query = f"SELECT * FROM `{dataset_id}.{table_id}` WHERE graph_id = '{graph_id}'"
+            self.logger.info(query)
+        query_job = client.query(query)
+        results = query_job.result()
+
+        # Processing the results based on data type
+        if data_type == 'edges':
+            data = [{"from": row['from'], "to": row['to']} for row in results]
+        else:
+            # This handles both nodes and answer nodes, as the structure is now similar
+            data = [{"id": row['id'], "label": row['label']} for row in results]
+
+        return data
+
+    # def load_graph_data_by_id(self, dataset_id, graph_id, nodes_table, edges_table, answers_table):
+    #     # Fetch nodes for given graph_id
+    #     nodes_query = f"SELECT * FROM `{dataset_id}.{nodes_table}` WHERE graph_id = '{graph_id}'"
+    #     nodes_query_job = self.bq_handler.bigquery_client.query(nodes_query)
+    #     nodes_results = nodes_query_job.result()
+    #     nodes = [{"id": row['id'], "label": row['label']} for row in nodes_results]
     #
-    #     tree = {}
-    #     for node in nodes:
-    #         tree[node['id']] = {
-    #             'label': node['label'],
-    #             'children': []
-    #         }
-    #     for edge in edges:
-    #         tree[edge['from']]['children'].append(edge['to'])
-    #     return tree
+    #     # Fetch edges for given graph_id
+    #     edges_query = f"SELECT * FROM `{dataset_id}.{edges_table}` WHERE graph_id = '{graph_id}'"
+    #     edges_query_job = self.bq_handler.bigquery_client.query(edges_query)
+    #     edges_results = edges_query_job.result()
+    #     edges = [{"from": row['from'], "to": row['to']} for row in edges_results]
+    #
+    #     # Integrate answer nodes into graph data
+    #     answers_query = f"SELECT DISTINCT node_id, label FROM `{dataset_id}.{answers_table}` WHERE graph_id = '{graph_id}'"
+    #     answers_query_job = self.bq_handler.bigquery_client.query(answers_query)
+    #     answers_results = answers_query_job.result()
+    #
+    #     for row in answers_results:
+    #         modified_node_id = row.node_id.replace('answer_', '')
+    #         matching_node = next((node for node in nodes if node['id'] == modified_node_id), None)
+    #
+    #         if matching_node:
+    #             # Add a new node for the answer
+    #             new_node = {
+    #                 'id': row.node_id,  # Use the node_id from the query
+    #                 'label': row.label
+    #             }
+    #             nodes.append(new_node)
+    #
+    #             # Add a new edge connecting the matching node to the new node
+    #             new_edge = {
+    #                 'from': matching_node['id'],
+    #                 'to': row.node_id  # Connect to the new node
+    #             }
+    #             edges.append(new_edge)
+    #
+    #     return {"nodes": nodes, "edges": edges}
 
-    # def print_tree(self, tree, node_id, depth=0):
-    #     # This function recursively prints the tree.
-    #     indent = ' ' * depth * 2
-    #     print(f"{indent}- {tree[node_id]['label']}")
-    #     for child_id in tree[node_id]['children']:
-    #         self.print_tree(tree, child_id, depth + 1)
+    # def load_graph_data_by_id(self, graph_id):
+    #     # nodes_table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table("nodes_table")
+    #     # edges_table_ref = self.bq_handler.bigquery_client.dataset(self.dataset_id).table("edges_table")
+    #
+    #     # Fetch nodes for given graph_id
+    #     nodes_query = f"SELECT * FROM `{self.bq_handler.bigquery_client.project}.{self.dataset_id}.{self.nodes_table}` WHERE graph_id = '{graph_id}'"
+    #     self.logger.info(nodes_query)
+    #     nodes_query_job = self.bq_handler.bigquery_client.query(nodes_query)
+    #     nodes_results = nodes_query_job.result()
+    #     nodes = [{"id": row['id'], "label": row['label']} for row in nodes_results]
+    #
+    #     self.logger.info(f"nodes loaded by graph id {nodes} already exists.")
+    #
+    #     # Fetch edges for given graph_id
+    #     edges_query = f"SELECT * FROM `{self.bq_handler.bigquery_client.project}.{self.dataset_id}.{self.edges_table}` WHERE graph_id = '{graph_id}'"
+    #     self.logger.info(edges_query)
+    #     edges_query_job = self.bq_handler.bigquery_client.query(edges_query)
+    #     edges_results = edges_query_job.result()
+    #     edges = [{"from": row['from'], "to": row['to']} for row in edges_results]
+    #
+    #     return {"nodes": nodes, "edges": edges}
 
     def load_json_graph(self, json_graph_data):
         graph_data = json.loads(json_graph_data)
