@@ -350,7 +350,7 @@ class GraphUI {
 
     async gptPostRequest() {
         // Show the loading indicator
-        this.startCountdown(130); // Start a 60-second countdown
+        this.startCountdown(130); // Start a 130-second countdown
 
         document.getElementById('loadingIndicator').style.display = 'block';
 
@@ -378,8 +378,10 @@ class GraphUI {
 
             console.log('Full response data received:', data);
 
-            if (data && Array.isArray(data.nodes) && Array.isArray(data.edges)) {
-                this.updateGraph(data); // Passing the whole data object since it already contains nodes and edges
+            if (data && data.updated_graph && Array.isArray(data.updated_graph.nodes) && Array.isArray(data.updated_graph.edges)) {
+                this.updateGraph(data.updated_graph); // Update with the updated_graph data
+                // Alert the user about the saved name of the graph
+                alert('Your graph has been saved under the name: ' + data.saved_name);
             } else {
                 console.error('Invalid or incomplete data received from backend:', data);
                 alert('Invalid or incomplete data received from backend.');
