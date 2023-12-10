@@ -138,7 +138,8 @@ class GraphUI {
         this.attachEventListeners();
         this.createMessagePassingDropdown();
         this.loadOpenAIModels();
-
+        this.loadJSONFiles();
+        document.getElementById('jsonFileDropdown').addEventListener('change', () => this.loadSelectedJSONFile());
 
     }
 
@@ -146,6 +147,45 @@ class GraphUI {
     resetJSON() {
         this.saveEntireGraphToJSON();
         console.log('JSON reset to current graph state.');
+    }
+
+
+    async loadJSONFiles() {
+        try {
+            const response = await fetch('/get-json-files');
+            const jsonFiles = await response.json();
+            const dropdown = document.getElementById('jsonFileDropdown');
+            dropdown.innerHTML = '';
+            jsonFiles.forEach(file => {
+                const option = document.createElement('option');
+                option.value = file;
+                option.textContent = file;  // Display the file name
+                dropdown.appendChild(option);
+            });
+            console.log('JSON files loaded:', jsonFiles);
+        } catch (error) {
+            console.error('Error loading JSON files:', error);
+        }
+    }
+
+    async loadSelectedJSONFile() {
+        const selectedFile = document.getElementById('jsonFileDropdown').value;
+        if (selectedFile) {
+            try {
+                const response = await fetch('/load-json-file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({filename: selectedFile})
+                });
+                const graphData = await response.json();
+                this.updateGraph(graphData);
+                console.log('Loaded graph data from JSON file:', graphData);
+            } catch (error) {
+                console.error('Error loading graph data from JSON file:', error);
+            }
+        }
     }
 
 
