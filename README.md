@@ -7,7 +7,7 @@ For Vision-Statement see: [Vision.md](READ_ME%2FVision.md)
 1. **Understand the motivation**
     - [Vision.md](READ_ME%2FVision.md)
     - [V](https://cv-gieklps3ea-uc.a.run.app/graph_to_agent_normative_approach)
-    - [linkedin_article]([https://www.linkedin.com/...](https://www.linkedin.com/pulse/proposal-re-use-re-design-flawed-reward-system-git-all-kilian-lehn-oj2ze%3FtrackingId=2dJYCDeFmOoTpzMEszsqmA%253D%253D/?trackingId=2dJYCDeFmOoTpzMEszsqmA%3D%3D))
+    - [linkedin_article](https://www.linkedin.com/pulse/proposal-re-use-re-design-flawed-reward-system-git-all-kilian-lehn-oj2ze%3FtrackingId=2dJYCDeFmOoTpzMEszsqmA%253D%253D/?trackingId=2dJYCDeFmOoTpzMEszsqmA%3D%3D)
 
 ## Git Workflow Rules
 
