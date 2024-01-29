@@ -104,7 +104,7 @@ termcolor==2.2.0
 threadpoolctl==3.1.0
 tokenizers==0.13.2
 tqdm==4.65.0
-transformers==4.26.1
+transformers==4.37.2
 trio==0.22.0
 trio-websocket==0.10.2
 typing_extensions==4.5.0
