@@ -16,7 +16,7 @@ coloredlogs==15.0.1
 contourpy==1.0.7
 cryptography==39.0.2
 cycler==0.11.0
-dash==2.9.1
+dash==2.15.0
 dash-ace==0.2.1
 dash-bootstrap-components==1.4.1
 dash-core-components==2.0.0
