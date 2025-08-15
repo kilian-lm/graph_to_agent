@@ -4,6 +4,6 @@ functions-framework==3.4.0
 python-dotenv==1.0.0
 openai==0.28.1
 gunicorn==20.1.0
-Werkzeug==2.2.3
+Werkzeug==3.0.6
 requests==2.28.2
 coloredlogs==15.0.1
