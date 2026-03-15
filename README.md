@@ -1,99 +1,273 @@
-# graph_to_agent
+# Graph-to-Agent
 
-For Vision-Statement see: [Vision.md](READ_ME%2FVision.md)
+**Visual Agent Orchestration Framework for LLM Workflows**
 
-# Motivation
+Build multi-agent LLM systems using graph-based visual programming. Wire up agents visually, define message flows, and execute complex AI workflows with reproducible results.
 
-1. **Understand the motivation**
-    - [Vision.md](READ_ME%2FVision.md)
-    - [V](https://cv-gieklps3ea-uc.a.run.app/graph_to_agent_normative_approach)
-    - [linkedin_article](https://www.linkedin.com/...)
+[![CI](https://github.com/kilian-lm/graph_to_agent/actions/workflows/ci.yml/badge.svg)](https://github.com/kilian-lm/graph_to_agent/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
 
-## Git Workflow Rules
+---
 
-1. **Branching Strategy:**
-    - Each developer should work on their own development branch (e.g. feature-... development branch).
-    - The `main` branch should only be updated through pull requests.
-    - Pull requests to the `main` branch require a review before being merged.
-    - Delete feature branches once they are merged into `main`.
+## Quick Start
 
-2. **Commit Messages:**
-    - Write clear and concise commit messages describing the changes made.
-    - Use the imperative mood, e.g., "Add feature" not "Added feature" or "Adds feature".
+### Installation
 
-3. **Conflict Resolution:**
-    - Resolve merge conflicts in your development branch before submitting a pull request.
-    - Keep your branch updated with the latest changes from `main` to minimize conflicts.
+```bash
+# Install from source
+pip install -e .
 
-4. **Code Review:**
-    - Actively participate in code review processes.
-    - Reviewers should ensure code quality, functionality, and adherence to design principles.
+# Or with dev dependencies
+pip install -e ".[dev]"
+```
 
-# Specs
+### Basic Usage
 
-1. **Status:** MVP
-2. **Architecture:**
-    1. **Involved Platforms:**
-        1. GCP
-            1. **Stack:**
-                1. Cloud Run (europe-west3-docker.pkg.dev/...)
-                2. BQ
-4. **.env**
+```python
+from graph_to_agent import GraphOrchestrator
 
-# ENV-Configs
+# Initialize
+orchestrator = GraphOrchestrator()
 
-NUM_STEPS=10 (todo :: UI :: DFS search of user input)
+# Define a simple agent graph
+graph = {
+    "nodes": [
+        {"id": "1", "label": "user"},
+        {"id": "2", "label": "Translate the following to French"},
+        {"id": "3", "label": "system"},
+        {"id": "4", "label": "I am a French translator."},
+        {"id": "5", "label": "user"},
+        {"id": "6", "label": "Hello, how are you?"},
+    ],
+    "edges": [
+        {"from": "1", "to": "2"},
+        {"from": "2", "to": "3"},
+        {"from": "3", "to": "4"},
+        {"from": "4", "to": "5"},
+        {"from": "5", "to": "6"},
+    ]
+}
 
-MODEL=gpt-3.5-turbo-16k-0613 (todo :: UI :: Dropdown of models)
+# Convert to GPT messages (without API call)
+messages = orchestrator.graph_to_messages(graph)
+print(messages)
+# [{'role': 'user', 'content': 'Translate the following to French'},
+#  {'role': 'system', 'content': 'I am a French translator.'},
+#  {'role': 'user', 'content': 'Hello, how are you?'}]
 
-## Credentials
+# Execute with OpenAI (requires OPENAI_API_KEY env var)
+response = orchestrator.execute(graph)
+print(response)
+# "Bonjour, comment allez-vous ?"
+```
 
-BQ_CLIENT_SECRETS={*****}
+### Run the Web UI
 
-OPENAI_API_KEY=****
+```bash
+# Set your API key
+export OPENAI_API_KEY=sk-...
 
-## Endpoints
+# Run the web app
+make run
+# or
+python -m flask --app app:app run --debug
+```
 
-OPENAI_BASE_URL=https://api.openai.com/v1/chat/completions
+Open http://localhost:5000 to use the visual graph editor.
 
-## Tables
+---
 
-ADJACENCY_MATRIX_DATASET_ID=graph_to_agent_adjacency_matrices
-MULTI_LAYERED_MATRIX_DATASET_ID=graph_to_agent_multi_layered_metrices
-ANSWER_CURATED_CHAT_COMPLETIONS=graph_to_agent_answer_curated_chat_completions
-CURATED_CHAT_COMPLETIONS=graph_to_agent_chat_completions
-RAW_CHAT_COMPLETIONS=graph_to_agent_raw_chat_completions
+## How It Works
+
+Graph-to-Agent translates visual graphs into LLM conversation flows:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Visual Graph                          │
+│                                                          │
+│    [user] ──> [instruction] ──> [system] ──> [ack]      │
+│                                                          │
+└────────────────────────┬────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│                   GPT Messages                           │
+│                                                          │
+│  [{"role": "user", "content": "instruction"},            │
+│   {"role": "system", "content": "ack"}]                  │
+│                                                          │
+└────────────────────────┬────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│                    LLM Response                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Node Types
+
+| Node Label | Purpose |
+|------------|---------|
+| `user` | Marks the next content as a user message |
+| `system` | Marks the next content as a system message |
+| *anything else* | Content to be sent as the message |
+
+### Variable Substitution
+
+Use `@variable` or `@variable_name` placeholders for dynamic content:
+
+```python
+graph = {
+    "nodes": [
+        {"id": "1", "label": "user"},
+        {"id": "2", "label": "Analyze this: @variable_input"},
+    ],
+    "edges": [{"from": "1", "to": "2"}]
+}
+
+response = orchestrator.execute(graph, variables={"input": "Hello world"})
+```
+
+---
+
+## Project Structure
+
+```
+graph_to_agent/
+├── src/graph_to_agent/      # New clean package structure
+│   ├── core/                # Core orchestration logic
+│   │   ├── orchestrator.py  # Main entry point
+│   │   ├── engine.py        # Low-level graph processing
+│   │   └── translator.py    # Format conversions
+│   ├── agents/              # LLM backends
+│   │   └── openai.py        # OpenAI integration
+│   ├── persistence/         # Storage backends
+│   │   ├── memory.py        # In-memory storage
+│   │   └── file.py          # File-based storage
+│   └── web/                 # Web components
+├── controllers/             # Legacy Flask controllers
+├── logics/                  # Legacy business logic
+├── templates/               # HTML templates
+├── static/                  # JS/CSS assets
+├── examples/                # Usage examples
+├── tests/                   # Test suite
+└── legacy/                  # Deprecated code (reference only)
+```
+
+---
+
+## Examples
+
+### Multi-Agent Wire-Box
+
+The "Wire-Box" pattern lets you orchestrate multiple expert agents:
+
+```python
+# See examples/expert_wirebox.py for full code
+
+# Agent 1: Skeptic perspective
+# Agent 2: Optimist perspective
+# Meta-Agent: Synthesizes both views
+
+graph = create_multi_perspective_graph("Should we pivot to B2B?")
+response = orchestrator.execute(graph)
+```
+
+### Basic Agent Chain
+
+```python
+# See examples/basic_agent_chain.py
+python examples/basic_agent_chain.py
+```
+
+---
+
+## Development
+
+```bash
+# Install dev dependencies
+make dev
+
+# Run tests
+make test
+
+# Lint and format
+make lint
+make format
+
+# Run web app in debug mode
+make run
+```
+
+### Environment Variables
+
+```bash
+# Required for API calls
+OPENAI_API_KEY=sk-...
+
+# Optional: BigQuery persistence
+BQ_CLIENT_SECRETS='{"type":"service_account",...}'
+
+# Optional: App configuration
 GRAPH_DATASET_ID=graph_to_agent
-EDGES_TABLE=edges_table
-NODES_TABLE=nodes_table
+MODEL=gpt-3.5-turbo
+```
 
-## Local Dirs
+---
 
-TEMP_RAW_CHAT_COMPLETIONS_DIR=temp_raw_chat_completions
-TEMP_MULTI_LAYERED_MATRIX_DIR=temp_multi_layered_matrix
-TEMP_CHECKPOINTS_GPT_CALLS=temp_checkpoints_gpt_calls
-LOG_DIR_LOCAL=./temp_log
+## Architecture Concepts
 
-# Video-Agenda
+### Graph-Based Agent Composition
 
-1. control + shift --> default :D
-2. control c + v
-3. explain multi select difference between custom function, agent and assistant
-4. modi msg passing
-5. how to read proposal
-6. explain roadmap
-7. explain interest in simulation
-    1. law of physics connected with msg. passing weights/ the more msgs/ the more info one msg carries, the higher the
-       gravity of a node
-    2. conways game of life
-    3. llama-index --> language corpus via edges
-8. explain different dimensions if somebody uses a pre-trained/ fine tuned model 
-9. Explain the sheer infinite statistical possibilities, starting with the two layers
-   1. explain the difference between the two layers
-   2. distance matrix
-   3. social interaction simulation by msg. protocols
-   4. Agent behaviour with dynamic environment
+Unlike black-box agent frameworks, Graph-to-Agent provides:
 
+- **Visual Composition**: Wire up agents using a graph editor
+- **Reproducibility**: Same graph = same execution path
+- **Versioning**: Track graph evolution like code
+- **Expert Wire-Boxes**: Domain experts encode knowledge in reusable patterns
 
+### Comparison with Emergent Simulation (e.g., Mirofish)
 
+| Graph-to-Agent | Emergent Simulation |
+|----------------|---------------------|
+| Explicit orchestration | Emergent behavior |
+| Reproducible results | Probabilistic outcomes |
+| Expert-driven design | Simulation-based discovery |
+| Version control friendly | Dynamic state |
 
+Both approaches are valid - choose based on your needs.
+
+---
+
+## Vision
+
+For the full vision and motivation, see [READ_ME/Vision.md](READ_ME/Vision.md).
+
+**TL;DR**: Build a "Git for Knowledge" - version-controlled, graph-based knowledge libraries that enable reproducible intellectual exploration and expert knowledge encoding.
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing`)
+3. Make your changes
+4. Run tests (`make test`)
+5. Commit (`git commit -m 'Add amazing feature'`)
+6. Push (`git push origin feature/amazing`)
+7. Open a Pull Request
+
+---
+
+## License
+
+[GPL-3.0](LICENSE)
+
+---
+
+## Links
+
+- [YouTube Demo (2023)](https://www.youtube.com/watch?v=NFA_c7bbALM)
+- [Vision Document](READ_ME/Vision.md)
+- [Security Policy](SECURITY.md)
