@@ -12,14 +12,11 @@ from typing import Any, Optional
 from dataclasses import dataclass, field
 
 try:
-    import requests
+    from openai import OpenAI
+    HAS_OPENAI = True
 except ImportError:
-    requests = None
-
-try:
-    import openai
-except ImportError:
-    openai = None
+    HAS_OPENAI = False
+    OpenAI = None
 
 
 @dataclass
@@ -92,21 +89,43 @@ class GraphOrchestrator:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "gpt-3.5-turbo",
-        base_url: str = "https://api.openai.com/v1/chat/completions",
+        model: str = "gpt-4o",  # Updated to latest recommended model
+        base_url: Optional[str] = None,
     ):
         """
         Initialize the orchestrator.
 
         Args:
             api_key: OpenAI API key (defaults to OPENAI_API_KEY env var)
-            model: Model to use for completions
-            base_url: API endpoint URL
+            model: Model to use for completions (gpt-4o, gpt-4-turbo, etc.)
+            base_url: Optional API endpoint URL override
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model = model
         self.base_url = base_url
         self.logger = logging.getLogger(__name__)
+        self._client: Optional["OpenAI"] = None
+
+    @property
+    def client(self) -> "OpenAI":
+        """Get or create the OpenAI client instance."""
+        if self._client is None:
+            if not HAS_OPENAI:
+                raise ImportError(
+                    "openai library required. Install with: pip install openai>=1.0.0"
+                )
+            if not self.api_key:
+                raise ValueError(
+                    "API key required. Set OPENAI_API_KEY or pass api_key parameter."
+                )
+
+            client_kwargs = {"api_key": self.api_key}
+            if self.base_url:
+                client_kwargs["base_url"] = self.base_url
+
+            self._client = OpenAI(**client_kwargs)
+
+        return self._client
 
     def graph_to_messages(self, graph_data: dict) -> list[dict]:
         """
@@ -189,6 +208,8 @@ class GraphOrchestrator:
         self,
         graph_data: dict,
         variables: Optional[dict] = None,
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
     ) -> str:
         """
         Execute the graph and return the LLM response.
@@ -196,15 +217,12 @@ class GraphOrchestrator:
         Args:
             graph_data: Graph structure with nodes and edges
             variables: Optional dict of variable substitutions
+            temperature: Sampling temperature (0-2)
+            max_tokens: Maximum tokens to generate
 
         Returns:
             LLM response text
         """
-        if not self.api_key:
-            raise ValueError(
-                "API key required. Set OPENAI_API_KEY env var or pass api_key parameter."
-            )
-
         # Apply variable substitutions
         if variables:
             graph_data = self._substitute_variables(graph_data, variables)
@@ -215,24 +233,19 @@ class GraphOrchestrator:
         if not messages:
             raise ValueError("Graph produced no messages. Check node/edge structure.")
 
-        # Make API call
-        payload = {
+        # Make API call using modern OpenAI SDK
+        params = {
             "model": self.model,
             "messages": messages,
+            "temperature": temperature,
         }
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
+        if max_tokens:
+            params["max_tokens"] = max_tokens
 
-        if requests is None:
-            raise ImportError("requests library required. Install with: pip install requests")
+        response = self.client.chat.completions.create(**params)
 
-        response = requests.post(self.base_url, headers=headers, json=payload)
-        response.raise_for_status()
-
-        return response.json()["choices"][0]["message"]["content"]
+        return response.choices[0].message.content
 
     def _substitute_variables(self, graph_data: dict, variables: dict) -> dict:
         """Replace @variable placeholders in node labels."""
