@@ -1,0 +1,61 @@
+repos:
+  # Secret detection
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            .*\.ipynb$|
+            data_science/.*|
+            legacy/.*
+          )$
+
+  # Code formatting and linting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  # General file fixes
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: |
+          (?x)^(
+            .*\.md$|
+            data_science/.*
+          )$
+      - id: end-of-file-fixer
+        exclude: |
+          (?x)^(
+            data_science/.*
+          )$
+      - id: check-yaml
+      - id: check-json
+        exclude: |
+          (?x)^(
+            .*\.ipynb$
+          )$
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: debug-statements
+
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.6
+    hooks:
+      - id: bandit
+        args: ["-c", "pyproject.toml", "-r", "controllers/", "logics/", "logger/"]
+        additional_dependencies: ["bandit[toml]"]
+        exclude: |
+          (?x)^(
+            legacy/.*|
+            data_science/.*|
+            tests/.*
+          )$
