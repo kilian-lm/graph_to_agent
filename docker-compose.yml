@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Main web application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - EULA_O_K=TRUE
+      - MODEL=${MODEL:-gpt-3.5-turbo}
+      - GRAPH_DATASET_ID=${GRAPH_DATASET_ID:-graph_to_agent}
+    volumes:
+      # Mount for development (hot reload)
+      - ./src:/app/src:ro
+      - ./controllers:/app/controllers:ro
+      - ./logics:/app/logics:ro
+      - ./templates:/app/templates:ro
+      - ./static:/app/static:ro
+      # Persistent storage for graphs
+      - graph_data:/app/graphs
+    restart: unless-stopped
+
+  # Development mode with hot reload
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - EULA_O_K=TRUE
+    volumes:
+      - .:/app
+      - /app/.git  # Exclude .git
+    command: flask --app app:app run --host=0.0.0.0 --port=5000 --debug
+
+volumes:
+  graph_data:

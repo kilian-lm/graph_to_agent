@@ -2,6 +2,11 @@
 
 # kl-dev
 privat_chat_hist
+
+# IDE
+.idea/
+*.iml
+.vscode/
 chat.html
 *.xml
 *.env
