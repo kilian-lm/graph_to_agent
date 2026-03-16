@@ -53,8 +53,7 @@ def get_openai_models():
     try:
         openai.api_key = cloud_run_spec.get_api_key()
         models = openai.Model.list()
-        model_options = [{'label': model['id'], 'value': model['id']} for model in models['data'] if
-                         'annalect' not in model['id']]
+        model_options = [{'label': model['id'], 'value': model['id']} for model in models['data']]
         return jsonify(model_options)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
