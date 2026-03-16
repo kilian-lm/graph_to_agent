@@ -58,10 +58,16 @@ run-prod:
 
 # Docker
 docker-build:
-	docker build -t graph-to-agent .
+	docker build -t graph-to-agent -f docker/Dockerfile .
 
 docker-run:
 	docker run -p 8080:8080 --env-file .env graph-to-agent
+
+docker-compose:
+	docker-compose -f docker/docker-compose.yml up
+
+docker-compose-dev:
+	docker-compose -f docker/docker-compose.yml up dev
 
 # Cleanup
 clean:
