@@ -29,6 +29,15 @@ Quick Start:
 
     # Execute (requires OPENAI_API_KEY env var)
     response = orchestrator.execute(graph)
+
+Persistence Backends:
+    from graph_to_agent.persistence import Neo4jHandler, InMemoryStore, FileStore
+
+Messaging Backends:
+    from graph_to_agent.messaging import RedisStreamsHandler
+
+Memory Backends:
+    from graph_to_agent.memory import Mem0Handler, HydraDBHandler
 """
 
 __version__ = "0.2.0"

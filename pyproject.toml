@@ -77,8 +77,26 @@ firebase = [
     "firebase-admin>=6.0.0",
     "firebase-functions>=0.1.0",
 ]
+neo4j = [
+    "neo4j>=5.0.0",
+]
+redis = [
+    "redis>=5.0.0",
+]
+mem0 = [
+    "mem0ai>=1.0.0",
+]
+hydradb = [
+    "hydradb>=0.1.0",
+]
+memory = [
+    "graph-to-agent[mem0,hydradb]",
+]
+graph = [
+    "graph-to-agent[neo4j,redis]",
+]
 all = [
-    "graph-to-agent[dev,anthropic,audio,firebase]",
+    "graph-to-agent[dev,anthropic,audio,firebase,neo4j,redis,mem0,hydradb]",
 ]
 
 [project.urls]
